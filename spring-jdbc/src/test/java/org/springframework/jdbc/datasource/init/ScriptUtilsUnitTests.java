@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -183,7 +183,7 @@ public class ScriptUtilsUnitTests {
 
 		assertFalse(containsSqlScriptDelimiters("select 1; select '\\n\n';", "\n"));
 		assertTrue(containsSqlScriptDelimiters("select 1\n select 2", "\n"));
-		
+
 		assertFalse(containsSqlScriptDelimiters("select 1\n select 2", "\n\n"));
 		assertTrue(containsSqlScriptDelimiters("select 1\n\n select 2", "\n\n"));
 

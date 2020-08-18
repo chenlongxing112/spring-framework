@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -67,7 +67,7 @@ class KotlinAutowiredTests {
 		assertNull(kb.injectedFromMethod)
 		assertNull(kb.injectedField)
 	}
-	
+
 	@Test  // SPR-15847
 	fun `Autowiring by primary constructor with mandatory and optional parameters`() {
 		val bf = DefaultListableBeanFactory()
@@ -202,7 +202,7 @@ class KotlinAutowiredTests {
 
 
 	class KotlinBean(val injectedFromConstructor: TestBean?) {
-		
+
 		var injectedFromMethod: TestBean? = null
 
 		@Autowired
