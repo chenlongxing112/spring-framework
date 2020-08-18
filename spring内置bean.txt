@@ -1,0 +1,61 @@
+spring内置bean总共包含如下几个:在AnnotationConfigUtils类中
+
+1. 	org.springframework.context.annotation.internalConfigurationAnnotationProcessor
+   	 * The bean name of the internally managed Configuration annotation processor.(主要是@Configuration注解的处理器)
+   	 对应spring的 ConfigurationClassPostProcessor 类
+
+2. org.springframework.context.annotation.internalConfigurationBeanNameGenerator
+   	 * The bean name of the internally managed BeanNameGenerator for use when processing classes. (主要是beanName处理器)
+   	 该处理器不在 AnnotationConfigUtils.registerAnnotationConfigProcessors() 方法中注册
+
+3. org.springframework.context.annotation.internalAutowiredAnnotationProcessor
+   	 * The bean name of the internally managed Autowired annotation processor.(主要是@Autowired注解的处理器)
+   	 对应spring的 AutowiredAnnotationBeanPostProcessor 类
+
+4. org.springframework.context.annotation.internalRequiredAnnotationProcessor
+   	 * The bean name of the internally managed Required annotation processor.(主要是@Required注解处理器)
+   	 对应spring的 RequiredAnnotationBeanPostProcessor 类
+
+5. org.springframework.context.annotation.internalCommonAnnotationProcessor
+   	 * The bean name of the internally managed JSR-250 annotation processor.(主要是处理java原生注解的处理器)
+   	 对应spring 的 CommonAnnotationBeanPostProcessor 类
+
+6. org.springframework.context.annotation.internalPersistenceAnnotationProcessor
+   	 * The bean name of the internally managed JPA annotation processor.(主要是处理JPA注解的处理器)
+
+7. org.springframework.orm.jpa.support.PersistenceAnnotationBeanPostProcessor
+    同 6
+
+8. org.springframework.context.event.internalEventListenerProcessor
+   	 * The bean name of the internally managed @EventListener annotation processor.(主要处理@EventListener注解的处理器)
+   	 对应 spring 的 EventListenerMethodProcessor 类
+
+9. org.springframework.context.event.internalEventListenerFactory
+   	 * The bean name of the internally managed EventListenerFactory.(主要用户管理实践监听工厂)
+   	 对应的spring 的 DefaultEventListenerFactory 类
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

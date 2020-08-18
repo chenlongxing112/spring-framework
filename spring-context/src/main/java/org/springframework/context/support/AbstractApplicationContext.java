@@ -513,41 +513,90 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		return this.applicationListeners;
 	}
 
+	/**
+	 * 1. 准备bean工厂环境, 注册各种bean后置处理器并调用一些内部后置处理器逻辑
+	 * 2. 解析配置类及使用扫描器扫描所有类并解析扫描出来的类, 将其封装成 ScannedGenericBeanDefinition(被@Component注解的类),
+	 * ConfigurationClassBeanDefinition(被@import注解导入的类)放入beanDefinitionMap 中以及所有BeanName放入beanDefinitionNames中
+	 * 3. 扫描配置类提供的扫描路径, 初始化spring所有的bean, 创建所有非lazy的bean(包含自己提供的 spring内置的bean)
+	 * @throws BeansException
+	 * @throws IllegalStateException
+	 */
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
 		synchronized (this.startupShutdownMonitor) {
 			// Prepare this context for refreshing.
+			// 准备环境, 读取配置文件
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
+			// 获得刷新的beanFactory
+			// 对于AnnotationConfigApplicationContext，作用：
+			// 1.调用org.springframework.context.support.GenericApplicationContext.refreshBeanFactory，
+			// 只是指定了SerializationId
+			// 2.直接返回beanFactory(不用创建，容器中已存在)
+			//  对于ClassPathXmlApplicationContext，作用：
+			// 1.调用AbstractRefreshableApplicationContext.refreshBeanFactory
+			// 2.如果存在beanFactory，先销毁单例bean，关闭beanFactory，再创建beanFactory
+			// 3.注册传入的spring的xml配置文件中配置的bean，注册到beanFactory
+			// 4.将beanFactory赋值给容器，返回beanFactory
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
+			// 这个方法执行完成, spring的bean单例容器中会存在三个bean,
+			// 分别是systemEnvironment, environment, systemProperties
+			// Prepare the bean factory for use in this context.
+			// 准备bean工厂： 指定beanFactory的类加载器， 添加后置处理器，注册缺省环境bean等
+			// beanFactory添加了2个后置处理器 ApplicationContextAwareProcessor, ApplicationListenerDetector (new )
 			prepareBeanFactory(beanFactory);
 
 			try {
 				// Allows post-processing of the bean factory in context subclasses.
+				// 该方法没有做任何事, 内部无任何逻辑
+				// Allows post-processing of the bean factory in context subclasses.
+				// 空方法
+				// 允许在上下文的子类中对beanFactory进行后处理
+				// 比如 AbstractRefreshableWebApplicationContext.postProcessBeanFactory
 				postProcessBeanFactory(beanFactory);
 
 				// Invoke factory processors registered as beans in the context.
+				// 调用后置处理器, 此方法太重要了, 调用过程参考下图
+				// Invoke factory processors registered as beans in the context.
+				// 1.通过beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class)
+				//   拿到ConfigurationClassPostProcessor
+				// 2.通过ConfigurationClassPostProcessor.postProcessBeanDefinitionRegistry，注册所有注解配置的bean
+				// 注册的顺序： @ComponentScan>实现ImportSelector>方法bean>@ImportResource("spring.xml")
+				//  > 实现 ImportBeanDefinitionRegistrar  (相对的顺序，都在同一个配置类上配置)
+				// 3. 调用ConfigurationClassPostProcessor#postProcessBeanFactory
+				//  增强@Configuration修饰的配置类  AppConfig--->AppConfig$$EnhancerBySpringCGLIB
+				// (可以处理内部方法bean之间的调用，防止多例)
+				//  添加了后置处理器 ConfigurationClassPostProcessor.ImportAwareBeanPostProcessor (new)
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
+				// 注册拦截bean创建的后置处理器：
+				// 1.添加Spring自身的：  BeanPostProcessorChecker （new）  以及注册了beanDefinition的两个
+				//  CommonAnnotationBeanPostProcessor AutowiredAnnotationBeanPostProcessor
+				//  重新添加ApplicationListenerDetector(new ) ，删除旧的，移到处理器链末尾
+				// 2.用户自定义的后置处理器
+				// 注册了beanDefinition的会通过 beanFactory.getBean(ppName, BeanPostProcessor.class) 获取后置处理器
 				registerBeanPostProcessors(beanFactory);
 
 				// Initialize message source for this context.
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
+				// 初始化事件多播器
 				initApplicationEventMulticaster();
 
 				// Initialize other special beans in specific context subclasses.
+				// 空方法   子类实现： springboot  内嵌容器  ioc启动带动tomcat启动
 				onRefresh();
 
 				// Check for listener beans and register them.
 				registerListeners();
 
 				// Instantiate all remaining (non-lazy-init) singletons.
+				// 实例化所有剩余的(非懒加载)单例。
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.

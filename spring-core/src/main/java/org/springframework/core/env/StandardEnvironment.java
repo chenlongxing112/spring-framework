@@ -16,6 +16,8 @@
 
 package org.springframework.core.env;
 
+import java.util.Map;
+
 /**
  * {@link Environment} implementation suitable for use in 'standard' (i.e. non-web)
  * applications.
@@ -75,10 +77,13 @@ public class StandardEnvironment extends AbstractEnvironment {
 	 */
 	@Override
 	protected void customizePropertySources(MutablePropertySources propertySources) {
-		propertySources.addLast(
-				new PropertiesPropertySource(SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME, getSystemProperties()));
-		propertySources.addLast(
-				new SystemEnvironmentPropertySource(SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, getSystemEnvironment()));
+		Map<String, Object> systemProperties = getSystemProperties();
+		PropertiesPropertySource propertySource = new PropertiesPropertySource(SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME, systemProperties);
+		propertySources.addLast(propertySource);
+
+		Map<String, Object> systemEnvironment = getSystemEnvironment();
+		SystemEnvironmentPropertySource environmentPropertySource = new SystemEnvironmentPropertySource(SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, systemEnvironment);
+		propertySources.addLast(environmentPropertySource);
 	}
 
 }
