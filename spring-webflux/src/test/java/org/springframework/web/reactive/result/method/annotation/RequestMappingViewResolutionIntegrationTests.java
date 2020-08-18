@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Optional;
+
+import org.junit.Test;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -40,16 +42,15 @@ import org.springframework.web.reactive.config.ViewResolverRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 import org.springframework.web.reactive.result.view.freemarker.FreeMarkerConfigurer;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.testfixture.http.server.reactive.bootstrap.HttpServer;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * {@code @RequestMapping} integration tests with view resolution scenarios.
  *
  * @author Rossen Stoyanchev
  */
-class RequestMappingViewResolutionIntegrationTests extends AbstractRequestMappingIntegrationTests {
+public class RequestMappingViewResolutionIntegrationTests extends AbstractRequestMappingIntegrationTests {
 
 	@Override
 	protected ApplicationContext initApplicationContext() {
@@ -60,30 +61,24 @@ class RequestMappingViewResolutionIntegrationTests extends AbstractRequestMappin
 	}
 
 
-	@ParameterizedHttpServerTest
-	void html(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void html() throws Exception {
 		String expected = "<html><body>Hello: Jason!</body></html>";
-		assertThat(performGet("/html?name=Jason", MediaType.TEXT_HTML, String.class).getBody()).isEqualTo(expected);
+		assertEquals(expected, performGet("/html?name=Jason", MediaType.TEXT_HTML, String.class).getBody());
 	}
 
-	@ParameterizedHttpServerTest
-	void etagCheckWithNotModifiedResponse(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void etagCheckWithNotModifiedResponse() throws Exception {
 		URI uri = new URI("http://localhost:" + this.port + "/html");
 		RequestEntity<Void> request = RequestEntity.get(uri).ifNoneMatch("\"deadb33f8badf00d\"").build();
 		ResponseEntity<String> response = getRestTemplate().exchange(request, String.class);
 
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_MODIFIED);
-		assertThat(response.getBody()).isNull();
+		assertEquals(HttpStatus.NOT_MODIFIED, response.getStatusCode());
+		assertNull(response.getBody());
 	}
 
-	@ParameterizedHttpServerTest  // SPR-15291
-	void redirect(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test  // SPR-15291
+	public void redirect() throws Exception {
 		SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory() {
 			@Override
 			protected void prepareConnection(HttpURLConnection conn, String method) throws IOException {
@@ -96,8 +91,8 @@ class RequestMappingViewResolutionIntegrationTests extends AbstractRequestMappin
 		RequestEntity<Void> request = RequestEntity.get(uri).accept(MediaType.ALL).build();
 		ResponseEntity<Void> response = new RestTemplate(factory).exchange(request, Void.class);
 
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SEE_OTHER);
-		assertThat(response.getHeaders().getLocation().toString()).isEqualTo("/");
+		assertEquals(HttpStatus.SEE_OTHER, response.getStatusCode());
+		assertEquals("/", response.getHeaders().getLocation().toString());
 	}
 
 

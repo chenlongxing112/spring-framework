@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -53,7 +53,7 @@ public class DefaultWebFilterChain implements WebFilterChain {
 	private final WebFilter currentFilter;
 
 	@Nullable
-	private final DefaultWebFilterChain chain;
+	private final DefaultWebFilterChain next;
 
 
 	/**
@@ -68,7 +68,7 @@ public class DefaultWebFilterChain implements WebFilterChain {
 		this.handler = handler;
 		DefaultWebFilterChain chain = initChain(filters, handler);
 		this.currentFilter = chain.currentFilter;
-		this.chain = chain.chain;
+		this.next = chain.next;
 	}
 
 	private static DefaultWebFilterChain initChain(List<WebFilter> filters, WebHandler handler) {
@@ -84,12 +84,12 @@ public class DefaultWebFilterChain implements WebFilterChain {
 	 * Private constructor to represent one link in the chain.
 	 */
 	private DefaultWebFilterChain(List<WebFilter> allFilters, WebHandler handler,
-			@Nullable WebFilter currentFilter, @Nullable DefaultWebFilterChain chain) {
+			@Nullable WebFilter currentFilter, @Nullable DefaultWebFilterChain next) {
 
 		this.allFilters = allFilters;
 		this.currentFilter = currentFilter;
 		this.handler = handler;
-		this.chain = chain;
+		this.next = next;
 	}
 
 	/**
@@ -117,14 +117,9 @@ public class DefaultWebFilterChain implements WebFilterChain {
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange) {
 		return Mono.defer(() ->
-				this.currentFilter != null && this.chain != null ?
-						invokeFilter(this.currentFilter, this.chain, exchange) :
+				this.currentFilter != null && this.next != null ?
+						this.currentFilter.filter(exchange, this.next) :
 						this.handler.handle(exchange));
-	}
-
-	private Mono<Void> invokeFilter(WebFilter current, DefaultWebFilterChain chain, ServerWebExchange exchange) {
-		String currentName = current.getClass().getName();
-		return current.filter(exchange, chain).checkpoint(currentName + " [DefaultWebFilterChain]");
 	}
 
 }

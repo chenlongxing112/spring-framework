@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,6 +25,7 @@ import org.springframework.http.codec.ServerSentEventHttpMessageWriter;
 import org.springframework.http.codec.multipart.MultipartHttpMessageReader;
 import org.springframework.http.codec.multipart.SynchronossPartHttpMessageReader;
 import org.springframework.lang.Nullable;
+import org.springframework.util.ClassUtils;
 
 /**
  * Default implementation of {@link ServerCodecConfigurer.ServerDefaultCodecs}.
@@ -33,27 +34,14 @@ import org.springframework.lang.Nullable;
  */
 class ServerDefaultCodecsImpl extends BaseDefaultCodecs implements ServerCodecConfigurer.ServerDefaultCodecs {
 
-	@Nullable
-	private HttpMessageReader<?> multipartReader;
+	private static final boolean synchronossMultipartPresent =
+			ClassUtils.isPresent("org.synchronoss.cloud.nio.multipart.NioMultipartParser",
+					DefaultServerCodecConfigurer.class.getClassLoader());
+
 
 	@Nullable
 	private Encoder<?> sseEncoder;
 
-
-	ServerDefaultCodecsImpl() {
-	}
-
-	ServerDefaultCodecsImpl(ServerDefaultCodecsImpl other) {
-		super(other);
-		this.multipartReader = other.multipartReader;
-		this.sseEncoder = other.sseEncoder;
-	}
-
-
-	@Override
-	public void multipartReader(HttpMessageReader<?> reader) {
-		this.multipartReader = reader;
-	}
 
 	@Override
 	public void serverSentEventEncoder(Encoder<?> encoder) {
@@ -63,14 +51,16 @@ class ServerDefaultCodecsImpl extends BaseDefaultCodecs implements ServerCodecCo
 
 	@Override
 	protected void extendTypedReaders(List<HttpMessageReader<?>> typedReaders) {
-		if (this.multipartReader != null) {
-			addCodec(typedReaders, this.multipartReader);
-			return;
-		}
 		if (synchronossMultipartPresent) {
+			boolean enable = isEnableLoggingRequestDetails();
+
 			SynchronossPartHttpMessageReader partReader = new SynchronossPartHttpMessageReader();
-			addCodec(typedReaders, partReader);
-			addCodec(typedReaders, new MultipartHttpMessageReader(partReader));
+			partReader.setEnableLoggingRequestDetails(enable);
+			typedReaders.add(partReader);
+
+			MultipartHttpMessageReader reader = new MultipartHttpMessageReader(partReader);
+			reader.setEnableLoggingRequestDetails(enable);
+			typedReaders.add(reader);
 		}
 	}
 

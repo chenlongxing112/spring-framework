@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.function.Function;
-
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.MarshalException;
 import javax.xml.bind.Marshaller;
@@ -28,7 +27,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import org.springframework.core.ResolvableType;
 import org.springframework.core.codec.AbstractSingleValueEncoder;
@@ -99,16 +97,8 @@ public class Jaxb2XmlEncoder extends AbstractSingleValueEncoder<Object> {
 	}
 
 	@Override
-	protected Flux<DataBuffer> encode(Object value, DataBufferFactory bufferFactory,
-			ResolvableType valueType, @Nullable MimeType mimeType, @Nullable Map<String, Object> hints) {
-
-		// we're relying on doOnDiscard in base class
-		return Mono.fromCallable(() -> encodeValue(value, bufferFactory, valueType, mimeType, hints)).flux();
-	}
-
-	@Override
-	public DataBuffer encodeValue(Object value, DataBufferFactory bufferFactory,
-			ResolvableType valueType, @Nullable MimeType mimeType, @Nullable Map<String, Object> hints) {
+	protected Flux<DataBuffer> encode(Object value, DataBufferFactory dataBufferFactory,
+			ResolvableType type, @Nullable MimeType mimeType, @Nullable Map<String, Object> hints) {
 
 		if (!Hints.isLoggingSuppressed(hints)) {
 			LogFormatUtils.traceDebug(logger, traceOn -> {
@@ -118,20 +108,22 @@ public class Jaxb2XmlEncoder extends AbstractSingleValueEncoder<Object> {
 		}
 
 		boolean release = true;
-		DataBuffer buffer = bufferFactory.allocateBuffer(1024);
+		DataBuffer buffer = dataBufferFactory.allocateBuffer(1024);
+		OutputStream outputStream = buffer.asOutputStream();
+		Class<?> clazz = ClassUtils.getUserClass(value);
+
 		try {
-			OutputStream outputStream = buffer.asOutputStream();
-			Class<?> clazz = ClassUtils.getUserClass(value);
 			Marshaller marshaller = initMarshaller(clazz);
 			marshaller.marshal(value, outputStream);
 			release = false;
-			return buffer;
+			return Flux.just(buffer);
 		}
 		catch (MarshalException ex) {
-			throw new EncodingException("Could not marshal " + value.getClass() + " to XML", ex);
+			return Flux.error(new EncodingException(
+					"Could not marshal " + value.getClass() + " to XML", ex));
 		}
 		catch (JAXBException ex) {
-			throw new CodecException("Invalid JAXB configuration", ex);
+			return Flux.error(new CodecException("Invalid JAXB configuration", ex));
 		}
 		finally {
 			if (release) {
@@ -140,7 +132,7 @@ public class Jaxb2XmlEncoder extends AbstractSingleValueEncoder<Object> {
 		}
 	}
 
-	private Marshaller initMarshaller(Class<?> clazz) throws CodecException, JAXBException {
+	private Marshaller initMarshaller(Class<?> clazz) throws JAXBException {
 		Marshaller marshaller = this.jaxbContexts.createMarshaller(clazz);
 		marshaller.setProperty(Marshaller.JAXB_ENCODING, StandardCharsets.UTF_8.name());
 		marshaller = this.marshallerProcessor.apply(marshaller);

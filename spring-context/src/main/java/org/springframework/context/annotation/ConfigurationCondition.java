@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,6 +31,7 @@ public interface ConfigurationCondition extends Condition {
 
 	/**
 	 * Return the {@link ConfigurationPhase} in which the condition should be evaluated.
+	 * 条件判断的阶段，是在解析配置类的时候过滤还是在注册bean的时候过滤
 	 */
 	ConfigurationPhase getConfigurationPhase();
 

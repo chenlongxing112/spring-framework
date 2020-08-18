@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,13 +18,12 @@ package org.springframework.web.method.support;
 
 import java.lang.reflect.Method;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.core.MethodParameter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * Test fixture with {@link HandlerMethodArgumentResolverComposite}.
@@ -40,8 +39,8 @@ public class HandlerMethodArgumentResolverCompositeTests {
 	private MethodParameter paramStr;
 
 
-	@BeforeEach
-	public void setup() throws Exception {
+	@Before
+	public void setUp() throws Exception {
 		this.resolverComposite = new HandlerMethodArgumentResolverComposite();
 
 		Method method = getClass().getDeclaredMethod("handle", Integer.class, String.class);
@@ -51,11 +50,11 @@ public class HandlerMethodArgumentResolverCompositeTests {
 
 
 	@Test
-	public void supportsParameter() throws Exception {
+	public void supportsParameter() {
 		this.resolverComposite.addResolver(new StubArgumentResolver(Integer.class));
 
-		assertThat(this.resolverComposite.supportsParameter(paramInt)).isTrue();
-		assertThat(this.resolverComposite.supportsParameter(paramStr)).isFalse();
+		assertTrue(this.resolverComposite.supportsParameter(paramInt));
+		assertFalse(this.resolverComposite.supportsParameter(paramStr));
 	}
 
 	@Test
@@ -63,7 +62,7 @@ public class HandlerMethodArgumentResolverCompositeTests {
 		this.resolverComposite.addResolver(new StubArgumentResolver(55));
 		Object resolvedValue = this.resolverComposite.resolveArgument(paramInt, null, null, null);
 
-		assertThat(resolvedValue).isEqualTo(55);
+		assertEquals(55, resolvedValue);
 	}
 
 	@Test
@@ -72,13 +71,12 @@ public class HandlerMethodArgumentResolverCompositeTests {
 		this.resolverComposite.addResolver(new StubArgumentResolver(2));
 		Object resolvedValue = this.resolverComposite.resolveArgument(paramInt, null, null, null);
 
-		assertThat(resolvedValue).as("Didn't use the first registered resolver").isEqualTo(1);
+		assertEquals("Didn't use the first registered resolver", 1, resolvedValue);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void noSuitableArgumentResolver() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				this.resolverComposite.resolveArgument(paramStr, null, null, null));
+		this.resolverComposite.resolveArgument(paramStr, null, null, null);
 	}
 
 

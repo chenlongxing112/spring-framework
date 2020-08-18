@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,8 @@ package org.springframework.test.context.support;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+
 import org.mockito.BDDMockito;
 
 import org.springframework.test.annotation.DirtiesContext;
@@ -28,18 +29,10 @@ import org.springframework.test.annotation.DirtiesContext.HierarchyMode;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS;
-import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD;
-import static org.springframework.test.annotation.DirtiesContext.ClassMode.BEFORE_CLASS;
-import static org.springframework.test.annotation.DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD;
-import static org.springframework.test.annotation.DirtiesContext.HierarchyMode.CURRENT_LEVEL;
-import static org.springframework.test.annotation.DirtiesContext.HierarchyMode.EXHAUSTIVE;
-import static org.springframework.test.annotation.DirtiesContext.MethodMode.BEFORE_METHOD;
+import static org.mockito.BDDMockito.*;
+import static org.springframework.test.annotation.DirtiesContext.ClassMode.*;
+import static org.springframework.test.annotation.DirtiesContext.HierarchyMode.*;
+import static org.springframework.test.annotation.DirtiesContext.MethodMode.*;
 
 /**
  * Unit tests for {@link DirtiesContextBeforeModesTestExecutionListener}.
@@ -48,7 +41,7 @@ import static org.springframework.test.annotation.DirtiesContext.MethodMode.BEFO
  * @author Sam Brannen
  * @since 4.0
  */
-class DirtiesContextTestExecutionListenerTests {
+public class DirtiesContextTestExecutionListenerTests {
 
 	private final TestExecutionListener beforeListener = new DirtiesContextBeforeModesTestExecutionListener();
 	private final TestExecutionListener afterListener = new DirtiesContextTestExecutionListener();
@@ -56,7 +49,7 @@ class DirtiesContextTestExecutionListenerTests {
 
 
 	@Test
-	void beforeAndAfterTestMethodForDirtiesContextDeclaredLocallyOnMethodWithBeforeMethodMode() throws Exception {
+	public void beforeAndAfterTestMethodForDirtiesContextDeclaredLocallyOnMethodWithBeforeMethodMode() throws Exception {
 		Class<?> clazz = getClass();
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		given(testContext.getTestMethod()).willReturn(
@@ -70,7 +63,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestMethodForDirtiesContextDeclaredLocallyOnMethodWithAfterMethodMode() throws Exception {
+	public void beforeAndAfterTestMethodForDirtiesContextDeclaredLocallyOnMethodWithAfterMethodMode() throws Exception {
 		Class<?> clazz = getClass();
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		given(testContext.getTestMethod()).willReturn(
@@ -84,7 +77,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestMethodForDirtiesContextDeclaredOnMethodViaMetaAnnotationWithAfterMethodMode()
+	public void beforeAndAfterTestMethodForDirtiesContextDeclaredOnMethodViaMetaAnnotationWithAfterMethodMode()
 			throws Exception {
 		Class<?> clazz = getClass();
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
@@ -99,7 +92,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestMethodForDirtiesContextDeclaredLocallyOnClassBeforeEachTestMethod() throws Exception {
+	public void beforeAndAfterTestMethodForDirtiesContextDeclaredLocallyOnClassBeforeEachTestMethod() throws Exception {
 		Class<?> clazz = DirtiesContextDeclaredLocallyBeforeEachTestMethod.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		given(testContext.getTestMethod()).willReturn(clazz.getDeclaredMethod("clean"));
@@ -112,7 +105,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestMethodForDirtiesContextDeclaredLocallyOnClassAfterEachTestMethod() throws Exception {
+	public void beforeAndAfterTestMethodForDirtiesContextDeclaredLocallyOnClassAfterEachTestMethod() throws Exception {
 		Class<?> clazz = DirtiesContextDeclaredLocallyAfterEachTestMethod.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		given(testContext.getTestMethod()).willReturn(clazz.getDeclaredMethod("clean"));
@@ -125,7 +118,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestMethodForDirtiesContextDeclaredViaMetaAnnotationOnClassAfterEachTestMethod()
+	public void beforeAndAfterTestMethodForDirtiesContextDeclaredViaMetaAnnotationOnClassAfterEachTestMethod()
 			throws Exception {
 		Class<?> clazz = DirtiesContextDeclaredViaMetaAnnotationAfterEachTestMethod.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
@@ -139,7 +132,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestMethodForDirtiesContextDeclaredLocallyOnClassBeforeClass() throws Exception {
+	public void beforeAndAfterTestMethodForDirtiesContextDeclaredLocallyOnClassBeforeClass() throws Exception {
 		Class<?> clazz = DirtiesContextDeclaredLocallyBeforeClass.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		given(testContext.getTestMethod()).willReturn(clazz.getDeclaredMethod("clean"));
@@ -151,7 +144,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestMethodForDirtiesContextDeclaredLocallyOnClassAfterClass() throws Exception {
+	public void beforeAndAfterTestMethodForDirtiesContextDeclaredLocallyOnClassAfterClass() throws Exception {
 		Class<?> clazz = DirtiesContextDeclaredLocallyAfterClass.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		given(testContext.getTestMethod()).willReturn(clazz.getDeclaredMethod("clean"));
@@ -163,7 +156,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestMethodForDirtiesContextDeclaredViaMetaAnnotationOnClassAfterClass() throws Exception {
+	public void beforeAndAfterTestMethodForDirtiesContextDeclaredViaMetaAnnotationOnClassAfterClass() throws Exception {
 		Class<?> clazz = DirtiesContextDeclaredViaMetaAnnotationAfterClass.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		given(testContext.getTestMethod()).willReturn(clazz.getDeclaredMethod("clean"));
@@ -175,7 +168,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestMethodForDirtiesContextViaMetaAnnotationWithOverrides() throws Exception {
+	public void beforeAndAfterTestMethodForDirtiesContextViaMetaAnnotationWithOverrides() throws Exception {
 		Class<?> clazz = DirtiesContextViaMetaAnnotationWithOverrides.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		given(testContext.getTestMethod()).willReturn(clazz.getDeclaredMethod("clean"));
@@ -190,7 +183,7 @@ class DirtiesContextTestExecutionListenerTests {
 	// -------------------------------------------------------------------------
 
 	@Test
-	void beforeAndAfterTestClassForDirtiesContextDeclaredLocallyOnMethod() throws Exception {
+	public void beforeAndAfterTestClassForDirtiesContextDeclaredLocallyOnMethod() throws Exception {
 		Class<?> clazz = getClass();
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		beforeListener.beforeTestClass(testContext);
@@ -201,7 +194,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestClassForDirtiesContextDeclaredLocallyOnClassBeforeEachTestMethod() throws Exception {
+	public void beforeAndAfterTestClassForDirtiesContextDeclaredLocallyOnClassBeforeEachTestMethod() throws Exception {
 		Class<?> clazz = DirtiesContextDeclaredLocallyBeforeEachTestMethod.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		beforeListener.beforeTestClass(testContext);
@@ -212,7 +205,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestClassForDirtiesContextDeclaredLocallyOnClassAfterEachTestMethod() throws Exception {
+	public void beforeAndAfterTestClassForDirtiesContextDeclaredLocallyOnClassAfterEachTestMethod() throws Exception {
 		Class<?> clazz = DirtiesContextDeclaredLocallyAfterEachTestMethod.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		beforeListener.beforeTestClass(testContext);
@@ -223,7 +216,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestClassForDirtiesContextDeclaredViaMetaAnnotationOnClassAfterEachTestMethod()
+	public void beforeAndAfterTestClassForDirtiesContextDeclaredViaMetaAnnotationOnClassAfterEachTestMethod()
 			throws Exception {
 		Class<?> clazz = DirtiesContextDeclaredViaMetaAnnotationAfterEachTestMethod.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
@@ -235,7 +228,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestClassForDirtiesContextDeclaredLocallyOnClassBeforeClass() throws Exception {
+	public void beforeAndAfterTestClassForDirtiesContextDeclaredLocallyOnClassBeforeClass() throws Exception {
 		Class<?> clazz = DirtiesContextDeclaredLocallyBeforeClass.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		beforeListener.beforeTestClass(testContext);
@@ -247,7 +240,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestClassForDirtiesContextDeclaredLocallyOnClassAfterClass() throws Exception {
+	public void beforeAndAfterTestClassForDirtiesContextDeclaredLocallyOnClassAfterClass() throws Exception {
 		Class<?> clazz = DirtiesContextDeclaredLocallyAfterClass.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		beforeListener.beforeTestClass(testContext);
@@ -259,7 +252,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestClassForDirtiesContextDeclaredViaMetaAnnotationOnClassAfterClass() throws Exception {
+	public void beforeAndAfterTestClassForDirtiesContextDeclaredViaMetaAnnotationOnClassAfterClass() throws Exception {
 		Class<?> clazz = DirtiesContextDeclaredViaMetaAnnotationAfterClass.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		beforeListener.beforeTestClass(testContext);
@@ -271,7 +264,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestClassForDirtiesContextDeclaredViaMetaAnnotationWithOverrides() throws Exception {
+	public void beforeAndAfterTestClassForDirtiesContextDeclaredViaMetaAnnotationWithOverrides() throws Exception {
 		Class<?> clazz = DirtiesContextViaMetaAnnotationWithOverrides.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);
 		beforeListener.beforeTestClass(testContext);
@@ -282,7 +275,7 @@ class DirtiesContextTestExecutionListenerTests {
 	}
 
 	@Test
-	void beforeAndAfterTestClassForDirtiesContextDeclaredViaMetaAnnotationWithOverriddenAttributes()
+	public void beforeAndAfterTestClassForDirtiesContextDeclaredViaMetaAnnotationWithOverridenAttributes()
 			throws Exception {
 		Class<?> clazz = DirtiesContextViaMetaAnnotationWithOverridenAttributes.class;
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(clazz);

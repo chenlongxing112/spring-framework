@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.context.ApplicationContext;
@@ -31,22 +33,18 @@ import org.springframework.core.ResolvableTypeProvider;
 import org.springframework.core.annotation.Order;
 import org.springframework.util.ReflectionUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Stephane Nicoll
  */
 public class ApplicationListenerMethodAdapterTests extends AbstractApplicationEventListenerTests {
+
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
 
 	private final SampleEvents sampleEvents = spy(new SampleEvents());
 
@@ -56,27 +54,27 @@ public class ApplicationListenerMethodAdapterTests extends AbstractApplicationEv
 	@Test
 	public void rawListener() {
 		Method method = ReflectionUtils.findMethod(SampleEvents.class, "handleRaw", ApplicationEvent.class);
-		supportsEventType(true, method, ResolvableType.forClass(ApplicationEvent.class));
+		supportsEventType(true, method, getGenericApplicationEventType("applicationEvent"));
 	}
 
 	@Test
 	public void rawListenerWithGenericEvent() {
 		Method method = ReflectionUtils.findMethod(SampleEvents.class, "handleRaw", ApplicationEvent.class);
-		supportsEventType(true, method, ResolvableType.forClassWithGenerics(GenericTestEvent.class, String.class));
+		supportsEventType(true, method, getGenericApplicationEventType("stringEvent"));
 	}
 
 	@Test
 	public void genericListener() {
 		Method method = ReflectionUtils.findMethod(
 				SampleEvents.class, "handleGenericString", GenericTestEvent.class);
-		supportsEventType(true, method, ResolvableType.forClassWithGenerics(GenericTestEvent.class, String.class));
+		supportsEventType(true, method, getGenericApplicationEventType("stringEvent"));
 	}
 
 	@Test
 	public void genericListenerWrongParameterizedType() {
 		Method method = ReflectionUtils.findMethod(
 				SampleEvents.class, "handleGenericString", GenericTestEvent.class);
-		supportsEventType(false, method, ResolvableType.forClassWithGenerics(GenericTestEvent.class, Long.class));
+		supportsEventType(false, method, getGenericApplicationEventType("longEvent"));
 	}
 
 	@Test
@@ -99,7 +97,8 @@ public class ApplicationListenerMethodAdapterTests extends AbstractApplicationEv
 
 	@Test
 	public void listenerWithSubTypeSeveralGenerics() {
-		Method method = ReflectionUtils.findMethod(SampleEvents.class, "handleString", String.class);
+		Method method = ReflectionUtils.findMethod(SampleEvents.class,
+				"handleString", String.class);
 		supportsEventType(true, method, ResolvableType.forClass(PayloadTestEvent.class));
 	}
 
@@ -140,20 +139,23 @@ public class ApplicationListenerMethodAdapterTests extends AbstractApplicationEv
 	public void listenerWithTooManyParameters() {
 		Method method = ReflectionUtils.findMethod(
 				SampleEvents.class, "tooManyParameters", String.class, String.class);
-		assertThatIllegalStateException().isThrownBy(() -> createTestInstance(method));
+		this.thrown.expect(IllegalStateException.class);
+		createTestInstance(method);
 	}
 
 	@Test
 	public void listenerWithNoParameter() {
 		Method method = ReflectionUtils.findMethod(SampleEvents.class, "noParameter");
-		assertThatIllegalStateException().isThrownBy(() -> createTestInstance(method));
+		this.thrown.expect(IllegalStateException.class);
+		createTestInstance(method);
 	}
 
 	@Test
 	public void listenerWithMoreThanOneParameter() {
 		Method method = ReflectionUtils.findMethod(
 				SampleEvents.class, "moreThanOneParameter", String.class, Integer.class);
-		assertThatIllegalStateException().isThrownBy(() -> createTestInstance(method));
+		this.thrown.expect(IllegalStateException.class);
+		createTestInstance(method);
 	}
 
 	@Test
@@ -161,7 +163,7 @@ public class ApplicationListenerMethodAdapterTests extends AbstractApplicationEv
 		Method method = ReflectionUtils.findMethod(
 				SampleEvents.class, "handleGenericString", GenericTestEvent.class);
 		ApplicationListenerMethodAdapter adapter = createTestInstance(method);
-		assertThat(adapter.getOrder()).isEqualTo(0);
+		assertEquals(0, adapter.getOrder());
 	}
 
 	@Test
@@ -169,7 +171,7 @@ public class ApplicationListenerMethodAdapterTests extends AbstractApplicationEv
 		Method method = ReflectionUtils.findMethod(
 				SampleEvents.class, "handleRaw", ApplicationEvent.class);
 		ApplicationListenerMethodAdapter adapter = createTestInstance(method);
-		assertThat(adapter.getOrder()).isEqualTo(42);
+		assertEquals(42, adapter.getOrder());
 	}
 
 	@Test
@@ -223,10 +225,10 @@ public class ApplicationListenerMethodAdapterTests extends AbstractApplicationEv
 				SampleEvents.class, "generateRuntimeException", GenericTestEvent.class);
 		GenericTestEvent<String> event = createGenericTestEvent("fail");
 
-		assertThatIllegalStateException().isThrownBy(() ->
-				invokeListener(method, event))
-			.withMessageContaining("Test exception")
-			.withNoCause();
+		this.thrown.expect(IllegalStateException.class);
+		this.thrown.expectMessage("Test exception");
+		this.thrown.expectCause(is((Throwable) isNull()));
+		invokeListener(method, event);
 	}
 
 	@Test
@@ -235,9 +237,9 @@ public class ApplicationListenerMethodAdapterTests extends AbstractApplicationEv
 				SampleEvents.class, "generateCheckedException", GenericTestEvent.class);
 		GenericTestEvent<String> event = createGenericTestEvent("fail");
 
-		assertThatExceptionOfType(UndeclaredThrowableException.class).isThrownBy(() ->
-				invokeListener(method, event))
-			.withCauseInstanceOf(IOException.class);
+		this.thrown.expect(UndeclaredThrowableException.class);
+		this.thrown.expectCause(is(instanceOf(IOException.class)));
+		invokeListener(method, event);
 	}
 
 	@Test
@@ -252,9 +254,9 @@ public class ApplicationListenerMethodAdapterTests extends AbstractApplicationEv
 				InvalidProxyTestBean.class, "handleIt2", ApplicationEvent.class);
 		StaticApplicationListenerMethodAdapter listener =
 				new StaticApplicationListenerMethodAdapter(method, bean);
-		assertThatIllegalStateException().isThrownBy(() ->
-				listener.onApplicationEvent(createGenericTestEvent("test")))
-			.withMessageContaining("handleIt2");
+		this.thrown.expect(IllegalStateException.class);
+		this.thrown.expectMessage("handleIt2");
+		listener.onApplicationEvent(createGenericTestEvent("test"));
 	}
 
 	@Test
@@ -308,7 +310,7 @@ public class ApplicationListenerMethodAdapterTests extends AbstractApplicationEv
 	public void beanInstanceRetrievedAtEveryInvocation() {
 		Method method = ReflectionUtils.findMethod(
 				SampleEvents.class, "handleGenericString", GenericTestEvent.class);
-		given(this.context.getBean("testBean")).willReturn(this.sampleEvents);
+		when(this.context.getBean("testBean")).thenReturn(this.sampleEvents);
 		ApplicationListenerMethodAdapter listener = new ApplicationListenerMethodAdapter(
 				"testBean", GenericTestEvent.class, method);
 		listener.init(this.context, new EventExpressionEvaluator());
@@ -327,8 +329,8 @@ public class ApplicationListenerMethodAdapterTests extends AbstractApplicationEv
 
 	private void supportsEventType(boolean match, Method method, ResolvableType eventType) {
 		ApplicationListenerMethodAdapter adapter = createTestInstance(method);
-		assertThat(adapter.supportsEventType(eventType))
-				.as("Wrong match for event '" + eventType + "' on " + method).isEqualTo(match);
+		assertEquals("Wrong match for event '" + eventType + "' on " + method,
+				match, adapter.supportsEventType(eventType));
 	}
 
 	private void invokeListener(Method method, ApplicationEvent event) {

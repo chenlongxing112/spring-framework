@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,9 +21,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
+import org.junit.Before;
+import org.junit.Test;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageDeliveryException;
@@ -38,13 +37,8 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for {@link GenericMessagingTemplate}.
@@ -61,7 +55,7 @@ public class GenericMessagingTemplateTests {
 	private ThreadPoolTaskExecutor executor;
 
 
-	@BeforeEach
+	@Before
 	public void setup() {
 		this.messageChannel = new StubMessageChannel();
 		this.template = new GenericMessagingTemplate();
@@ -75,38 +69,38 @@ public class GenericMessagingTemplateTests {
 	public void sendWithTimeout() {
 		SubscribableChannel channel = mock(SubscribableChannel.class);
 		final AtomicReference<Message<?>> sent = new AtomicReference<>();
-		willAnswer(invocation -> {
+		doAnswer(invocation -> {
 			sent.set(invocation.getArgument(0));
 			return true;
-		}).given(channel).send(any(Message.class), eq(30_000L));
+		}).when(channel).send(any(Message.class), eq(30_000L));
 		Message<?> message = MessageBuilder.withPayload("request")
 				.setHeader(GenericMessagingTemplate.DEFAULT_SEND_TIMEOUT_HEADER, 30_000L)
 				.setHeader(GenericMessagingTemplate.DEFAULT_RECEIVE_TIMEOUT_HEADER, 1L)
 				.build();
 		this.template.send(channel, message);
 		verify(channel).send(any(Message.class), eq(30_000L));
-		assertThat(sent.get()).isNotNull();
-		assertThat(sent.get().getHeaders().containsKey(GenericMessagingTemplate.DEFAULT_SEND_TIMEOUT_HEADER)).isFalse();
-		assertThat(sent.get().getHeaders().containsKey(GenericMessagingTemplate.DEFAULT_RECEIVE_TIMEOUT_HEADER)).isFalse();
+		assertNotNull(sent.get());
+		assertFalse(sent.get().getHeaders().containsKey(GenericMessagingTemplate.DEFAULT_SEND_TIMEOUT_HEADER));
+		assertFalse(sent.get().getHeaders().containsKey(GenericMessagingTemplate.DEFAULT_RECEIVE_TIMEOUT_HEADER));
 	}
 
 	@Test
 	public void sendWithTimeoutMutable() {
 		SubscribableChannel channel = mock(SubscribableChannel.class);
 		final AtomicReference<Message<?>> sent = new AtomicReference<>();
-		willAnswer(invocation -> {
+		doAnswer(invocation -> {
 			sent.set(invocation.getArgument(0));
 			return true;
-		}).given(channel).send(any(Message.class), eq(30_000L));
+		}).when(channel).send(any(Message.class), eq(30_000L));
 		MessageHeaderAccessor accessor = new MessageHeaderAccessor();
 		accessor.setLeaveMutable(true);
 		Message<?> message = new GenericMessage<>("request", accessor.getMessageHeaders());
 		accessor.setHeader(GenericMessagingTemplate.DEFAULT_SEND_TIMEOUT_HEADER, 30_000L);
 		this.template.send(channel, message);
 		verify(channel).send(any(Message.class), eq(30_000L));
-		assertThat(sent.get()).isNotNull();
-		assertThat(sent.get().getHeaders().containsKey(GenericMessagingTemplate.DEFAULT_SEND_TIMEOUT_HEADER)).isFalse();
-		assertThat(sent.get().getHeaders().containsKey(GenericMessagingTemplate.DEFAULT_RECEIVE_TIMEOUT_HEADER)).isFalse();
+		assertNotNull(sent.get());
+		assertFalse(sent.get().getHeaders().containsKey(GenericMessagingTemplate.DEFAULT_SEND_TIMEOUT_HEADER));
+		assertFalse(sent.get().getHeaders().containsKey(GenericMessagingTemplate.DEFAULT_RECEIVE_TIMEOUT_HEADER));
 	}
 
 	@Test
@@ -121,7 +115,7 @@ public class GenericMessagingTemplateTests {
 		});
 
 		String actual = this.template.convertSendAndReceive(channel, "request", String.class);
-		assertThat(actual).isEqualTo("response");
+		assertEquals("response", actual);
 	}
 
 	@Test
@@ -135,13 +129,15 @@ public class GenericMessagingTemplateTests {
 
 		SubscribableChannel channel = mock(SubscribableChannel.class);
 		MessageHandler handler = createLateReplier(latch, failure);
-		willAnswer(invocation -> {
-			this.executor.execute(() -> handler.handleMessage(invocation.getArgument(0)));
+		doAnswer(invocation -> {
+			this.executor.execute(() -> {
+				handler.handleMessage(invocation.getArgument(0));
+			});
 			return true;
-		}).given(channel).send(any(Message.class), anyLong());
+		}).when(channel).send(any(Message.class), anyLong());
 
-		assertThat(this.template.convertSendAndReceive(channel, "request", String.class)).isNull();
-		assertThat(latch.await(10_000, TimeUnit.MILLISECONDS)).isTrue();
+		assertNull(this.template.convertSendAndReceive(channel, "request", String.class));
+		assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
 
 		Throwable ex = failure.get();
 		if (ex != null) {
@@ -161,17 +157,19 @@ public class GenericMessagingTemplateTests {
 
 		SubscribableChannel channel = mock(SubscribableChannel.class);
 		MessageHandler handler = createLateReplier(latch, failure);
-		willAnswer(invocation -> {
-			this.executor.execute(() -> handler.handleMessage(invocation.getArgument(0)));
+		doAnswer(invocation -> {
+			this.executor.execute(() -> {
+				handler.handleMessage(invocation.getArgument(0));
+			});
 			return true;
-		}).given(channel).send(any(Message.class), anyLong());
+		}).when(channel).send(any(Message.class), anyLong());
 
 		Message<?> message = MessageBuilder.withPayload("request")
 				.setHeader(GenericMessagingTemplate.DEFAULT_SEND_TIMEOUT_HEADER, 30_000L)
 				.setHeader(GenericMessagingTemplate.DEFAULT_RECEIVE_TIMEOUT_HEADER, 1L)
 				.build();
-		assertThat(this.template.sendAndReceive(channel, message)).isNull();
-		assertThat(latch.await(10_000, TimeUnit.MILLISECONDS)).isTrue();
+		assertNull(this.template.sendAndReceive(channel, message));
+		assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
 
 		Throwable ex = failure.get();
 		if (ex != null) {
@@ -193,17 +191,19 @@ public class GenericMessagingTemplateTests {
 
 		SubscribableChannel channel = mock(SubscribableChannel.class);
 		MessageHandler handler = createLateReplier(latch, failure);
-		willAnswer(invocation -> {
-			this.executor.execute(() -> handler.handleMessage(invocation.getArgument(0)));
+		doAnswer(invocation -> {
+			this.executor.execute(() -> {
+				handler.handleMessage(invocation.getArgument(0));
+			});
 			return true;
-		}).given(channel).send(any(Message.class), anyLong());
+		}).when(channel).send(any(Message.class), anyLong());
 
 		Message<?> message = MessageBuilder.withPayload("request")
 				.setHeader("sto", 30_000L)
 				.setHeader("rto", 1L)
 				.build();
-		assertThat(this.template.sendAndReceive(channel, message)).isNull();
-		assertThat(latch.await(10_000, TimeUnit.MILLISECONDS)).isTrue();
+		assertNull(this.template.sendAndReceive(channel, message));
+		assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
 
 		Throwable ex = failure.get();
 		if (ex != null) {
@@ -249,8 +249,8 @@ public class GenericMessagingTemplateTests {
 		List<Message<byte[]>> messages = this.messageChannel.getMessages();
 		Message<byte[]> message = messages.get(0);
 
-		assertThat(message.getHeaders()).isSameAs(headers);
-		assertThat(accessor.isMutable()).isFalse();
+		assertSame(headers, message.getHeaders());
+		assertFalse(accessor.isMutable());
 	}
 
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -63,16 +63,11 @@ public class WebClientResponseException extends WebClientException {
 	 * Constructor with response data only, and a default message.
 	 * @since 5.1.4
 	 */
-	public WebClientResponseException(int status, String reasonPhrase,
+	public WebClientResponseException(int statusCode, String statusText,
 			@Nullable HttpHeaders headers, @Nullable byte[] body, @Nullable Charset charset,
 			@Nullable HttpRequest request) {
 
-		this(initMessage(status, reasonPhrase, request), status, reasonPhrase, headers, body, charset, request);
-	}
-
-	private static String initMessage(int status, String reasonPhrase, @Nullable HttpRequest request) {
-		return status + " " + reasonPhrase +
-				(request != null ? " from " + request.getMethodValue() + " " + request.getURI() : "");
+		this(statusCode + " " + statusText, statusCode, statusText, headers, body, charset, request);
 	}
 
 	/**

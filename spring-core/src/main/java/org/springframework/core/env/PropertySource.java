@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -68,8 +68,6 @@ public abstract class PropertySource<T> {
 
 	/**
 	 * Create a new {@code PropertySource} with the given name and source object.
-	 * @param name the associated name
-	 * @param source the source object
 	 */
 	public PropertySource(String name, T source) {
 		Assert.hasText(name, "Property source name must contain at least one character");
@@ -134,9 +132,9 @@ public abstract class PropertySource<T> {
 	 * <p>No properties other than {@code name} are evaluated.
 	 */
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		return (this == other || (other instanceof PropertySource &&
-				ObjectUtils.nullSafeEquals(getName(), ((PropertySource<?>) other).getName())));
+				ObjectUtils.nullSafeEquals(this.name, ((PropertySource<?>) other).name)));
 	}
 
 	/**
@@ -145,7 +143,7 @@ public abstract class PropertySource<T> {
 	 */
 	@Override
 	public int hashCode() {
-		return ObjectUtils.nullSafeHashCode(getName());
+		return ObjectUtils.nullSafeHashCode(this.name);
 	}
 
 	/**
@@ -161,10 +159,10 @@ public abstract class PropertySource<T> {
 	public String toString() {
 		if (logger.isDebugEnabled()) {
 			return getClass().getSimpleName() + "@" + System.identityHashCode(this) +
-					" {name='" + getName() + "', properties=" + getSource() + "}";
+					" {name='" + this.name + "', properties=" + this.source + "}";
 		}
 		else {
-			return getClass().getSimpleName() + " {name='" + getName() + "'}";
+			return getClass().getSimpleName() + " {name='" + this.name + "'}";
 		}
 	}
 

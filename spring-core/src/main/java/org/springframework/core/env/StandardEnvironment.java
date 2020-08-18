@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.core.env;
-
-import java.util.Map;
 
 /**
  * {@link Environment} implementation suitable for use in 'standard' (i.e. non-web)
@@ -77,13 +75,8 @@ public class StandardEnvironment extends AbstractEnvironment {
 	 */
 	@Override
 	protected void customizePropertySources(MutablePropertySources propertySources) {
-		Map<String, Object> systemProperties = getSystemProperties();
-		PropertiesPropertySource propertySource = new PropertiesPropertySource(SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME, systemProperties);
-		propertySources.addLast(propertySource);
-
-		Map<String, Object> systemEnvironment = getSystemEnvironment();
-		SystemEnvironmentPropertySource environmentPropertySource = new SystemEnvironmentPropertySource(SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, systemEnvironment);
-		propertySources.addLast(environmentPropertySource);
+		propertySources.addLast(new MapPropertySource(SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME, getSystemProperties()));
+		propertySources.addLast(new SystemEnvironmentPropertySource(SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, getSystemEnvironment()));
 	}
 
 }

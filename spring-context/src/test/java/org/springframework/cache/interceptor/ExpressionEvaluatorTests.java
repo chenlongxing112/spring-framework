@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -36,8 +36,8 @@ import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.util.ReflectionUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Costin Leau
@@ -61,16 +61,16 @@ public class ExpressionEvaluatorTests {
 	@Test
 	public void testMultipleCachingSource() {
 		Collection<CacheOperation> ops = getOps("multipleCaching");
-		assertThat(ops.size()).isEqualTo(2);
+		assertEquals(2, ops.size());
 		Iterator<CacheOperation> it = ops.iterator();
 		CacheOperation next = it.next();
-		assertThat(next instanceof CacheableOperation).isTrue();
-		assertThat(next.getCacheNames().contains("test")).isTrue();
-		assertThat(next.getKey()).isEqualTo("#a");
+		assertTrue(next instanceof CacheableOperation);
+		assertTrue(next.getCacheNames().contains("test"));
+		assertEquals("#a", next.getKey());
 		next = it.next();
-		assertThat(next instanceof CacheableOperation).isTrue();
-		assertThat(next.getCacheNames().contains("test")).isTrue();
-		assertThat(next.getKey()).isEqualTo("#b");
+		assertTrue(next instanceof CacheableOperation);
+		assertTrue(next.getCacheNames().contains("test"));
+		assertEquals("#b", next.getKey());
 	}
 
 	@Test
@@ -91,37 +91,41 @@ public class ExpressionEvaluatorTests {
 		Object keyA = this.eval.key(it.next().getKey(), key, evalCtx);
 		Object keyB = this.eval.key(it.next().getKey(), key, evalCtx);
 
-		assertThat(keyA).isEqualTo(args[0]);
-		assertThat(keyB).isEqualTo(args[1]);
+		assertEquals(args[0], keyA);
+		assertEquals(args[1], keyB);
 	}
 
 	@Test
 	public void withReturnValue() {
 		EvaluationContext context = createEvaluationContext("theResult");
 		Object value = new SpelExpressionParser().parseExpression("#result").getValue(context);
-		assertThat(value).isEqualTo("theResult");
+		assertThat(value, equalTo("theResult"));
 	}
 
 	@Test
 	public void withNullReturn() {
 		EvaluationContext context = createEvaluationContext(null);
 		Object value = new SpelExpressionParser().parseExpression("#result").getValue(context);
-		assertThat(value).isNull();
+		assertThat(value, nullValue());
 	}
 
 	@Test
 	public void withoutReturnValue() {
 		EvaluationContext context = createEvaluationContext(CacheOperationExpressionEvaluator.NO_RESULT);
 		Object value = new SpelExpressionParser().parseExpression("#result").getValue(context);
-		assertThat(value).isNull();
+		assertThat(value, nullValue());
 	}
 
 	@Test
 	public void unavailableReturnValue() {
 		EvaluationContext context = createEvaluationContext(CacheOperationExpressionEvaluator.RESULT_UNAVAILABLE);
-		assertThatExceptionOfType(VariableNotAvailableException.class).isThrownBy(() ->
-				new SpelExpressionParser().parseExpression("#result").getValue(context))
-			.satisfies(ex ->  assertThat(ex.getName()).isEqualTo("result"));
+		try {
+			new SpelExpressionParser().parseExpression("#result").getValue(context);
+			fail("Should have failed to parse expression, result not available");
+		}
+		catch (VariableNotAvailableException e) {
+			assertEquals("wrong variable name", "result", e.getName());
+		}
 	}
 
 	@Test
@@ -133,7 +137,7 @@ public class ExpressionEvaluatorTests {
 
 		EvaluationContext context = createEvaluationContext(CacheOperationExpressionEvaluator.NO_RESULT, applicationContext);
 		Object value = new SpelExpressionParser().parseExpression("@myBean.class.getName()").getValue(context);
-		assertThat(value).isEqualTo(String.class.getName());
+		assertThat(value, is(String.class.getName()));
 	}
 
 	private EvaluationContext createEvaluationContext(Object result) {

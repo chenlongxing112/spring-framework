@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,10 +21,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 import java.util.Optional;
-
 import javax.inject.Provider;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ObjectFactory;
@@ -33,8 +32,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.beans.testfixture.beans.Colour;
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,8 +41,11 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.tests.sample.beans.Colour;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * System tests covering use of {@link Autowired} and {@link Value} within
@@ -62,8 +62,8 @@ public class AutowiredConfigurationTests {
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(
 				AutowiredConfigurationTests.class.getSimpleName() + ".xml", AutowiredConfigurationTests.class);
 
-		assertThat(context.getBean("colour", Colour.class)).isEqualTo(Colour.RED);
-		assertThat(context.getBean("testBean", TestBean.class).getName()).isEqualTo(Colour.RED.toString());
+		assertThat(context.getBean("colour", Colour.class), equalTo(Colour.RED));
+		assertThat(context.getBean("testBean", TestBean.class).getName(), equalTo(Colour.RED.toString()));
 	}
 
 	@Test
@@ -71,8 +71,8 @@ public class AutowiredConfigurationTests {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
 				AutowiredMethodConfig.class, ColorConfig.class);
 
-		assertThat(context.getBean(Colour.class)).isEqualTo(Colour.RED);
-		assertThat(context.getBean(TestBean.class).getName()).isEqualTo("RED-RED");
+		assertThat(context.getBean(Colour.class), equalTo(Colour.RED));
+		assertThat(context.getBean(TestBean.class).getName(), equalTo("RED-RED"));
 	}
 
 	@Test
@@ -80,8 +80,8 @@ public class AutowiredConfigurationTests {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
 				OptionalAutowiredMethodConfig.class, ColorConfig.class);
 
-		assertThat(context.getBean(Colour.class)).isEqualTo(Colour.RED);
-		assertThat(context.getBean(TestBean.class).getName()).isEqualTo("RED-RED");
+		assertThat(context.getBean(Colour.class), equalTo(Colour.RED));
+		assertThat(context.getBean(TestBean.class).getName(), equalTo("RED-RED"));
 	}
 
 	@Test
@@ -89,8 +89,8 @@ public class AutowiredConfigurationTests {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
 				OptionalAutowiredMethodConfig.class);
 
-		assertThat(context.getBeansOfType(Colour.class).isEmpty()).isTrue();
-		assertThat(context.getBean(TestBean.class).getName()).isEqualTo("");
+		assertTrue(context.getBeansOfType(Colour.class).isEmpty());
+		assertThat(context.getBean(TestBean.class).getName(), equalTo(""));
 	}
 
 	@Test
@@ -102,7 +102,7 @@ public class AutowiredConfigurationTests {
 		ctx.registerBeanDefinition("config1", new RootBeanDefinition(AutowiredConstructorConfig.class));
 		ctx.registerBeanDefinition("config2", new RootBeanDefinition(ColorConfig.class));
 		ctx.refresh();
-		assertThat(ctx.getBean(Colour.class)).isSameAs(ctx.getBean(AutowiredConstructorConfig.class).colour);
+		assertSame(ctx.getBean(AutowiredConstructorConfig.class).colour, ctx.getBean(Colour.class));
 	}
 
 	@Test
@@ -114,7 +114,7 @@ public class AutowiredConfigurationTests {
 		ctx.registerBeanDefinition("config1", new RootBeanDefinition(ObjectFactoryConstructorConfig.class));
 		ctx.registerBeanDefinition("config2", new RootBeanDefinition(ColorConfig.class));
 		ctx.refresh();
-		assertThat(ctx.getBean(Colour.class)).isSameAs(ctx.getBean(ObjectFactoryConstructorConfig.class).colour);
+		assertSame(ctx.getBean(ObjectFactoryConstructorConfig.class).colour, ctx.getBean(Colour.class));
 	}
 
 	@Test
@@ -126,7 +126,7 @@ public class AutowiredConfigurationTests {
 		ctx.registerBeanDefinition("config1", new RootBeanDefinition(MultipleConstructorConfig.class));
 		ctx.registerBeanDefinition("config2", new RootBeanDefinition(ColorConfig.class));
 		ctx.refresh();
-		assertThat(ctx.getBean(Colour.class)).isSameAs(ctx.getBean(MultipleConstructorConfig.class).colour);
+		assertSame(ctx.getBean(MultipleConstructorConfig.class).colour, ctx.getBean(Colour.class));
 	}
 
 	@Test
@@ -175,26 +175,26 @@ public class AutowiredConfigurationTests {
 		System.clearProperty("myProp");
 
 		TestBean testBean = context.getBean("testBean", TestBean.class);
-		assertThat((Object) testBean.getName()).isNull();
+		assertNull(testBean.getName());
 
 		testBean = context.getBean("testBean2", TestBean.class);
-		assertThat((Object) testBean.getName()).isNull();
+		assertNull(testBean.getName());
 
 		System.setProperty("myProp", "foo");
 
 		testBean = context.getBean("testBean", TestBean.class);
-		assertThat(testBean.getName()).isEqualTo("foo");
+		assertThat(testBean.getName(), equalTo("foo"));
 
 		testBean = context.getBean("testBean2", TestBean.class);
-		assertThat(testBean.getName()).isEqualTo("foo");
+		assertThat(testBean.getName(), equalTo("foo"));
 
 		System.clearProperty("myProp");
 
 		testBean = context.getBean("testBean", TestBean.class);
-		assertThat((Object) testBean.getName()).isNull();
+		assertNull(testBean.getName());
 
 		testBean = context.getBean("testBean2", TestBean.class);
-		assertThat((Object) testBean.getName()).isNull();
+		assertNull(testBean.getName());
 	}
 
 	@Test
@@ -203,8 +203,8 @@ public class AutowiredConfigurationTests {
 				"AutowiredConfigurationTests-custom.xml", AutowiredConfigurationTests.class);
 
 		TestBean testBean = context.getBean("testBean", TestBean.class);
-		assertThat(testBean.getName()).isEqualTo("localhost");
-		assertThat(testBean.getAge()).isEqualTo(contentLength());
+		assertThat(testBean.getName(), equalTo("localhost"));
+		assertThat(testBean.getAge(), equalTo(contentLength()));
 	}
 
 	@Test
@@ -215,8 +215,8 @@ public class AutowiredConfigurationTests {
 		context.refresh();
 
 		TestBean testBean = context.getBean("testBean", TestBean.class);
-		assertThat(testBean.getName()).isEqualTo("localhost");
-		assertThat(testBean.getAge()).isEqualTo(contentLength());
+		assertThat(testBean.getName(), equalTo("localhost"));
+		assertThat(testBean.getAge(), equalTo(contentLength()));
 	}
 
 	private int contentLength() throws IOException {

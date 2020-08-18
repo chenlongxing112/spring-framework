@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,9 @@
  */
 
 package org.springframework.web.socket.client.standard;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 import java.net.URI;
 import java.util.Collections;
@@ -26,8 +29,8 @@ import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Endpoint;
 import javax.websocket.WebSocketContainer;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
@@ -35,12 +38,6 @@ import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.AbstractWebSocketHandler;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 /**
  * Test fixture for {@link StandardWebSocketClient}.
@@ -58,7 +55,7 @@ public class StandardWebSocketClientTests {
 	private WebSocketHttpHeaders headers;
 
 
-	@BeforeEach
+	@Before
 	public void setup() {
 		this.headers = new WebSocketHttpHeaders();
 		this.wsHandler = new AbstractWebSocketHandler() {
@@ -73,8 +70,8 @@ public class StandardWebSocketClientTests {
 		URI uri = new URI("ws://localhost/abc");
 		WebSocketSession session = this.wsClient.doHandshake(this.wsHandler, this.headers, uri).get();
 
-		assertThat(session.getLocalAddress()).isNotNull();
-		assertThat(session.getLocalAddress().getPort()).isEqualTo(80);
+		assertNotNull(session.getLocalAddress());
+		assertEquals(80, session.getLocalAddress().getPort());
 	}
 
 	@Test
@@ -82,15 +79,14 @@ public class StandardWebSocketClientTests {
 		URI uri = new URI("wss://localhost/abc");
 		WebSocketSession session = this.wsClient.doHandshake(this.wsHandler, this.headers, uri).get();
 
-		assertThat(session.getLocalAddress()).isNotNull();
-		assertThat(session.getLocalAddress().getPort()).isEqualTo(443);
+		assertNotNull(session.getLocalAddress());
+		assertEquals(443, session.getLocalAddress().getPort());
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testGetLocalAddressNoScheme() throws Exception {
 		URI uri = new URI("localhost/abc");
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				this.wsClient.doHandshake(this.wsHandler, this.headers, uri));
+		this.wsClient.doHandshake(this.wsHandler, this.headers, uri);
 	}
 
 	@Test
@@ -98,9 +94,9 @@ public class StandardWebSocketClientTests {
 		URI uri = new URI("wss://localhost/abc");
 		WebSocketSession session = this.wsClient.doHandshake(this.wsHandler, this.headers, uri).get();
 
-		assertThat(session.getRemoteAddress()).isNotNull();
-		assertThat(session.getRemoteAddress().getHostName()).isEqualTo("localhost");
-		assertThat(session.getLocalAddress().getPort()).isEqualTo(443);
+		assertNotNull(session.getRemoteAddress());
+		assertEquals("localhost", session.getRemoteAddress().getHostName());
+		assertEquals(443, session.getLocalAddress().getPort());
 	}
 
 	@Test
@@ -113,8 +109,8 @@ public class StandardWebSocketClientTests {
 
 		WebSocketSession session = this.wsClient.doHandshake(this.wsHandler, this.headers, uri).get();
 
-		assertThat(session.getHandshakeHeaders().size()).isEqualTo(1);
-		assertThat(session.getHandshakeHeaders().getFirst("foo")).isEqualTo("bar");
+		assertEquals(1, session.getHandshakeHeaders().size());
+		assertEquals("bar", session.getHandshakeHeaders().getFirst("foo"));
 	}
 
 	@Test
@@ -130,7 +126,7 @@ public class StandardWebSocketClientTests {
 		verify(this.wsContainer).connectToServer(any(Endpoint.class), captor.capture(), any(URI.class));
 		ClientEndpointConfig endpointConfig = captor.getValue();
 
-		assertThat(endpointConfig.getPreferredSubprotocols()).isEqualTo(protocols);
+		assertEquals(protocols, endpointConfig.getPreferredSubprotocols());
 	}
 
 	@Test
@@ -146,7 +142,7 @@ public class StandardWebSocketClientTests {
 		verify(this.wsContainer).connectToServer(any(Endpoint.class), captor.capture(), any(URI.class));
 		ClientEndpointConfig endpointConfig = captor.getValue();
 
-		assertThat(endpointConfig.getUserProperties()).isEqualTo(userProperties);
+		assertEquals(userProperties, endpointConfig.getUserProperties());
 	}
 
 	@Test
@@ -163,7 +159,7 @@ public class StandardWebSocketClientTests {
 
 		Map<String, List<String>> headers = new HashMap<>();
 		endpointConfig.getConfigurator().beforeRequest(headers);
-		assertThat(headers.size()).isEqualTo(1);
+		assertEquals(1, headers.size());
 	}
 
 	@Test
@@ -173,7 +169,7 @@ public class StandardWebSocketClientTests {
 		this.wsClient.setTaskExecutor(new SimpleAsyncTaskExecutor());
 		WebSocketSession session = this.wsClient.doHandshake(this.wsHandler, this.headers, uri).get();
 
-		assertThat(session).isNotNull();
+		assertNotNull(session);
 	}
 
 }

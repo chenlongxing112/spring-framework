@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,12 +26,13 @@ import java.sql.Types;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.sql.DataSource;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
@@ -51,15 +52,8 @@ import org.springframework.jdbc.support.SQLStateSQLExceptionTranslator;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.startsWith;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Thomas Risberg
@@ -68,13 +62,16 @@ import static org.mockito.Mockito.verify;
  */
 public class StoredProcedureTests {
 
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
+
 	private DataSource dataSource;
 	private Connection connection;
 	private CallableStatement callableStatement;
 
 	private boolean verifyClosedAfter = true;
 
-	@BeforeEach
+	@Before
 	public void setup() throws Exception {
 		dataSource = mock(DataSource.class);
 		connection = mock(Connection.class);
@@ -83,7 +80,7 @@ public class StoredProcedureTests {
 		given(callableStatement.getConnection()).willReturn(connection);
 	}
 
-	@AfterEach
+	@After
 	public void verifyClosed() throws Exception {
 		if (verifyClosedAfter) {
 			verify(callableStatement).close();
@@ -100,21 +97,21 @@ public class StoredProcedureTests {
 				callableStatement);
 
 		NoSuchStoredProcedure sproc = new NoSuchStoredProcedure(dataSource);
-		assertThatExceptionOfType(BadSqlGrammarException.class).isThrownBy(
-				sproc::execute);
+		thrown.expect(BadSqlGrammarException.class);
+		sproc.execute();
 	}
 
 	private void testAddInvoice(final int amount, final int custid) throws Exception {
 		AddInvoice adder = new AddInvoice(dataSource);
 		int id = adder.execute(amount, custid);
-		assertThat(id).isEqualTo(4);
+		assertEquals(4, id);
 	}
 
 	private void testAddInvoiceUsingObjectArray(final int amount, final int custid)
 			throws Exception {
 		AddInvoiceUsingObjectArray adder = new AddInvoiceUsingObjectArray(dataSource);
 		int id = adder.execute(amount, custid);
-		assertThat(id).isEqualTo(5);
+		assertEquals(5, id);
 	}
 
 	@Test
@@ -167,6 +164,8 @@ public class StoredProcedureTests {
 	/**
 	 * Confirm no connection was used to get metadata. Does not use superclass replay
 	 * mechanism.
+	 *
+	 * @throws Exception
 	 */
 	@Test
 	public void testStoredProcedureConfiguredViaJdbcTemplateWithCustomExceptionTranslator()
@@ -195,8 +194,8 @@ public class StoredProcedureTests {
 		t.setExceptionTranslator(new SQLStateSQLExceptionTranslator());
 		StoredProcedureConfiguredViaJdbcTemplate sp = new StoredProcedureConfiguredViaJdbcTemplate(t);
 
-		assertThat(sp.execute(11)).isEqualTo(5);
-		assertThat(t.calls).isEqualTo(1);
+		assertEquals(5, sp.execute(11));
+		assertEquals(1, t.calls);
 
 		verify(callableStatement).setObject(1, 11, Types.INTEGER);
 		verify(callableStatement).registerOutParameter(2, Types.INTEGER);
@@ -204,6 +203,8 @@ public class StoredProcedureTests {
 
 	/**
 	 * Confirm our JdbcTemplate is used
+	 *
+	 * @throws Exception
 	 */
 	@Test
 	public void testStoredProcedureConfiguredViaJdbcTemplate() throws Exception {
@@ -215,7 +216,7 @@ public class StoredProcedureTests {
 		JdbcTemplate t = new JdbcTemplate();
 		t.setDataSource(dataSource);
 		StoredProcedureConfiguredViaJdbcTemplate sp = new StoredProcedureConfiguredViaJdbcTemplate(t);
-		assertThat(sp.execute(1106)).isEqualTo(4);
+		assertEquals(4, sp.execute(1106));
 		verify(callableStatement).setObject(1, 1106, Types.INTEGER);
 		verify(callableStatement).registerOutParameter(2, Types.INTEGER);
 	}
@@ -234,16 +235,17 @@ public class StoredProcedureTests {
 	public void testUnnamedParameter() throws Exception {
 		this.verifyClosedAfter = false;
 		// Shouldn't succeed in creating stored procedure with unnamed parameter
-		assertThatExceptionOfType(InvalidDataAccessApiUsageException.class).isThrownBy(() ->
-		new UnnamedParameterStoredProcedure(dataSource));
+		thrown.expect(InvalidDataAccessApiUsageException.class);
+		new UnnamedParameterStoredProcedure(dataSource);
 	}
 
 	@Test
 	public void testMissingParameter() throws Exception {
 		this.verifyClosedAfter = false;
 		MissingParameterStoredProcedure mp = new MissingParameterStoredProcedure(dataSource);
-		assertThatExceptionOfType(InvalidDataAccessApiUsageException.class).isThrownBy(
-				mp::execute);
+		thrown.expect(InvalidDataAccessApiUsageException.class);
+		mp.execute();
+		fail("Shouldn't succeed in running stored procedure with missing required parameter");
 	}
 
 	@Test
@@ -254,8 +256,8 @@ public class StoredProcedureTests {
 		given(connection.prepareCall("{call " + StoredProcedureExceptionTranslator.SQL + "()}")
 				).willReturn(callableStatement);
 		StoredProcedureExceptionTranslator sproc = new StoredProcedureExceptionTranslator(dataSource);
-		assertThatExceptionOfType(CustomDataException.class).isThrownBy(
-				sproc::execute);
+		thrown.expect(CustomDataException.class);
+		sproc.execute();
 	}
 
 	@Test
@@ -270,7 +272,7 @@ public class StoredProcedureTests {
 				).willReturn(callableStatement);
 		StoredProcedureWithResultSet sproc = new StoredProcedureWithResultSet(dataSource);
 		sproc.execute();
-		assertThat(sproc.getCount()).isEqualTo(2);
+		assertEquals(2, sproc.getCount());
 		verify(resultSet).close();
 	}
 
@@ -290,9 +292,9 @@ public class StoredProcedureTests {
 		StoredProcedureWithResultSetMapped sproc = new StoredProcedureWithResultSetMapped(dataSource);
 		Map<String, Object> res = sproc.execute();
 		List<String> rs = (List<String>) res.get("rs");
-		assertThat(rs.size()).isEqualTo(2);
-		assertThat(rs.get(0)).isEqualTo("Foo");
-		assertThat(rs.get(1)).isEqualTo("Bar");
+		assertEquals(2, rs.size());
+		assertEquals("Foo", rs.get(0));
+		assertEquals("Bar", rs.get(1));
 		verify(resultSet).close();
 	}
 
@@ -325,24 +327,23 @@ public class StoredProcedureTests {
 		StoredProcedureWithResultSetMapped sproc = new StoredProcedureWithResultSetMapped(dataSource);
 		Map<String, Object> res = sproc.execute();
 
-		assertThat(res.size()).as("incorrect number of returns").isEqualTo(3);
+		assertEquals("incorrect number of returns", 3, res.size());
 
 		List<String> rs1 = (List<String>) res.get("rs");
-		assertThat(rs1.size()).isEqualTo(2);
-		assertThat(rs1.get(0)).isEqualTo("Foo");
-		assertThat(rs1.get(1)).isEqualTo("Bar");
+		assertEquals(2, rs1.size());
+		assertEquals("Foo", rs1.get(0));
+		assertEquals("Bar", rs1.get(1));
 
 		List<Object> rs2 = (List<Object>) res.get("#result-set-2");
-		assertThat(rs2.size()).isEqualTo(1);
+		assertEquals(1, rs2.size());
 		Object o2 = rs2.get(0);
-		boolean condition = o2 instanceof Map;
-		assertThat(condition).as("wron type returned for result set 2").isTrue();
+		assertTrue("wron type returned for result set 2", o2 instanceof Map);
 		Map<String, String> m2 = (Map<String, String>) o2;
-		assertThat(m2.get("spam")).isEqualTo("Spam");
-		assertThat(m2.get("eggs")).isEqualTo("Eggs");
+		assertEquals("Spam", m2.get("spam"));
+		assertEquals("Eggs", m2.get("eggs"));
 
 		Number n = (Number) res.get("#update-count-1");
-		assertThat(n.intValue()).as("wrong update count").isEqualTo(0);
+		assertEquals("wrong update count", 0, n.intValue());
 		verify(resultSet1).close();
 		verify(resultSet2).close();
 	}
@@ -358,7 +359,7 @@ public class StoredProcedureTests {
 		StoredProcedureWithResultSetMapped sproc = new StoredProcedureWithResultSetMapped(
 				jdbcTemplate);
 		Map<String, Object> res = sproc.execute();
-		assertThat(res.size()).as("incorrect number of returns").isEqualTo(0);
+		assertEquals("incorrect number of returns", 0, res.size());
 	}
 
 	@Test
@@ -381,11 +382,11 @@ public class StoredProcedureTests {
 				jdbcTemplate);
 		Map<String, Object> res = sproc.execute();
 
-		assertThat(res.size()).as("incorrect number of returns").isEqualTo(1);
+		assertEquals("incorrect number of returns", 1, res.size());
 		List<String> rs1 = (List<String>) res.get("rs");
-		assertThat(rs1.size()).isEqualTo(2);
-		assertThat(rs1.get(0)).isEqualTo("Foo");
-		assertThat(rs1.get(1)).isEqualTo("Bar");
+		assertEquals(2, rs1.size());
+		assertEquals("Foo", rs1.get(0));
+		assertEquals("Bar", rs1.get(1));
 		verify(resultSet).close();
 	}
 
@@ -399,7 +400,7 @@ public class StoredProcedureTests {
 
 		ParameterMapperStoredProcedure pmsp = new ParameterMapperStoredProcedure(dataSource);
 		Map<String, Object> out = pmsp.executeTest();
-		assertThat(out.get("out")).isEqualTo("OK");
+		assertEquals("OK", out.get("out"));
 
 		verify(callableStatement).setString(eq(1), startsWith("Mock for Connection"));
 		verify(callableStatement).registerOutParameter(2, Types.VARCHAR);
@@ -416,7 +417,7 @@ public class StoredProcedureTests {
 
 		SqlTypeValueStoredProcedure stvsp = new SqlTypeValueStoredProcedure(dataSource);
 		Map<String, Object> out = stvsp.executeTest(testVal);
-		assertThat(out.get("out")).isEqualTo("OK");
+		assertEquals("OK", out.get("out"));
 		verify(callableStatement).setObject(1, testVal, Types.ARRAY);
 		verify(callableStatement).registerOutParameter(2, Types.VARCHAR);
 	}
@@ -430,7 +431,7 @@ public class StoredProcedureTests {
 				).willReturn(callableStatement);
 		NumericWithScaleStoredProcedure nwssp = new NumericWithScaleStoredProcedure(dataSource);
 		Map<String, Object> out = nwssp.executeTest();
-		assertThat(out.get("out")).isEqualTo(new BigDecimal("12345.6789"));
+		assertEquals(new BigDecimal("12345.6789"), out.get("out"));
 		verify(callableStatement).registerOutParameter(1, Types.DECIMAL, 4);
 	}
 

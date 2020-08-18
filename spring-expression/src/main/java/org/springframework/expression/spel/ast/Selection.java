@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -205,16 +205,19 @@ public class Selection extends SpelNodeImpl {
 
 	@Override
 	public String toStringAST() {
-		return prefix() + getChild(0).toStringAST() + "]";
-	}
-
-	private String prefix() {
+		StringBuilder sb = new StringBuilder();
 		switch (this.variant) {
-			case ALL:   return "?[";
-			case FIRST: return "^[";
-			case LAST:  return "$[";
+			case ALL:
+				sb.append("?[");
+				break;
+			case FIRST:
+				sb.append("^[");
+				break;
+			case LAST:
+				sb.append("$[");
+				break;
 		}
-		return "";
+		return sb.append(getChild(0).toStringAST()).append("]").toString();
 	}
 
 }

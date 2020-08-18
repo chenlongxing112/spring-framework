@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,8 +24,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
-import io.reactivex.Single;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -41,14 +40,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.codec.EncoderHttpMessageWriter;
 import org.springframework.http.codec.HttpMessageWriter;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpRequest;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpResponse;
+import org.springframework.mock.web.test.server.MockServerWebExchange;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.result.view.ViewResolver;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpResponse;
-import org.springframework.web.testfixture.server.MockServerWebExchange;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Arjen Poutsma
@@ -59,14 +58,14 @@ public class DefaultEntityResponseBuilderTests {
 	public void fromObject() {
 		String body = "foo";
 		EntityResponse<String> response = EntityResponse.fromObject(body).build().block();
-		assertThat(response.entity()).isSameAs(body);
+		assertSame(body, response.entity());
 	}
 
 	@Test
 	public void fromPublisherClass() {
 		Flux<String> body = Flux.just("foo", "bar");
 		EntityResponse<Flux<String>> response = EntityResponse.fromPublisher(body, String.class).build().block();
-		assertThat(response.entity()).isSameAs(body);
+		assertSame(body, response.entity());
 	}
 
 	@Test
@@ -74,15 +73,7 @@ public class DefaultEntityResponseBuilderTests {
 		Flux<String> body = Flux.just("foo", "bar");
 		ParameterizedTypeReference<String> typeReference = new ParameterizedTypeReference<String>() {};
 		EntityResponse<Flux<String>> response = EntityResponse.fromPublisher(body, typeReference).build().block();
-		assertThat(response.entity()).isSameAs(body);
-	}
-
-	@Test
-	public void fromProducer() {
-		Single<String> body = Single.just("foo");
-		ParameterizedTypeReference<String> typeReference = new ParameterizedTypeReference<String>() {};
-		EntityResponse<Single<String>> response = EntityResponse.fromProducer(body, typeReference).build().block();
-		assertThat(response.entity()).isSameAs(body);
+		assertSame(body, response.entity());
 	}
 
 	@Test
@@ -90,8 +81,7 @@ public class DefaultEntityResponseBuilderTests {
 		String body = "foo";
 		Mono<EntityResponse<String>> result = EntityResponse.fromObject(body).status(HttpStatus.CREATED).build();
 		StepVerifier.create(result)
-				.expectNextMatches(response -> HttpStatus.CREATED.equals(response.statusCode()) &&
-						response.rawStatusCode() == 201)
+				.expectNextMatches(response -> HttpStatus.CREATED.equals(response.statusCode()))
 				.expectComplete()
 				.verify();
 	}
@@ -226,7 +216,7 @@ public class DefaultEntityResponseBuilderTests {
 				.expectComplete()
 				.verify();
 
-		assertThat(exchange.getResponse().getBody()).isNotNull();
+		assertNotNull(exchange.getResponse().getBody());
 	}
 
 	@Test
@@ -237,7 +227,7 @@ public class DefaultEntityResponseBuilderTests {
 				.build()
 				.block();
 
-		MockServerHttpRequest request = MockServerHttpRequest.get("https://example.com")
+		MockServerHttpRequest request = MockServerHttpRequest.get("http://example.com")
 				.header(HttpHeaders.IF_NONE_MATCH, etag)
 				.build();
 		MockServerWebExchange exchange = MockServerWebExchange.from(request);
@@ -245,7 +235,7 @@ public class DefaultEntityResponseBuilderTests {
 		responseMono.writeTo(exchange, DefaultServerResponseBuilderTests.EMPTY_CONTEXT);
 
 		MockServerHttpResponse response = exchange.getResponse();
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_MODIFIED);
+		assertEquals(HttpStatus.NOT_MODIFIED, response.getStatusCode());
 		StepVerifier.create(response.getBody())
 				.expectError(IllegalStateException.class)
 				.verify();
@@ -261,7 +251,7 @@ public class DefaultEntityResponseBuilderTests {
 				.build()
 				.block();
 
-		MockServerHttpRequest request = MockServerHttpRequest.get("https://example.com")
+		MockServerHttpRequest request = MockServerHttpRequest.get("http://example.com")
 				.header(HttpHeaders.IF_MODIFIED_SINCE,
 						DateTimeFormatter.RFC_1123_DATE_TIME.format(now))
 				.build();
@@ -270,7 +260,7 @@ public class DefaultEntityResponseBuilderTests {
 		responseMono.writeTo(exchange, DefaultServerResponseBuilderTests.EMPTY_CONTEXT);
 
 		MockServerHttpResponse response = exchange.getResponse();
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_MODIFIED);
+		assertEquals(HttpStatus.NOT_MODIFIED, response.getStatusCode());
 		StepVerifier.create(response.getBody())
 				.expectError(IllegalStateException.class)
 				.verify();

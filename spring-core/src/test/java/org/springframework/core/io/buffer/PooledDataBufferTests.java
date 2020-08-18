@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,81 +18,56 @@ package org.springframework.core.io.buffer;
 
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Arjen Poutsma
- * @author Sam Brannen
  */
-class PooledDataBufferTests {
+@RunWith(Parameterized.class)
+public class PooledDataBufferTests {
 
-	@Nested
-	class UnpooledByteBufAllocatorWithPreferDirectTrueTests implements PooledDataBufferTestingTrait {
+	@Parameterized.Parameter
+	public DataBufferFactory dataBufferFactory;
 
-		@Override
-		public DataBufferFactory createDataBufferFactory() {
-			return new NettyDataBufferFactory(new UnpooledByteBufAllocator(true));
-		}
+	@Parameterized.Parameters(name = "{0}")
+	public static Object[][] buffers() {
+
+		return new Object[][]{
+				{new NettyDataBufferFactory(new UnpooledByteBufAllocator(true))},
+				{new NettyDataBufferFactory(new UnpooledByteBufAllocator(false))},
+				{new NettyDataBufferFactory(new PooledByteBufAllocator(true))},
+				{new NettyDataBufferFactory(new PooledByteBufAllocator(false))}};
 	}
 
-	@Nested
-	class UnpooledByteBufAllocatorWithPreferDirectFalseTests implements PooledDataBufferTestingTrait {
-
-		@Override
-		public DataBufferFactory createDataBufferFactory() {
-			return new NettyDataBufferFactory(new UnpooledByteBufAllocator(true));
-		}
+	private PooledDataBuffer createDataBuffer(int capacity) {
+		return (PooledDataBuffer) dataBufferFactory.allocateBuffer(capacity);
 	}
 
-	@Nested
-	class PooledByteBufAllocatorWithPreferDirectTrueTests implements PooledDataBufferTestingTrait {
+	@Test
+	public void retainAndRelease() {
+		PooledDataBuffer buffer = createDataBuffer(1);
+		buffer.write((byte) 'a');
 
-		@Override
-		public DataBufferFactory createDataBufferFactory() {
-			return new NettyDataBufferFactory(new PooledByteBufAllocator(true));
-		}
+		buffer.retain();
+		boolean result = buffer.release();
+		assertFalse(result);
+		result = buffer.release();
+		assertTrue(result);
 	}
 
-	@Nested
-	class PooledByteBufAllocatorWithPreferDirectFalseTests implements PooledDataBufferTestingTrait {
+	@Test(expected = IllegalStateException.class)
+	public void tooManyReleases() {
+		PooledDataBuffer buffer = createDataBuffer(1);
+		buffer.write((byte) 'a');
 
-		@Override
-		public DataBufferFactory createDataBufferFactory() {
-			return new NettyDataBufferFactory(new PooledByteBufAllocator(true));
-		}
+		buffer.release();
+		buffer.release();
 	}
 
-	interface PooledDataBufferTestingTrait {
-
-		DataBufferFactory createDataBufferFactory();
-
-		default PooledDataBuffer createDataBuffer(int capacity) {
-			return (PooledDataBuffer) createDataBufferFactory().allocateBuffer(capacity);
-		}
-
-		@Test
-		default void retainAndRelease() {
-			PooledDataBuffer buffer = createDataBuffer(1);
-			buffer.write((byte) 'a');
-
-			buffer.retain();
-			assertThat(buffer.release()).isFalse();
-			assertThat(buffer.release()).isTrue();
-		}
-
-		@Test
-		default void tooManyReleases() {
-			PooledDataBuffer buffer = createDataBuffer(1);
-			buffer.write((byte) 'a');
-
-			buffer.release();
-			assertThatIllegalStateException().isThrownBy(buffer::release);
-		}
-
-	}
 
 }

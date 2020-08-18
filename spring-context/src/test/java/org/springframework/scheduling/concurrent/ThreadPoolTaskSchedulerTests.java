@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,15 +24,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.core.task.AsyncListenableTaskExecutor;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.TriggerContext;
 import org.springframework.util.ErrorHandler;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * @author Mark Fisher
@@ -59,7 +58,7 @@ public class ThreadPoolTaskSchedulerTests extends AbstractSchedulingTaskExecutor
 		scheduler.setErrorHandler(errorHandler);
 		scheduler.execute(task);
 		await(errorHandler);
-		assertThat(errorHandler.lastError).isNotNull();
+		assertNotNull(errorHandler.lastError);
 	}
 
 	@Test
@@ -69,9 +68,9 @@ public class ThreadPoolTaskSchedulerTests extends AbstractSchedulingTaskExecutor
 		scheduler.setErrorHandler(errorHandler);
 		Future<?> future = scheduler.submit(task);
 		Object result = future.get(1000, TimeUnit.MILLISECONDS);
-		assertThat(future.isDone()).isTrue();
-		assertThat(result).isNull();
-		assertThat(errorHandler.lastError).isNotNull();
+		assertTrue(future.isDone());
+		assertNull(result);
+		assertNotNull(errorHandler.lastError);
 	}
 
 	@Test
@@ -81,9 +80,9 @@ public class ThreadPoolTaskSchedulerTests extends AbstractSchedulingTaskExecutor
 		scheduler.setErrorHandler(errorHandler);
 		Future<String> future = scheduler.submit(task);
 		Object result = future.get(1000, TimeUnit.MILLISECONDS);
-		assertThat(future.isDone()).isTrue();
-		assertThat(result).isNull();
-		assertThat(errorHandler.lastError).isNotNull();
+		assertTrue(future.isDone());
+		assertNull(result);
+		assertNotNull(errorHandler.lastError);
 	}
 
 	@Test
@@ -91,18 +90,22 @@ public class ThreadPoolTaskSchedulerTests extends AbstractSchedulingTaskExecutor
 		TestTask task = new TestTask(1);
 		Future<?> future = scheduler.schedule(task, new Date());
 		Object result = future.get(1000, TimeUnit.MILLISECONDS);
-		assertThat(result).isNull();
-		assertThat(future.isDone()).isTrue();
+		assertNull(result);
+		assertTrue(future.isDone());
 		assertThreadNamePrefix(task);
 	}
 
-	@Test
+	@Test(expected = ExecutionException.class)
 	public void scheduleOneTimeFailingTaskWithoutErrorHandler() throws Exception {
 		TestTask task = new TestTask(0);
 		Future<?> future = scheduler.schedule(task, new Date());
-		assertThatExceptionOfType(ExecutionException.class).isThrownBy(() ->
-				future.get(1000, TimeUnit.MILLISECONDS));
-		assertThat(future.isDone()).isTrue();
+		try {
+			future.get(1000, TimeUnit.MILLISECONDS);
+		}
+		catch (ExecutionException ex) {
+			assertTrue(future.isDone());
+			throw ex;
+		}
 	}
 
 	@Test
@@ -112,9 +115,9 @@ public class ThreadPoolTaskSchedulerTests extends AbstractSchedulingTaskExecutor
 		scheduler.setErrorHandler(errorHandler);
 		Future<?> future = scheduler.schedule(task, new Date());
 		Object result = future.get(1000, TimeUnit.MILLISECONDS);
-		assertThat(future.isDone()).isTrue();
-		assertThat(result).isNull();
-		assertThat(errorHandler.lastError).isNotNull();
+		assertTrue(future.isDone());
+		assertNull(result);
+		assertNotNull(errorHandler.lastError);
 	}
 
 	@Test
@@ -122,7 +125,7 @@ public class ThreadPoolTaskSchedulerTests extends AbstractSchedulingTaskExecutor
 		TestTask task = new TestTask(3);
 		Future<?> future = scheduler.schedule(task, new TestTrigger(3));
 		Object result = future.get(1000, TimeUnit.MILLISECONDS);
-		assertThat(result).isNull();
+		assertNull(result);
 		await(task);
 		assertThreadNamePrefix(task);
 	}
@@ -136,7 +139,7 @@ public class ThreadPoolTaskSchedulerTests extends AbstractSchedulingTaskExecutor
 
 
 	private void assertThreadNamePrefix(TestTask task) {
-		assertThat(task.lastThread.getName().substring(0, THREAD_NAME_PREFIX.length())).isEqualTo(THREAD_NAME_PREFIX);
+		assertEquals(THREAD_NAME_PREFIX, task.lastThread.getName().substring(0, THREAD_NAME_PREFIX.length()));
 	}
 
 	private void await(TestTask task) {
@@ -154,7 +157,7 @@ public class ThreadPoolTaskSchedulerTests extends AbstractSchedulingTaskExecutor
 		catch (InterruptedException ex) {
 			throw new IllegalStateException(ex);
 		}
-		assertThat(latch.getCount()).as("latch did not count down,").isEqualTo(0);
+		assertEquals("latch did not count down,", 0, latch.getCount());
 	}
 
 

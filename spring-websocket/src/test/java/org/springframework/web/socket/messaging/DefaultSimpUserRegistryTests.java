@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,14 @@
 
 package org.springframework.web.socket.messaging;
 
+import java.security.Principal;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.core.testfixture.security.TestPrincipal;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessageType;
@@ -33,7 +33,7 @@ import org.springframework.messaging.simp.user.SimpUser;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.web.socket.CloseStatus;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Test fixture for
@@ -54,11 +54,11 @@ public class DefaultSimpUserRegistryTests {
 		registry.onApplicationEvent(event);
 
 		SimpUser simpUser = registry.getUser("joe");
-		assertThat(simpUser).isNotNull();
+		assertNotNull(simpUser);
 
-		assertThat(registry.getUserCount()).isEqualTo(1);
-		assertThat(simpUser.getSessions().size()).isEqualTo(1);
-		assertThat(simpUser.getSession("123")).isNotNull();
+		assertEquals(1, registry.getUserCount());
+		assertEquals(1, simpUser.getSessions().size());
+		assertNotNull(simpUser.getSession("123"));
 	}
 
 	@Test
@@ -79,13 +79,13 @@ public class DefaultSimpUserRegistryTests {
 		registry.onApplicationEvent(event);
 
 		SimpUser simpUser = registry.getUser("joe");
-		assertThat(simpUser).isNotNull();
+		assertNotNull(simpUser);
 
-		assertThat(registry.getUserCount()).isEqualTo(1);
-		assertThat(simpUser.getSessions().size()).isEqualTo(3);
-		assertThat(simpUser.getSession("123")).isNotNull();
-		assertThat(simpUser.getSession("456")).isNotNull();
-		assertThat(simpUser.getSession("789")).isNotNull();
+		assertEquals(1, registry.getUserCount());
+		assertEquals(3, simpUser.getSessions().size());
+		assertNotNull(simpUser.getSession("123"));
+		assertNotNull(simpUser.getSession("456"));
+		assertNotNull(simpUser.getSession("789"));
 	}
 
 	@Test
@@ -106,8 +106,8 @@ public class DefaultSimpUserRegistryTests {
 		registry.onApplicationEvent(connectedEvent);
 
 		SimpUser simpUser = registry.getUser("joe");
-		assertThat(simpUser).isNotNull();
-		assertThat(simpUser.getSessions().size()).isEqualTo(3);
+		assertNotNull(simpUser);
+		assertEquals(3, simpUser.getSessions().size());
 
 		CloseStatus status = CloseStatus.GOING_AWAY;
 		message = createMessage(SimpMessageType.DISCONNECT, "456");
@@ -118,8 +118,8 @@ public class DefaultSimpUserRegistryTests {
 		disconnectEvent = new SessionDisconnectEvent(this, message, "789", status, user);
 		registry.onApplicationEvent(disconnectEvent);
 
-		assertThat(simpUser.getSessions().size()).isEqualTo(1);
-		assertThat(simpUser.getSession("123")).isNotNull();
+		assertEquals(1, simpUser.getSessions().size());
+		assertNotNull(simpUser.getSession("123"));
 	}
 
 	@Test
@@ -150,13 +150,13 @@ public class DefaultSimpUserRegistryTests {
 			}
 		});
 
-		assertThat(matches.size()).isEqualTo(2);
+		assertEquals(2, matches.size());
 
 		Iterator<SimpSubscription> iterator = matches.iterator();
 		Set<String> sessionIds = new HashSet<>(2);
 		sessionIds.add(iterator.next().getId());
 		sessionIds.add(iterator.next().getId());
-		assertThat(sessionIds).isEqualTo(new HashSet<>(Arrays.asList("sub1", "sub2")));
+		assertEquals(new HashSet<>(Arrays.asList("sub1", "sub2")), sessionIds);
 	}
 
 	@Test
@@ -169,7 +169,7 @@ public class DefaultSimpUserRegistryTests {
 		registry.onApplicationEvent(event);
 
 		SimpUser simpUser = registry.getUser("joe");
-		assertThat(simpUser.getSession(null)).isNull();
+		assertNull(simpUser.getSession(null));
 	}
 
 
@@ -189,6 +189,22 @@ public class DefaultSimpUserRegistryTests {
 			accessor.setSubscriptionId(subscriptionId);
 		}
 		return MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+	}
+
+
+	private static class TestPrincipal implements Principal {
+
+		private String name;
+
+		public TestPrincipal(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public String getName() {
+			return this.name;
+		}
+
 	}
 
 }

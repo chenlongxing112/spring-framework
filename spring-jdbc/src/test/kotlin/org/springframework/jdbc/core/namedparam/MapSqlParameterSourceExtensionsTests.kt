@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors
+ * Copyright 2002-2017 the original author or authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * 	https://www.apache.org/licenses/LICENSE-2.0
+ * 	http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,9 @@
 
 package org.springframework.jdbc.core.namedparam
 
-import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assert.assertEquals
+import org.junit.Test
 import java.sql.JDBCType
-
-import org.junit.jupiter.api.Test
 
 /**
  * Tests for [MapSqlParameterSource] Kotlin extensions.
@@ -32,24 +31,23 @@ class MapSqlParameterSourceExtensionsTests {
 	fun `setter with value`() {
 		val source = MapSqlParameterSource()
 		source["foo"] = 2
-		assertThat(source.getValue("foo")).isEqualTo(2)
+		assertEquals(2, source.getValue("foo"))
 	}
 
 	@Test
 	fun `setter with value and type`() {
 		val source = MapSqlParameterSource()
 		source["foo", JDBCType.INTEGER.vendorTypeNumber] = 2
-		assertThat(source.getValue("foo")).isEqualTo(2)
-		assertThat(source.getSqlType("foo")).isEqualTo(JDBCType.INTEGER.vendorTypeNumber)
+		assertEquals(2, source.getValue("foo"))
+		assertEquals(JDBCType.INTEGER.vendorTypeNumber, source.getSqlType("foo"))
 	}
 
 	@Test
 	fun `setter with value, type and type name`() {
 		val source = MapSqlParameterSource()
 		source["foo", JDBCType.INTEGER.vendorTypeNumber, "INT"] = 2
-		assertThat(source.getValue("foo")).isEqualTo(2)
-		assertThat(source.getSqlType("foo")).isEqualTo(JDBCType.INTEGER.vendorTypeNumber)
-		assertThat(source.getTypeName("foo")).isEqualTo("INT")
+		assertEquals(2, source.getValue("foo"))
+		assertEquals(JDBCType.INTEGER.vendorTypeNumber, source.getSqlType("foo"))
+		assertEquals("INT", source.getTypeName("foo"))
 	}
-
 }

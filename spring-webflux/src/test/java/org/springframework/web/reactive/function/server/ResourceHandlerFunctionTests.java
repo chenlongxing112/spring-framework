@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,8 +21,8 @@ import java.nio.file.Files;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -32,12 +32,12 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.HttpMessageWriter;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpRequest;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpResponse;
+import org.springframework.mock.web.test.server.MockServerWebExchange;
 import org.springframework.web.reactive.result.view.ViewResolver;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpResponse;
-import org.springframework.web.testfixture.server.MockServerWebExchange;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Arjen Poutsma
@@ -52,7 +52,7 @@ public class ResourceHandlerFunctionTests {
 	private ServerResponse.Context context;
 
 
-	@BeforeEach
+	@Before
 	public void createContext() {
 		HandlerStrategies strategies = HandlerStrategies.withDefaults();
 		context = new ServerResponse.Context() {
@@ -78,13 +78,12 @@ public class ResourceHandlerFunctionTests {
 		Mono<ServerResponse> responseMono = this.handlerFunction.handle(request);
 
 		Mono<Void> result = responseMono.flatMap(response -> {
-			assertThat(response.statusCode()).isEqualTo(HttpStatus.OK);
-			boolean condition = response instanceof EntityResponse;
-			assertThat(condition).isTrue();
-			@SuppressWarnings("unchecked")
+					assertEquals(HttpStatus.OK, response.statusCode());
+					assertTrue(response instanceof EntityResponse);
+					@SuppressWarnings("unchecked")
 					EntityResponse<Resource> entityResponse = (EntityResponse<Resource>) response;
-			assertThat(entityResponse.entity()).isEqualTo(this.resource);
-			return response.writeTo(exchange, context);
+					assertEquals(this.resource, entityResponse.entity());
+					return response.writeTo(exchange, context);
 				});
 
 		StepVerifier.create(result)
@@ -97,12 +96,12 @@ public class ResourceHandlerFunctionTests {
 				.consumeNextWith(dataBuffer -> {
 					byte[] resultBytes = new byte[dataBuffer.readableByteCount()];
 					dataBuffer.read(resultBytes);
-					assertThat(resultBytes).isEqualTo(expectedBytes);
+					assertArrayEquals(expectedBytes, resultBytes);
 				})
 				.expectComplete()
 				.verify();
-		assertThat(mockResponse.getHeaders().getContentType()).isEqualTo(MediaType.TEXT_PLAIN);
-		assertThat(mockResponse.getHeaders().getContentLength()).isEqualTo(this.resource.contentLength());
+		assertEquals(MediaType.TEXT_PLAIN, mockResponse.getHeaders().getContentType());
+		assertEquals(this.resource.contentLength(), mockResponse.getHeaders().getContentLength());
 	}
 
 	@Test
@@ -115,20 +114,19 @@ public class ResourceHandlerFunctionTests {
 		Mono<ServerResponse> responseMono = this.handlerFunction.handle(request);
 
 		Mono<Void> result = responseMono.flatMap(response -> {
-			assertThat(response.statusCode()).isEqualTo(HttpStatus.OK);
-			boolean condition = response instanceof EntityResponse;
-			assertThat(condition).isTrue();
+			assertEquals(HttpStatus.OK, response.statusCode());
+			assertTrue(response instanceof EntityResponse);
 			@SuppressWarnings("unchecked")
 			EntityResponse<Resource> entityResponse = (EntityResponse<Resource>) response;
-			assertThat(entityResponse.entity().getFilename()).isEqualTo(this.resource.getFilename());
+			assertEquals(this.resource.getFilename(), entityResponse.entity().getFilename());
 			return response.writeTo(exchange, context);
 		});
 
 		StepVerifier.create(result).expectComplete().verify();
 		StepVerifier.create(mockResponse.getBody()).expectComplete().verify();
 
-		assertThat(mockResponse.getHeaders().getContentType()).isEqualTo(MediaType.TEXT_PLAIN);
-		assertThat(mockResponse.getHeaders().getContentLength()).isEqualTo(this.resource.contentLength());
+		assertEquals(MediaType.TEXT_PLAIN, mockResponse.getHeaders().getContentType());
+		assertEquals(this.resource.contentLength(), mockResponse.getHeaders().getContentLength());
 	}
 
 	@Test
@@ -140,8 +138,9 @@ public class ResourceHandlerFunctionTests {
 
 		Mono<ServerResponse> responseMono = this.handlerFunction.handle(request);
 		Mono<Void> result = responseMono.flatMap(response -> {
-			assertThat(response.statusCode()).isEqualTo(HttpStatus.OK);
-			assertThat(response.headers().getAllow()).isEqualTo(EnumSet.of(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS));
+			assertEquals(HttpStatus.OK, response.statusCode());
+			assertEquals(EnumSet.of(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS),
+					response.headers().getAllow());
 			return response.writeTo(exchange, context);
 		});
 
@@ -149,8 +148,9 @@ public class ResourceHandlerFunctionTests {
 		StepVerifier.create(result)
 				.expectComplete()
 				.verify();
-		assertThat(mockResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(mockResponse.getHeaders().getAllow()).isEqualTo(EnumSet.of(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS));
+		assertEquals(HttpStatus.OK, mockResponse.getStatusCode());
+		assertEquals(EnumSet.of(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS),
+				mockResponse.getHeaders().getAllow());
 
 		StepVerifier.create(mockResponse.getBody()).expectComplete().verify();
 	}

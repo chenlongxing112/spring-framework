@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,8 @@ package org.springframework.test.context.junit.jupiter;
 import java.lang.reflect.Method;
 import java.util.Optional;
 
+import org.hamcrest.Matcher;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -29,11 +31,12 @@ import org.springframework.test.context.TestContextManager;
 import org.springframework.test.context.junit.SpringJUnitJupiterTestSuite;
 import org.springframework.util.ReflectionUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.endsWith;
+import static org.hamcrest.MatcherAssert.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.*;
 
 /**
  * Tests for {@link DisabledIfCondition} that verify actual condition evaluation
@@ -54,60 +57,59 @@ class DisabledIfConditionTests {
 
 	@Test
 	void missingDisabledIf() {
-		ConditionEvaluationResult result = condition.evaluateExecutionCondition(buildExtensionContext("missingDisabledIf"));
-		assertThat(result.isDisabled()).isFalse();
-		assertThat(result.getReason().get()).endsWith("missingDisabledIf() is enabled since @DisabledIf is not present");
+		assertResult(condition.evaluateExecutionCondition(buildExtensionContext("missingDisabledIf")), false,
+			endsWith("missingDisabledIf() is enabled since @DisabledIf is not present"));
 	}
 
 	@Test
 	void disabledByEmptyExpression() {
-		assertExpressionIsBlank("emptyExpression");
-		assertExpressionIsBlank("blankExpression");
+		// @formatter:off
+		assertAll(
+			() -> assertExpressionIsBlank("emptyExpression"),
+			() -> assertExpressionIsBlank("blankExpression")
+		);
+		// @formatter:on
 	}
 
 	@Test
 	void invalidExpressionEvaluationType() {
 		String methodName = "nonBooleanOrStringExpression";
+		IllegalStateException exception = assertThrows(IllegalStateException.class,
+			() -> condition.evaluateExecutionCondition(buildExtensionContext(methodName)));
+
 		Method method = ReflectionUtils.findMethod(getClass(), methodName);
 
-		assertThatIllegalStateException()
-			.isThrownBy(() -> condition.evaluateExecutionCondition(buildExtensionContext(methodName)))
-			.withMessageContaining(
-				"@DisabledIf(\"#{6 * 7}\") on " + method + " must evaluate to a String or a Boolean, not java.lang.Integer");
+		assertThat(exception.getMessage(),
+			is(equalTo("@DisabledIf(\"#{6 * 7}\") on " + method + " must evaluate to a String or a Boolean, not java.lang.Integer")));
 	}
 
 	@Test
 	void unsupportedStringEvaluationValue() {
 		String methodName = "stringExpressionThatIsNeitherTrueNorFalse";
+		IllegalStateException exception = assertThrows(IllegalStateException.class,
+			() -> condition.evaluateExecutionCondition(buildExtensionContext(methodName)));
+
 		Method method = ReflectionUtils.findMethod(getClass(), methodName);
 
-		assertThatIllegalStateException()
-			.isThrownBy(() -> condition.evaluateExecutionCondition(buildExtensionContext(methodName)))
-			.withMessageContaining(
-				"@DisabledIf(\"#{'enigma'}\") on " + method + " must evaluate to \"true\" or \"false\", not \"enigma\"");
+		assertThat(exception.getMessage(),
+			is(equalTo("@DisabledIf(\"#{'enigma'}\") on " + method + " must evaluate to \"true\" or \"false\", not \"enigma\"")));
 	}
 
 	@Test
 	void disabledWithCustomReason() {
-		ConditionEvaluationResult result = condition.evaluateExecutionCondition(buildExtensionContext("customReason"));
-		assertThat(result.isDisabled()).isTrue();
-		assertThat(result.getReason()).contains("Because... 42!");
+		assertResult(condition.evaluateExecutionCondition(buildExtensionContext("customReason")), true, is(equalTo("Because... 42!")));
 	}
 
 	@Test
 	void disabledWithDefaultReason() {
-		ConditionEvaluationResult result = condition.evaluateExecutionCondition(buildExtensionContext("defaultReason"));
-		assertThat(result.isDisabled()).isTrue();
-		assertThat(result.getReason().get())
-			.endsWith("defaultReason() is disabled because @DisabledIf(\"#{1 + 1 eq 2}\") evaluated to true");
+		assertResult(condition.evaluateExecutionCondition(buildExtensionContext("defaultReason")), true,
+			endsWith("defaultReason() is disabled because @DisabledIf(\"#{1 + 1 eq 2}\") evaluated to true"));
 	}
 
 	@Test
 	void notDisabledWithDefaultReason() {
-		ConditionEvaluationResult result = condition.evaluateExecutionCondition(buildExtensionContext("neverDisabledWithDefaultReason"));
-		assertThat(result.isDisabled()).isFalse();
-		assertThat(result.getReason().get())
-			.endsWith("neverDisabledWithDefaultReason() is enabled because @DisabledIf(\"false\") did not evaluate to true");
+		assertResult(condition.evaluateExecutionCondition(buildExtensionContext("neverDisabledWithDefaultReason")), false, endsWith(
+			"neverDisabledWithDefaultReason() is enabled because @DisabledIf(\"false\") did not evaluate to true"));
 	}
 
 	// -------------------------------------------------------------------------
@@ -116,19 +118,35 @@ class DisabledIfConditionTests {
 		Class<?> testClass = SpringTestCase.class;
 		Method method = ReflectionUtils.findMethod(getClass(), methodName);
 		Store store = mock(Store.class);
-		given(store.getOrComputeIfAbsent(any(), any(), any())).willReturn(new TestContextManager(testClass));
+		when(store.getOrComputeIfAbsent(any(), any(), any())).thenReturn(new TestContextManager(testClass));
 
 		ExtensionContext extensionContext = mock(ExtensionContext.class);
-		given(extensionContext.getTestClass()).willReturn(Optional.of(testClass));
-		given(extensionContext.getElement()).willReturn(Optional.of(method));
-		given(extensionContext.getStore(any())).willReturn(store);
+		when(extensionContext.getTestClass()).thenReturn(Optional.of(testClass));
+		when(extensionContext.getElement()).thenReturn(Optional.of(method));
+		when(extensionContext.getStore(any())).thenReturn(store);
 		return extensionContext;
 	}
 
 	private void assertExpressionIsBlank(String methodName) {
-		assertThatIllegalStateException()
-			.isThrownBy(() -> condition.evaluateExecutionCondition(buildExtensionContext(methodName)))
-			.withMessageContaining("must not be blank");
+		IllegalStateException exception = assertThrows(IllegalStateException.class,
+			() -> condition.evaluateExecutionCondition(buildExtensionContext(methodName)));
+
+		assertThat(exception.getMessage(), containsString("must not be blank"));
+	}
+
+	private void assertResult(ConditionEvaluationResult result, boolean disabled, Matcher<String> matcher) {
+		assertNotNull(result);
+
+		if (disabled) {
+			assertTrue(result.isDisabled());
+		}
+		else {
+			assertFalse(result.isDisabled());
+		}
+
+		Optional<String> reason = result.getReason();
+		assertTrue(reason.isPresent());
+		assertThat(reason.get(), matcher);
 	}
 
 	// -------------------------------------------------------------------------

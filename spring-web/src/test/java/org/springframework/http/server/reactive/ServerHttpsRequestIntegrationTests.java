@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,38 +24,46 @@ import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContextBuilder;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.server.reactive.bootstrap.HttpServer;
+import org.springframework.http.server.reactive.bootstrap.ReactorHttpsServer;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.testfixture.http.server.reactive.bootstrap.HttpServer;
-import org.springframework.web.testfixture.http.server.reactive.bootstrap.ReactorHttpsServer;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * HTTPS-specific integration test for {@link ServerHttpRequest}.
- *
  * @author Arjen Poutsma
- * @author Sam Brannen
  */
-class ServerHttpsRequestIntegrationTests {
-
-	private final HttpServer server = new ReactorHttpsServer();
+@RunWith(Parameterized.class)
+public class ServerHttpsRequestIntegrationTests {
 
 	private int port;
 
+	@Parameterized.Parameter(0)
+	public HttpServer server;
+
 	private RestTemplate restTemplate;
 
+	@Parameterized.Parameters(name = "server [{0}]")
+	public static Object[][] arguments() {
+		return new Object[][]{
+				{new ReactorHttpsServer()},
+		};
+	}
 
-	@BeforeEach
-	void startServer() throws Exception {
+	@Before
+	public void setup() throws Exception {
 		this.server.setHandler(new CheckRequestHandler());
 		this.server.afterPropertiesSet();
 		this.server.start();
@@ -74,31 +82,31 @@ class ServerHttpsRequestIntegrationTests {
 		this.restTemplate = new RestTemplate(requestFactory);
 	}
 
-	@AfterEach
-	void stopServer() {
+	@After
+	public void tearDown() throws Exception {
 		this.server.stop();
+		this.port = 0;
 	}
 
 	@Test
-	void checkUri() throws Exception {
+	public void checkUri() throws Exception {
 		URI url = new URI("https://localhost:" + port + "/foo?param=bar");
 		RequestEntity<Void> request = RequestEntity.post(url).build();
 		ResponseEntity<Void> response = this.restTemplate.exchange(request, Void.class);
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertEquals(HttpStatus.OK, response.getStatusCode());
 	}
 
-
-	private static class CheckRequestHandler implements HttpHandler {
+	public static class CheckRequestHandler implements HttpHandler {
 
 		@Override
 		public Mono<Void> handle(ServerHttpRequest request, ServerHttpResponse response) {
 			URI uri = request.getURI();
-			assertThat(uri.getScheme()).isEqualTo("https");
-			assertThat(uri.getHost()).isNotNull();
-			assertThat(uri.getPort()).isNotEqualTo((long) -1);
-			assertThat(request.getRemoteAddress()).isNotNull();
-			assertThat(uri.getPath()).isEqualTo("/foo");
-			assertThat(uri.getQuery()).isEqualTo("param=bar");
+			assertEquals("https", uri.getScheme());
+			assertNotNull(uri.getHost());
+			assertNotEquals(-1, uri.getPort());
+			assertNotNull(request.getRemoteAddress());
+			assertEquals("/foo", uri.getPath());
+			assertEquals("param=bar", uri.getQuery());
 			return Mono.empty();
 		}
 	}

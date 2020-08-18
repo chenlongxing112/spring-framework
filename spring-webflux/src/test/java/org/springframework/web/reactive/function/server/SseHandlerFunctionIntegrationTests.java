@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,8 @@ package org.springframework.web.reactive.function.server;
 
 import java.time.Duration;
 
+import org.junit.Before;
+import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -26,25 +28,23 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.testfixture.http.server.reactive.bootstrap.HttpServer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.http.MediaType.TEXT_EVENT_STREAM;
-import static org.springframework.web.reactive.function.BodyInserters.fromServerSentEvents;
-import static org.springframework.web.reactive.function.server.RouterFunctions.route;
+import static org.junit.Assert.*;
+import static org.springframework.http.MediaType.*;
+import static org.springframework.web.reactive.function.BodyInserters.*;
+import static org.springframework.web.reactive.function.server.RouterFunctions.*;
 
 /**
  * @author Arjen Poutsma
- * @author Sam Brannen
  */
-class SseHandlerFunctionIntegrationTests extends AbstractRouterFunctionIntegrationTests {
+public class SseHandlerFunctionIntegrationTests extends AbstractRouterFunctionIntegrationTests {
 
 	private WebClient webClient;
 
 
-	@Override
-	protected void startServer(HttpServer httpServer) throws Exception {
-		super.startServer(httpServer);
+	@Before
+	public void setup() throws Exception {
+		super.setup();
 		this.webClient = WebClient.create("http://localhost:" + this.port);
 	}
 
@@ -57,10 +57,8 @@ class SseHandlerFunctionIntegrationTests extends AbstractRouterFunctionIntegrati
 	}
 
 
-	@ParameterizedHttpServerTest
-	void sseAsString(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void sseAsString() {
 		Flux<String> result = this.webClient.get()
 				.uri("/string")
 				.accept(TEXT_EVENT_STREAM)
@@ -74,10 +72,8 @@ class SseHandlerFunctionIntegrationTests extends AbstractRouterFunctionIntegrati
 				.verify(Duration.ofSeconds(5L));
 	}
 
-	@ParameterizedHttpServerTest
-	void sseAsPerson(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void sseAsPerson() {
 		Flux<Person> result = this.webClient.get()
 				.uri("/person")
 				.accept(TEXT_EVENT_STREAM)
@@ -91,10 +87,8 @@ class SseHandlerFunctionIntegrationTests extends AbstractRouterFunctionIntegrati
 				.verify(Duration.ofSeconds(5L));
 	}
 
-	@ParameterizedHttpServerTest
-	void sseAsEvent(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void sseAsEvent() {
 		Flux<ServerSentEvent<String>> result = this.webClient.get()
 				.uri("/event")
 				.accept(TEXT_EVENT_STREAM)
@@ -103,18 +97,18 @@ class SseHandlerFunctionIntegrationTests extends AbstractRouterFunctionIntegrati
 
 		StepVerifier.create(result)
 				.consumeNextWith( event -> {
-					assertThat(event.id()).isEqualTo("0");
-					assertThat(event.data()).isEqualTo("foo");
-					assertThat(event.comment()).isEqualTo("bar");
-					assertThat(event.event()).isNull();
-					assertThat(event.retry()).isNull();
+					assertEquals("0", event.id());
+					assertEquals("foo", event.data());
+					assertEquals("bar", event.comment());
+					assertNull(event.event());
+					assertNull(event.retry());
 				})
 				.consumeNextWith( event -> {
-					assertThat(event.id()).isEqualTo("1");
-					assertThat(event.data()).isEqualTo("foo");
-					assertThat(event.comment()).isEqualTo("bar");
-					assertThat(event.event()).isNull();
-					assertThat(event.retry()).isNull();
+					assertEquals("1", event.id());
+					assertEquals("foo", event.data());
+					assertEquals("bar", event.comment());
+					assertNull(event.event());
+					assertNull(event.retry());
 				})
 				.expectComplete()
 				.verify(Duration.ofSeconds(5L));

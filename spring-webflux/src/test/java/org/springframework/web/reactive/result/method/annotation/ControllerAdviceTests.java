@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.web.reactive.result.method.annotation;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Collections;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.FatalBeanException;
 import org.springframework.context.ApplicationContext;
@@ -28,6 +27,8 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpRequest;
+import org.springframework.mock.web.test.server.MockServerWebExchange;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.ClassUtils;
@@ -42,15 +43,12 @@ import org.springframework.web.bind.support.WebExchangeDataBinder;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.reactive.BindingContext;
 import org.springframework.web.reactive.HandlerResult;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest;
-import org.springframework.web.testfixture.server.MockServerWebExchange;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 /**
  * {@code @ControllerAdvice} related tests for {@link RequestMappingHandlerAdapter}.
- *
  * @author Rossen Stoyanchev
  */
 public class ControllerAdviceTests {
@@ -95,7 +93,7 @@ public class ControllerAdviceTests {
 		controller.setException(exception);
 
 		Object actual = handle(adapter, controller, "handle").getReturnValue();
-		assertThat(actual).isEqualTo(expected);
+		assertEquals(expected, actual);
 	}
 
 	@Test
@@ -106,9 +104,9 @@ public class ControllerAdviceTests {
 
 		Model model = handle(adapter, controller, "handle").getModel();
 
-		assertThat(model.asMap().size()).isEqualTo(2);
-		assertThat(model.asMap().get("attr1")).isEqualTo("lAttr1");
-		assertThat(model.asMap().get("attr2")).isEqualTo("gAttr2");
+		assertEquals(2, model.asMap().size());
+		assertEquals("lAttr1", model.asMap().get("attr1"));
+		assertEquals("gAttr2", model.asMap().get("attr2"));
 	}
 
 	@Test
@@ -123,7 +121,7 @@ public class ControllerAdviceTests {
 		BindingContext bindingContext = handle(adapter, controller, "handle").getBindingContext();
 
 		WebExchangeDataBinder binder = bindingContext.createDataBinder(this.exchange, "name");
-		assertThat(binder.getValidators()).isEqualTo(Collections.singletonList(validator));
+		assertEquals(Collections.singletonList(validator), binder.getValidators());
 	}
 
 

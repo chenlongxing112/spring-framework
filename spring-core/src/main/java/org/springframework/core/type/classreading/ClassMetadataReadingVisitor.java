@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -42,11 +42,7 @@ import org.springframework.util.StringUtils;
  * @author Ramnivas Laddad
  * @author Chris Beams
  * @since 2.5
- * @deprecated As of Spring Framework 5.2, this class and related classes in this
- * package have been replaced by {@link SimpleAnnotationMetadataReadingVisitor}
- * and related classes for internal use within the framework.
  */
-@Deprecated
 class ClassMetadataReadingVisitor extends ClassVisitor implements ClassMetadata {
 
 	private String className = "";
@@ -121,7 +117,6 @@ class ClassMetadataReadingVisitor extends ClassVisitor implements ClassMetadata 
 	}
 
 	@Override
-	@Nullable
 	public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
 		// no-op
 		return new EmptyAnnotationVisitor();
@@ -171,6 +166,11 @@ class ClassMetadataReadingVisitor extends ClassVisitor implements ClassMetadata 
 	}
 
 	@Override
+	public boolean isConcrete() {
+		return !(this.isInterface || this.isAbstract);
+	}
+
+	@Override
 	public boolean isFinal() {
 		return this.isFinal;
 	}
@@ -189,6 +189,11 @@ class ClassMetadataReadingVisitor extends ClassVisitor implements ClassMetadata 
 	@Nullable
 	public String getEnclosingClassName() {
 		return this.enclosingClassName;
+	}
+
+	@Override
+	public boolean hasSuperClass() {
+		return (this.superClassName != null);
 	}
 
 	@Override

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,12 +21,13 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.util.StringUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link Profiles}.
@@ -36,329 +37,275 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  * @author Sam Brannen
  * @since 5.1
  */
-class ProfilesTests {
+public class ProfilesTests {
+
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
-	void ofWhenNullThrowsException() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				Profiles.of((String[]) null))
-			.withMessageContaining("Must specify at least one profile");
+	public void ofWhenNullThrowsException() {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage("Must specify at least one profile");
+		Profiles.of((String[]) null);
 	}
 
 	@Test
-	void ofWhenEmptyThrowsException() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				Profiles.of())
-			.withMessageContaining("Must specify at least one profile");
+	public void ofWhenEmptyThrowsException() {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage("Must specify at least one profile");
+		Profiles.of();
 	}
 
 	@Test
-	void ofNullElement() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				Profiles.of((String) null))
-			.withMessageContaining("must contain text");
+	public void ofNullElement() {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage("must contain text");
+		Profiles.of((String) null);
 	}
 
 	@Test
-	void ofEmptyElement() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				Profiles.of("  "))
-			.withMessageContaining("must contain text");
+	public void ofEmptyElement() {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage("must contain text");
+		Profiles.of("  ");
 	}
 
 	@Test
-	void ofSingleElement() {
+	public void ofSingleElement() {
 		Profiles profiles = Profiles.of("spring");
-		assertThat(profiles.matches(activeProfiles("spring"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("framework"))).isFalse();
+		assertTrue(profiles.matches(activeProfiles("spring")));
+		assertFalse(profiles.matches(activeProfiles("framework")));
 	}
 
 	@Test
-	void ofSingleInvertedElement() {
+	public void ofSingleInvertedElement() {
 		Profiles profiles = Profiles.of("!spring");
-		assertThat(profiles.matches(activeProfiles("spring"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("framework"))).isTrue();
+		assertFalse(profiles.matches(activeProfiles("spring")));
+		assertTrue(profiles.matches(activeProfiles("framework")));
 	}
 
 	@Test
-	void ofMultipleElements() {
+	public void ofMultipleElements() {
 		Profiles profiles = Profiles.of("spring", "framework");
-		assertThat(profiles.matches(activeProfiles("spring"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("framework"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("java"))).isFalse();
+		assertTrue(profiles.matches(activeProfiles("spring")));
+		assertTrue(profiles.matches(activeProfiles("framework")));
+		assertFalse(profiles.matches(activeProfiles("java")));
 	}
 
 	@Test
-	void ofMultipleElementsWithInverted() {
+	public void ofMultipleElementsWithInverted() {
 		Profiles profiles = Profiles.of("!spring", "framework");
-		assertThat(profiles.matches(activeProfiles("spring"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("spring", "framework"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("framework"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("java"))).isTrue();
+		assertFalse(profiles.matches(activeProfiles("spring")));
+		assertTrue(profiles.matches(activeProfiles("spring", "framework")));
+		assertTrue(profiles.matches(activeProfiles("framework")));
+		assertTrue(profiles.matches(activeProfiles("java")));
 	}
 
 	@Test
-	void ofMultipleElementsAllInverted() {
+	public void ofMultipleElementsAllInverted() {
 		Profiles profiles = Profiles.of("!spring", "!framework");
-		assertThat(profiles.matches(activeProfiles("spring"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("framework"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("java"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("spring", "framework"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("spring", "framework", "java"))).isFalse();
+		assertTrue(profiles.matches(activeProfiles("spring")));
+		assertTrue(profiles.matches(activeProfiles("framework")));
+		assertTrue(profiles.matches(activeProfiles("java")));
+		assertFalse(profiles.matches(activeProfiles("spring", "framework")));
+		assertFalse(profiles.matches(activeProfiles("spring", "framework", "java")));
 	}
 
 	@Test
-	void ofSingleExpression() {
+	public void ofSingleExpression() {
 		Profiles profiles = Profiles.of("(spring)");
-		assertThat(profiles.matches(activeProfiles("spring"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("framework"))).isFalse();
+		assertTrue(profiles.matches(activeProfiles("spring")));
+		assertFalse(profiles.matches(activeProfiles("framework")));
 	}
 
 	@Test
-	void ofSingleExpressionInverted() {
+	public void ofSingleExpressionInverted() {
 		Profiles profiles = Profiles.of("!(spring)");
-		assertThat(profiles.matches(activeProfiles("spring"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("framework"))).isTrue();
+		assertFalse(profiles.matches(activeProfiles("spring")));
+		assertTrue(profiles.matches(activeProfiles("framework")));
 	}
-
+	
 	@Test
-	void ofSingleInvertedExpression() {
+	public void ofSingleInvertedExpression() {
 		Profiles profiles = Profiles.of("(!spring)");
-		assertThat(profiles.matches(activeProfiles("spring"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("framework"))).isTrue();
+		assertFalse(profiles.matches(activeProfiles("spring")));
+		assertTrue(profiles.matches(activeProfiles("framework")));
 	}
 
 	@Test
-	void ofOrExpression() {
+	public void ofOrExpression() {
 		Profiles profiles = Profiles.of("(spring | framework)");
 		assertOrExpression(profiles);
 	}
 
 	@Test
-	void ofOrExpressionWithoutSpaces() {
+	public void ofOrExpressionWithoutSpaces() {
 		Profiles profiles = Profiles.of("(spring|framework)");
 		assertOrExpression(profiles);
 	}
 
 	private void assertOrExpression(Profiles profiles) {
-		assertThat(profiles.matches(activeProfiles("spring"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("framework"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("spring", "framework"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("java"))).isFalse();
+		assertTrue(profiles.matches(activeProfiles("spring")));
+		assertTrue(profiles.matches(activeProfiles("framework")));
+		assertTrue(profiles.matches(activeProfiles("spring", "framework")));
+		assertFalse(profiles.matches(activeProfiles("java")));
 	}
 
 	@Test
-	void ofAndExpression() {
+	public void ofAndExpression() {
 		Profiles profiles = Profiles.of("(spring & framework)");
 		assertAndExpression(profiles);
 	}
 
 	@Test
-	void ofAndExpressionWithoutSpaces() {
+	public void ofAndExpressionWithoutSpaces() {
 		Profiles profiles = Profiles.of("spring&framework)");
 		assertAndExpression(profiles);
 	}
 
 	@Test
-	void ofAndExpressionWithoutParentheses() {
+	public void ofAndExpressionWithoutParentheses() {
 		Profiles profiles = Profiles.of("spring & framework");
 		assertAndExpression(profiles);
 	}
 
 	private void assertAndExpression(Profiles profiles) {
-		assertThat(profiles.matches(activeProfiles("spring"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("framework"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("spring", "framework"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("java"))).isFalse();
+		assertFalse(profiles.matches(activeProfiles("spring")));
+		assertFalse(profiles.matches(activeProfiles("framework")));
+		assertTrue(profiles.matches(activeProfiles("spring", "framework")));
+		assertFalse(profiles.matches(activeProfiles("java")));
 	}
 
 	@Test
-	void ofNotAndExpression() {
+	public void ofNotAndExpression() {
 		Profiles profiles = Profiles.of("!(spring & framework)");
 		assertOfNotAndExpression(profiles);
 	}
 
 	@Test
-	void ofNotAndExpressionWithoutSpaces() {
+	public void ofNotAndExpressionWithoutSpaces() {
 		Profiles profiles = Profiles.of("!(spring&framework)");
 		assertOfNotAndExpression(profiles);
 	}
 
 	private void assertOfNotAndExpression(Profiles profiles) {
-		assertThat(profiles.matches(activeProfiles("spring"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("framework"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("spring", "framework"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("java"))).isTrue();
+		assertTrue(profiles.matches(activeProfiles("spring")));
+		assertTrue(profiles.matches(activeProfiles("framework")));
+		assertFalse(profiles.matches(activeProfiles("spring", "framework")));
+		assertTrue(profiles.matches(activeProfiles("java")));
 	}
 
 	@Test
-	void ofAndExpressionWithInvertedSingleElement() {
+	public void ofAndExpressionWithInvertedSingleElement() {
 		Profiles profiles = Profiles.of("!spring & framework");
 		assertOfAndExpressionWithInvertedSingleElement(profiles);
 	}
 
 	@Test
-	void ofAndExpressionWithInBracketsInvertedSingleElement() {
+	public void ofAndExpressionWithInBracketsInvertedSingleElement() {
 		Profiles profiles = Profiles.of("(!spring) & framework");
 		assertOfAndExpressionWithInvertedSingleElement(profiles);
 	}
 
 	@Test
-	void ofAndExpressionWithInvertedSingleElementInBrackets() {
+	public void ofAndExpressionWithInvertedSingleElementInBrackets() {
 		Profiles profiles = Profiles.of("! (spring) & framework");
 		assertOfAndExpressionWithInvertedSingleElement(profiles);
 	}
 
 	@Test
-	void ofAndExpressionWithInvertedSingleElementInBracketsWithoutSpaces() {
+	public void ofAndExpressionWithInvertedSingleElementInBracketsWithoutSpaces() {
 		Profiles profiles = Profiles.of("!(spring)&framework");
 		assertOfAndExpressionWithInvertedSingleElement(profiles);
 	}
 
 	@Test
-	void ofAndExpressionWithInvertedSingleElementWithoutSpaces() {
+	public void ofAndExpressionWithInvertedSingleElementWithoutSpaces() {
 		Profiles profiles = Profiles.of("!spring&framework");
 		assertOfAndExpressionWithInvertedSingleElement(profiles);
 	}
 
 	private void assertOfAndExpressionWithInvertedSingleElement(Profiles profiles) {
-		assertThat(profiles.matches(activeProfiles("framework"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("java"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("spring", "framework"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("spring"))).isFalse();
+		assertTrue(profiles.matches(activeProfiles("framework")));
+		assertFalse(profiles.matches(activeProfiles("java")));
+		assertFalse(profiles.matches(activeProfiles("spring", "framework")));
+		assertFalse(profiles.matches(activeProfiles("spring")));
 	}
 
 	@Test
-	void ofOrExpressionWithInvertedSingleElementWithoutSpaces() {
+	public void ofOrExpressionWithInvertedSingleElementWithoutSpaces() {
 		Profiles profiles = Profiles.of("!spring|framework");
 		assertOfOrExpressionWithInvertedSingleElement(profiles);
 	}
 
 	private void assertOfOrExpressionWithInvertedSingleElement(Profiles profiles) {
-		assertThat(profiles.matches(activeProfiles("framework"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("java"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("spring", "framework"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("spring"))).isFalse();
+		assertTrue(profiles.matches(activeProfiles("framework")));
+		assertTrue(profiles.matches(activeProfiles("java")));
+		assertTrue(profiles.matches(activeProfiles("spring", "framework")));
+		assertFalse(profiles.matches(activeProfiles("spring")));
 	}
 
 	@Test
-	void ofNotOrExpression() {
+	public void ofNotOrExpression() {
 		Profiles profiles = Profiles.of("!(spring | framework)");
 		assertOfNotOrExpression(profiles);
 	}
 
 	@Test
-	void ofNotOrExpressionWithoutSpaces() {
+	public void ofNotOrExpressionWithoutSpaces() {
 		Profiles profiles = Profiles.of("!(spring|framework)");
 		assertOfNotOrExpression(profiles);
 	}
 
 	private void assertOfNotOrExpression(Profiles profiles) {
-		assertThat(profiles.matches(activeProfiles("spring"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("framework"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("spring", "framework"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("java"))).isTrue();
+		assertFalse(profiles.matches(activeProfiles("spring")));
+		assertFalse(profiles.matches(activeProfiles("framework")));
+		assertFalse(profiles.matches(activeProfiles("spring", "framework")));
+		assertTrue(profiles.matches(activeProfiles("java")));
 	}
 
 	@Test
-	void ofComplexExpression() {
+	public void ofComplexExpression() {
 		Profiles profiles = Profiles.of("(spring & framework) | (spring & java)");
 		assertComplexExpression(profiles);
 	}
 
 	@Test
-	void ofComplexExpressionWithoutSpaces() {
+	public void ofComplexExpressionWithoutSpaces() {
 		Profiles profiles = Profiles.of("(spring&framework)|(spring&java)");
 		assertComplexExpression(profiles);
 	}
 
 	private void assertComplexExpression(Profiles profiles) {
-		assertThat(profiles.matches(activeProfiles("spring"))).isFalse();
-		assertThat(profiles.matches(activeProfiles("spring", "framework"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("spring", "java"))).isTrue();
-		assertThat(profiles.matches(activeProfiles("java", "framework"))).isFalse();
+		assertFalse(profiles.matches(activeProfiles("spring")));
+		assertTrue(profiles.matches(activeProfiles("spring", "framework")));
+		assertTrue(profiles.matches(activeProfiles("spring", "java")));
+		assertFalse(profiles.matches(activeProfiles("java", "framework")));
 	}
 
 	@Test
-	void malformedExpressions() {
+	public void malformedExpressions() {
 		assertMalformed(() -> Profiles.of("("));
 		assertMalformed(() -> Profiles.of(")"));
 		assertMalformed(() -> Profiles.of("a & b | c"));
 	}
 
 	@Test
-	void sensibleToString() {
-		assertThat(Profiles.of("spring")).hasToString("spring");
-		assertThat(Profiles.of("(spring & framework) | (spring & java)")).hasToString("(spring & framework) | (spring & java)");
-		assertThat(Profiles.of("(spring&framework)|(spring&java)")).hasToString("(spring&framework)|(spring&java)");
-		assertThat(Profiles.of("spring & framework", "java | kotlin")).hasToString("spring & framework or java | kotlin");
-		assertThat(Profiles.of("java | kotlin", "spring & framework")).hasToString("java | kotlin or spring & framework");
+	public void sensibleToString() {
+		assertEquals("spring & framework or java | kotlin",
+				Profiles.of("spring & framework", "java | kotlin").toString());
 	}
 
-	@Test
-	void sensibleEquals() {
-		assertEqual("(spring & framework) | (spring & java)");
-		assertEqual("(spring&framework)|(spring&java)");
-		assertEqual("spring & framework", "java | kotlin");
-
-		// Ensure order of individual expressions does not affect equals().
-		String expression1 = "A | B";
-		String expression2 = "C & (D | E)";
-		Profiles profiles1 = Profiles.of(expression1, expression2);
-		Profiles profiles2 = Profiles.of(expression2, expression1);
-		assertThat(profiles1).isEqualTo(profiles2);
-		assertThat(profiles2).isEqualTo(profiles1);
+	private void assertMalformed(Supplier<Profiles> supplier) {
+		try {
+			supplier.get();
+			fail("Not malformed");
+		}
+		catch (IllegalArgumentException ex) {
+			assertTrue(ex.getMessage().contains("Malformed"));
+		}
 	}
-
-	private void assertEqual(String... expressions) {
-		Profiles profiles1 = Profiles.of(expressions);
-		Profiles profiles2 = Profiles.of(expressions);
-		assertThat(profiles1).isEqualTo(profiles2);
-		assertThat(profiles2).isEqualTo(profiles1);
-	}
-
-	@Test
-	void sensibleHashCode() {
-		assertHashCode("(spring & framework) | (spring & java)");
-		assertHashCode("(spring&framework)|(spring&java)");
-		assertHashCode("spring & framework", "java | kotlin");
-
-		// Ensure order of individual expressions does not affect hashCode().
-		String expression1 = "A | B";
-		String expression2 = "C & (D | E)";
-		Profiles profiles1 = Profiles.of(expression1, expression2);
-		Profiles profiles2 = Profiles.of(expression2, expression1);
-		assertThat(profiles1).hasSameHashCodeAs(profiles2);
-	}
-
-	private void assertHashCode(String... expressions) {
-		Profiles profiles1 = Profiles.of(expressions);
-		Profiles profiles2 = Profiles.of(expressions);
-		assertThat(profiles1).hasSameHashCodeAs(profiles2);
-	}
-
-	@Test
-	void equalsAndHashCodeAreNotBasedOnLogicalStructureOfNodesWithinExpressionTree() {
-		Profiles profiles1 = Profiles.of("A | B");
-		Profiles profiles2 = Profiles.of("B | A");
-
-		assertThat(profiles1.matches(activeProfiles("A"))).isTrue();
-		assertThat(profiles1.matches(activeProfiles("B"))).isTrue();
-		assertThat(profiles2.matches(activeProfiles("A"))).isTrue();
-		assertThat(profiles2.matches(activeProfiles("B"))).isTrue();
-
-		assertThat(profiles1).isNotEqualTo(profiles2);
-		assertThat(profiles2).isNotEqualTo(profiles1);
-		assertThat(profiles1.hashCode()).isNotEqualTo(profiles2.hashCode());
-	}
-
-
-	private static void assertMalformed(Supplier<Profiles> supplier) {
-		assertThatIllegalArgumentException().isThrownBy(
-				supplier::get)
-			.withMessageContaining("Malformed");
-	}
-
+	
 	private static Predicate<String> activeProfiles(String... profiles) {
 		return new MockActiveProfiles(profiles);
 	}

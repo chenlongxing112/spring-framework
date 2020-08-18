@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,9 @@
  */
 
 package org.springframework.web.reactive.result.method.annotation;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -32,10 +35,12 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.config.CorsRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurationSupport;
-import org.springframework.web.testfixture.http.server.reactive.bootstrap.HttpServer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.hamcrest.Matchers.contains;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -44,129 +49,124 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  *
  * @author Sebastien Deleuze
  * @author Rossen Stoyanchev
- * @author Sam Brannen
  */
-class GlobalCorsConfigIntegrationTests extends AbstractRequestMappingIntegrationTests {
+public class GlobalCorsConfigIntegrationTests extends AbstractRequestMappingIntegrationTests {
 
-	private final HttpHeaders headers = new HttpHeaders();
+	private HttpHeaders headers;
 
 
-	@Override
-	protected void startServer(HttpServer httpServer) throws Exception {
-		super.startServer(httpServer);
+	@Before
+	public void setup() throws Exception {
+		super.setup();
+		this.headers = new HttpHeaders();
 		this.headers.setOrigin("http://localhost:9000");
 	}
 
+
 	@Override
 	protected ApplicationContext initApplicationContext() {
-		return new AnnotationConfigApplicationContext(WebConfig.class);
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+		context.register(WebConfig.class);
+		context.refresh();
+		return context;
 	}
 
 	@Override
 	protected RestTemplate initRestTemplate() {
-		// JDK default HTTP client disallowed headers like Origin
+		// JDK default HTTP client blacklists headers like Origin
 		return new RestTemplate(new HttpComponentsClientHttpRequestFactory());
 	}
 
 
-	@ParameterizedHttpServerTest
-	void actualRequestWithCorsEnabled(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void actualRequestWithCorsEnabled() throws Exception {
 		ResponseEntity<String> entity = performGet("/cors", this.headers, String.class);
-		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(entity.getHeaders().getAccessControlAllowOrigin()).isEqualTo("*");
-		assertThat(entity.getBody()).isEqualTo("cors");
+		assertEquals(HttpStatus.OK, entity.getStatusCode());
+		assertEquals("*", entity.getHeaders().getAccessControlAllowOrigin());
+		assertEquals("cors", entity.getBody());
 	}
 
-	@ParameterizedHttpServerTest
-	void actualRequestWithCorsRejected(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
-		assertThatExceptionOfType(HttpClientErrorException.class).isThrownBy(() ->
-				performGet("/cors-restricted", this.headers, String.class))
-			.satisfies(ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+	@Test
+	public void actualRequestWithCorsRejected() throws Exception {
+		try {
+			performGet("/cors-restricted", this.headers, String.class);
+			fail();
+		}
+		catch (HttpClientErrorException e) {
+			assertEquals(HttpStatus.FORBIDDEN, e.getStatusCode());
+		}
 	}
 
-	@ParameterizedHttpServerTest
-	void actualRequestWithoutCorsEnabled(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void actualRequestWithoutCorsEnabled() throws Exception {
 		ResponseEntity<String> entity = performGet("/welcome", this.headers, String.class);
-		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(entity.getHeaders().getAccessControlAllowOrigin()).isNull();
-		assertThat(entity.getBody()).isEqualTo("welcome");
+		assertEquals(HttpStatus.OK, entity.getStatusCode());
+		assertNull(entity.getHeaders().getAccessControlAllowOrigin());
+		assertEquals("welcome", entity.getBody());
 	}
 
-	@ParameterizedHttpServerTest
-	void actualRequestWithAmbiguousMapping(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void actualRequestWithAmbiguousMapping() throws Exception {
 		this.headers.add(HttpHeaders.ACCEPT, MediaType.TEXT_HTML_VALUE);
 		ResponseEntity<String> entity = performGet("/ambiguous", this.headers, String.class);
-		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(entity.getHeaders().getAccessControlAllowOrigin()).isEqualTo("*");
+		assertEquals(HttpStatus.OK, entity.getStatusCode());
+		assertEquals("*", entity.getHeaders().getAccessControlAllowOrigin());
 	}
 
-	@ParameterizedHttpServerTest
-	void preFlightRequestWithCorsEnabled(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void preFlightRequestWithCorsEnabled() throws Exception {
 		this.headers.add(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET");
 		ResponseEntity<String> entity = performOptions("/cors", this.headers, String.class);
-		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(entity.getHeaders().getAccessControlAllowOrigin()).isEqualTo("*");
-		assertThat(entity.getHeaders().getAccessControlAllowMethods())
-				.containsExactly(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.POST);
+		assertEquals(HttpStatus.OK, entity.getStatusCode());
+		assertEquals("*", entity.getHeaders().getAccessControlAllowOrigin());
+		assertThat(entity.getHeaders().getAccessControlAllowMethods(),
+				contains(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.POST));
 	}
 
-	@ParameterizedHttpServerTest
-	void preFlightRequestWithCorsRejected(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
-		this.headers.add(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET");
-		assertThatExceptionOfType(HttpClientErrorException.class).isThrownBy(() ->
-				performOptions("/cors-restricted", this.headers, String.class))
-			.satisfies(ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+	@Test
+	public void preFlightRequestWithCorsRejected() throws Exception {
+		try {
+			this.headers.add(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET");
+			performOptions("/cors-restricted", this.headers, String.class);
+			fail();
+		}
+		catch (HttpClientErrorException e) {
+			assertEquals(HttpStatus.FORBIDDEN, e.getStatusCode());
+		}
 	}
 
-	@ParameterizedHttpServerTest
-	void preFlightRequestWithoutCorsEnabled(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
-		this.headers.add(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET");
-		assertThatExceptionOfType(HttpClientErrorException.class).isThrownBy(() ->
-				performOptions("/welcome", this.headers, String.class))
-			.satisfies(ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+	@Test
+	public void preFlightRequestWithoutCorsEnabled() throws Exception {
+		try {
+			this.headers.add(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET");
+			performOptions("/welcome", this.headers, String.class);
+			fail();
+		}
+		catch (HttpClientErrorException e) {
+			assertEquals(HttpStatus.FORBIDDEN, e.getStatusCode());
+		}
 	}
 
-	@ParameterizedHttpServerTest
-	void preFlightRequestWithCorsRestricted(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
-		this.headers.set(HttpHeaders.ORIGIN, "https://foo");
+	@Test
+	public void preFlightRequestWithCorsRestricted() throws Exception {
+		this.headers.set(HttpHeaders.ORIGIN, "http://foo");
 		this.headers.add(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET");
 		ResponseEntity<String> entity = performOptions("/cors-restricted", this.headers, String.class);
-		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(entity.getHeaders().getAccessControlAllowOrigin()).isEqualTo("https://foo");
-		assertThat(entity.getHeaders().getAccessControlAllowMethods())
-				.containsExactly(HttpMethod.GET, HttpMethod.POST);
+		assertEquals(HttpStatus.OK, entity.getStatusCode());
+		assertEquals("http://foo", entity.getHeaders().getAccessControlAllowOrigin());
+		assertThat(entity.getHeaders().getAccessControlAllowMethods(), contains(HttpMethod.GET, HttpMethod.POST));
 	}
 
-	@ParameterizedHttpServerTest
-	void preFlightRequestWithAmbiguousMapping(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void preFlightRequestWithAmbiguousMapping() throws Exception {
 		this.headers.add(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET");
 		ResponseEntity<String> entity = performOptions("/ambiguous", this.headers, String.class);
-		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(entity.getHeaders().getAccessControlAllowOrigin()).isEqualTo("http://localhost:9000");
-		assertThat(entity.getHeaders().getAccessControlAllowMethods())
-				.containsExactly(HttpMethod.GET);
-		assertThat(entity.getHeaders().getAccessControlAllowCredentials()).isEqualTo(true);
-		assertThat(entity.getHeaders().get(HttpHeaders.VARY))
-				.containsExactly(HttpHeaders.ORIGIN, HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD,
-						HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS);
+		assertEquals(HttpStatus.OK, entity.getStatusCode());
+		assertEquals("http://localhost:9000", entity.getHeaders().getAccessControlAllowOrigin());
+		assertThat(entity.getHeaders().getAccessControlAllowMethods(), contains(HttpMethod.GET));
+		assertEquals(true, entity.getHeaders().getAccessControlAllowCredentials());
+		assertThat(entity.getHeaders().get(HttpHeaders.VARY), contains(HttpHeaders.ORIGIN,
+				HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS));
 	}
 
 
@@ -178,7 +178,7 @@ class GlobalCorsConfigIntegrationTests extends AbstractRequestMappingIntegration
 		@Override
 		protected void addCorsMappings(CorsRegistry registry) {
 			registry.addMapping("/cors-restricted")
-					.allowedOrigins("https://foo")
+					.allowedOrigins("http://foo")
 					.allowedMethods("GET", "POST");
 			registry.addMapping("/cors");
 			registry.addMapping("/ambiguous")

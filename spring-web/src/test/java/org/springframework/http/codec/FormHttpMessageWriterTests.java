@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,60 +16,61 @@
 
 package org.springframework.http.codec;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import org.springframework.core.ResolvableType;
+import org.springframework.core.io.buffer.AbstractLeakCheckingTestCase;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
-import org.springframework.core.testfixture.io.buffer.AbstractLeakCheckingTests;
+import org.springframework.core.io.buffer.support.DataBufferTestUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpResponse;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpResponse;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Sebastien Deleuze
  */
-public class FormHttpMessageWriterTests extends AbstractLeakCheckingTests {
+public class FormHttpMessageWriterTests extends AbstractLeakCheckingTestCase {
 
 	private final FormHttpMessageWriter writer = new FormHttpMessageWriter();
 
 
 	@Test
 	public void canWrite() {
-		assertThat(this.writer.canWrite(
+		assertTrue(this.writer.canWrite(
 				ResolvableType.forClassWithGenerics(MultiValueMap.class, String.class, String.class),
-				MediaType.APPLICATION_FORM_URLENCODED)).isTrue();
+				MediaType.APPLICATION_FORM_URLENCODED));
 
 		// No generic information
-		assertThat(this.writer.canWrite(
+		assertTrue(this.writer.canWrite(
 				ResolvableType.forInstance(new LinkedMultiValueMap<String, String>()),
-				MediaType.APPLICATION_FORM_URLENCODED)).isTrue();
+				MediaType.APPLICATION_FORM_URLENCODED));
 
-		assertThat(this.writer.canWrite(
+		assertFalse(this.writer.canWrite(
 				ResolvableType.forClassWithGenerics(MultiValueMap.class, String.class, Object.class),
-				null)).isFalse();
+				null));
 
-		assertThat(this.writer.canWrite(
+		assertFalse(this.writer.canWrite(
 				ResolvableType.forClassWithGenerics(MultiValueMap.class, Object.class, String.class),
-				null)).isFalse();
+				null));
 
-		assertThat(this.writer.canWrite(
+		assertFalse(this.writer.canWrite(
 				ResolvableType.forClassWithGenerics(Map.class, String.class, String.class),
-				MediaType.APPLICATION_FORM_URLENCODED)).isFalse();
+				MediaType.APPLICATION_FORM_URLENCODED));
 
-		assertThat(this.writer.canWrite(
+		assertFalse(this.writer.canWrite(
 				ResolvableType.forClassWithGenerics(MultiValueMap.class, String.class, String.class),
-				MediaType.MULTIPART_FORM_DATA)).isFalse();
+				MediaType.MULTIPART_FORM_DATA));
 	}
 
 	@Test
@@ -84,19 +85,21 @@ public class FormHttpMessageWriterTests extends AbstractLeakCheckingTests {
 
 		String expected = "name+1=value+1&name+2=value+2%2B1&name+2=value+2%2B2&name+3";
 		StepVerifier.create(response.getBody())
-				.consumeNextWith(stringConsumer(expected))
+				.consumeNextWith(stringConsumer(
+						expected))
 				.expectComplete()
 				.verify();
 		HttpHeaders headers = response.getHeaders();
-		assertThat(headers.getContentType().toString()).isEqualTo("application/x-www-form-urlencoded;charset=UTF-8");
-		assertThat(headers.getContentLength()).isEqualTo(expected.length());
+		assertEquals("application/x-www-form-urlencoded;charset=UTF-8", headers.getContentType().toString());
+		assertEquals(expected.length(), headers.getContentLength());
 	}
 
 	private Consumer<DataBuffer> stringConsumer(String expected) {
 		return dataBuffer -> {
-			String value = dataBuffer.toString(UTF_8);
+			String value =
+					DataBufferTestUtils.dumpString(dataBuffer, StandardCharsets.UTF_8);
 			DataBufferUtils.release(dataBuffer);
-			assertThat(value).isEqualTo(expected);
+			assertEquals(expected, value);
 		};
 	}
 

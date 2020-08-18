@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,13 +20,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.http.server.PathContainer.PathSegment;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 /**
  * Unit tests for {@link DefaultPathContainer}.
@@ -35,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class DefaultPathContainerTests {
 
 	@Test
-	public void pathSegment() {
+	public void pathSegment() throws Exception {
 		// basic
 		testPathSegment("cars", "cars", new LinkedMultiValueMap<>());
 
@@ -78,20 +79,20 @@ public class DefaultPathContainerTests {
 		PathContainer container = PathContainer.parsePath(rawValue);
 
 		if ("".equals(rawValue)) {
-			assertThat(container.elements().size()).isEqualTo(0);
+			assertEquals(0, container.elements().size());
 			return;
 		}
 
-		assertThat(container.elements().size()).isEqualTo(1);
+		assertEquals(1, container.elements().size());
 		PathSegment segment = (PathSegment) container.elements().get(0);
 
-		assertThat(segment.value()).as("value: '" + rawValue + "'").isEqualTo(rawValue);
-		assertThat(segment.valueToMatch()).as("valueToMatch: '" + rawValue + "'").isEqualTo(valueToMatch);
-		assertThat(segment.parameters()).as("params: '" + rawValue + "'").isEqualTo(params);
+		assertEquals("value: '" + rawValue + "'", rawValue, segment.value());
+		assertEquals("valueToMatch: '" + rawValue + "'", valueToMatch, segment.valueToMatch());
+		assertEquals("params: '" + rawValue + "'", params, segment.parameters());
 	}
 
 	@Test
-	public void path() {
+	public void path() throws Exception {
 		// basic
 		testPath("/a/b/c", "/a/b/c", Arrays.asList("/", "a", "/", "b", "/", "c"));
 
@@ -111,45 +112,30 @@ public class DefaultPathContainerTests {
 		testPath("//%20/%20", "//%20/%20", Arrays.asList("/", "/", "%20", "/", "%20"));
 	}
 
-	private void testPath(String input, PathContainer.Options options, String value, List<String> expectedElements) {
-		PathContainer path = PathContainer.parsePath(input, options);
-
-		assertThat(path.value()).as("value: '" + input + "'").isEqualTo(value);
-		assertThat(path.elements().stream().map(PathContainer.Element::value).collect(Collectors.toList()))
-				.as("elements: " + input).isEqualTo(expectedElements);
-	}
-
 	private void testPath(String input, String value, List<String> expectedElements) {
-		testPath(input, PathContainer.Options.HTTP_PATH, value, expectedElements);
+
+		PathContainer path = PathContainer.parsePath(input);
+
+		assertEquals("value: '" + input + "'", value, path.value());
+		assertEquals("elements: " + input, expectedElements, path.elements().stream()
+				.map(PathContainer.Element::value).collect(Collectors.toList()));
 	}
 
 	@Test
-	public void subPath() {
+	public void subPath() throws Exception {
 		// basic
 		PathContainer path = PathContainer.parsePath("/a/b/c");
-		assertThat(path.subPath(0)).isSameAs(path);
-		assertThat(path.subPath(2).value()).isEqualTo("/b/c");
-		assertThat(path.subPath(4).value()).isEqualTo("/c");
+		assertSame(path, path.subPath(0));
+		assertEquals("/b/c", path.subPath(2).value());
+		assertEquals("/c", path.subPath(4).value());
 
 		// root path
 		path = PathContainer.parsePath("/");
-		assertThat(path.subPath(0).value()).isEqualTo("/");
+		assertEquals("/", path.subPath(0).value());
 
 		// trailing slash
 		path = PathContainer.parsePath("/a/b/");
-		assertThat(path.subPath(2).value()).isEqualTo("/b/");
-	}
-
-	@Test // gh-23310
-	public void pathWithCustomSeparator() {
-		PathContainer path = PathContainer.parsePath("a.b%2Eb.c", PathContainer.Options.MESSAGE_ROUTE);
-
-		List<String> decodedSegments = path.elements().stream()
-				.filter(e -> e instanceof PathSegment)
-				.map(e -> ((PathSegment) e).valueToMatch())
-				.collect(Collectors.toList());
-
-		assertThat(decodedSegments).isEqualTo(Arrays.asList("a", "b.b", "c"));
+		assertEquals("/b/", path.subPath(2).value());
 	}
 
 }

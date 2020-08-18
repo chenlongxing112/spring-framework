@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -59,7 +59,7 @@ public class HttpWebHandlerAdapter extends WebHandlerDecorator implements HttpHa
 
 	/**
 	 * Dedicated log category for disconnected client exceptions.
-	 * <p>Servlet containers don't expose a client disconnected callback; see
+	 * <p>Servlet containers dn't expose a a client disconnected callback, see
 	 * <a href="https://github.com/eclipse-ee4j/servlet-api/issues/44">eclipse-ee4j/servlet-api#44</a>.
 	 * <p>To avoid filling logs with unnecessary stack traces, we make an
 	 * effort to identify such network failures on a per-server basis, and then
@@ -69,9 +69,17 @@ public class HttpWebHandlerAdapter extends WebHandlerDecorator implements HttpHa
 	private static final String DISCONNECTED_CLIENT_LOG_CATEGORY =
 			"org.springframework.web.server.DisconnectedClient";
 
-	 // Similar declaration exists in AbstractSockJsSession..
-	private static final Set<String> DISCONNECTED_CLIENT_EXCEPTIONS = new HashSet<>(
-			Arrays.asList("AbortedException", "ClientAbortException", "EOFException", "EofException"));
+	/**
+	 * Tomcat: ClientAbortException or EOFException
+	 * Jetty: EofException
+	 * WildFly, GlassFish: java.io.IOException "Broken pipe" (already covered)
+	 * <p>TODO:
+	 * This definition is currently duplicated between HttpWebHandlerAdapter
+	 * and AbstractSockJsSession. It is a candidate for a common utility class.
+	 * @see #isDisconnectedClientError(Throwable)
+	 */
+	private static final Set<String> DISCONNECTED_CLIENT_EXCEPTIONS =
+			new HashSet<>(Arrays.asList("ClientAbortException", "EOFException", "EofException"));
 
 
 	private static final Log logger = LogFactory.getLog(HttpWebHandlerAdapter.class);
@@ -243,13 +251,7 @@ public class HttpWebHandlerAdapter extends WebHandlerDecorator implements HttpHa
 				getCodecConfigurer(), getLocaleContextResolver(), this.applicationContext);
 	}
 
-	/**
-	 * Format the request for logging purposes including HTTP method and URL.
-	 * <p>By default this prints the HTTP method, the URL path, and the query.
-	 * @param request the request to format
-	 * @return the String to display, never empty or {@code null}
-	 */
-	protected String formatRequest(ServerHttpRequest request) {
+	private String formatRequest(ServerHttpRequest request) {
 		String rawQuery = request.getURI().getRawQuery();
 		String query = StringUtils.hasText(rawQuery) ? "?" + rawQuery : "";
 		return "HTTP " + request.getMethod() + " \"" + request.getPath() + query + "\"";
@@ -273,14 +275,7 @@ public class HttpWebHandlerAdapter extends WebHandlerDecorator implements HttpHa
 		ServerHttpResponse response = exchange.getResponse();
 		String logPrefix = exchange.getLogPrefix();
 
-		// Sometimes a remote call error can look like a disconnected client.
-		// Try to set the response first before the "isDisconnectedClient" check.
-
-		if (response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR)) {
-			logger.error(logPrefix + "500 Server Error for " + formatRequest(request), ex);
-			return Mono.empty();
-		}
-		else if (isDisconnectedClientError(ex)) {
+		if (isDisconnectedClientError(ex)) {
 			if (lostClientLogger.isTraceEnabled()) {
 				lostClientLogger.trace(logPrefix + "Client went away", ex);
 			}
@@ -288,6 +283,10 @@ public class HttpWebHandlerAdapter extends WebHandlerDecorator implements HttpHa
 				lostClientLogger.debug(logPrefix + "Client went away: " + ex +
 						" (stacktrace at TRACE level for '" + DISCONNECTED_CLIENT_LOG_CATEGORY + "')");
 			}
+			return Mono.empty();
+		}
+		else if (response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR)) {
+			logger.error(logPrefix + "500 Server Error for " + formatRequest(request), ex);
 			return Mono.empty();
 		}
 		else {
@@ -300,11 +299,8 @@ public class HttpWebHandlerAdapter extends WebHandlerDecorator implements HttpHa
 
 	private boolean isDisconnectedClientError(Throwable ex) {
 		String message = NestedExceptionUtils.getMostSpecificCause(ex).getMessage();
-		if (message != null) {
-			String text = message.toLowerCase();
-			if (text.contains("broken pipe") || text.contains("connection reset by peer")) {
-				return true;
-			}
+		if (message != null && message.toLowerCase().contains("broken pipe")) {
+			return true;
 		}
 		return DISCONNECTED_CLIENT_EXCEPTIONS.contains(ex.getClass().getSimpleName());
 	}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,19 +18,18 @@ package org.springframework.core.annotation;
 
 import java.lang.reflect.Method;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.core.MethodParameter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
  * @since 5.0
  */
-class SynthesizingMethodParameterTests {
+public class SynthesizingMethodParameterTests {
 
 	private Method method;
 
@@ -41,8 +40,8 @@ class SynthesizingMethodParameterTests {
 	private SynthesizingMethodParameter intReturnType;
 
 
-	@BeforeEach
-	void setUp() throws NoSuchMethodException {
+	@Before
+	public void setUp() throws NoSuchMethodException {
 		method = getClass().getMethod("method", String.class, Long.TYPE);
 		stringParameter = new SynthesizingMethodParameter(method, 0);
 		longParameter = new SynthesizingMethodParameter(method, 1);
@@ -51,57 +50,56 @@ class SynthesizingMethodParameterTests {
 
 
 	@Test
-	void equals() throws NoSuchMethodException {
-		assertThat(stringParameter).isEqualTo(stringParameter);
-		assertThat(longParameter).isEqualTo(longParameter);
-		assertThat(intReturnType).isEqualTo(intReturnType);
+	public void testEquals() throws NoSuchMethodException {
+		assertEquals(stringParameter, stringParameter);
+		assertEquals(longParameter, longParameter);
+		assertEquals(intReturnType, intReturnType);
 
-		assertThat(stringParameter.equals(longParameter)).isFalse();
-		assertThat(stringParameter.equals(intReturnType)).isFalse();
-		assertThat(longParameter.equals(stringParameter)).isFalse();
-		assertThat(longParameter.equals(intReturnType)).isFalse();
-		assertThat(intReturnType.equals(stringParameter)).isFalse();
-		assertThat(intReturnType.equals(longParameter)).isFalse();
+		assertFalse(stringParameter.equals(longParameter));
+		assertFalse(stringParameter.equals(intReturnType));
+		assertFalse(longParameter.equals(stringParameter));
+		assertFalse(longParameter.equals(intReturnType));
+		assertFalse(intReturnType.equals(stringParameter));
+		assertFalse(intReturnType.equals(longParameter));
 
 		Method method = getClass().getMethod("method", String.class, Long.TYPE);
 		MethodParameter methodParameter = new SynthesizingMethodParameter(method, 0);
-		assertThat(methodParameter).isEqualTo(stringParameter);
-		assertThat(stringParameter).isEqualTo(methodParameter);
-		assertThat(methodParameter).isNotEqualTo(longParameter);
-		assertThat(longParameter).isNotEqualTo(methodParameter);
+		assertEquals(stringParameter, methodParameter);
+		assertEquals(methodParameter, stringParameter);
+		assertNotEquals(longParameter, methodParameter);
+		assertNotEquals(methodParameter, longParameter);
 
 		methodParameter = new MethodParameter(method, 0);
-		assertThat(methodParameter).isEqualTo(stringParameter);
-		assertThat(stringParameter).isEqualTo(methodParameter);
-		assertThat(methodParameter).isNotEqualTo(longParameter);
-		assertThat(longParameter).isNotEqualTo(methodParameter);
+		assertEquals(stringParameter, methodParameter);
+		assertEquals(methodParameter, stringParameter);
+		assertNotEquals(longParameter, methodParameter);
+		assertNotEquals(methodParameter, longParameter);
 	}
 
 	@Test
-	void testHashCode() throws NoSuchMethodException {
-		assertThat(stringParameter.hashCode()).isEqualTo(stringParameter.hashCode());
-		assertThat(longParameter.hashCode()).isEqualTo(longParameter.hashCode());
-		assertThat(intReturnType.hashCode()).isEqualTo(intReturnType.hashCode());
+	public void testHashCode() throws NoSuchMethodException {
+		assertEquals(stringParameter.hashCode(), stringParameter.hashCode());
+		assertEquals(longParameter.hashCode(), longParameter.hashCode());
+		assertEquals(intReturnType.hashCode(), intReturnType.hashCode());
 
 		Method method = getClass().getMethod("method", String.class, Long.TYPE);
 		SynthesizingMethodParameter methodParameter = new SynthesizingMethodParameter(method, 0);
-		assertThat(methodParameter.hashCode()).isEqualTo(stringParameter.hashCode());
-		assertThat(methodParameter.hashCode()).isNotEqualTo((long) longParameter.hashCode());
+		assertEquals(stringParameter.hashCode(), methodParameter.hashCode());
+		assertNotEquals(longParameter.hashCode(), methodParameter.hashCode());
 	}
 
 	@Test
-	void factoryMethods() {
-		assertThat(SynthesizingMethodParameter.forExecutable(method, 0)).isEqualTo(stringParameter);
-		assertThat(SynthesizingMethodParameter.forExecutable(method, 1)).isEqualTo(longParameter);
+	public void testFactoryMethods() {
+		assertEquals(stringParameter, SynthesizingMethodParameter.forExecutable(method, 0));
+		assertEquals(longParameter, SynthesizingMethodParameter.forExecutable(method, 1));
 
-		assertThat(SynthesizingMethodParameter.forParameter(method.getParameters()[0])).isEqualTo(stringParameter);
-		assertThat(SynthesizingMethodParameter.forParameter(method.getParameters()[1])).isEqualTo(longParameter);
+		assertEquals(stringParameter, SynthesizingMethodParameter.forParameter(method.getParameters()[0]));
+		assertEquals(longParameter, SynthesizingMethodParameter.forParameter(method.getParameters()[1]));
 	}
 
-	@Test
-	void indexValidation() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new SynthesizingMethodParameter(method, 2));
+	@Test(expected = IllegalArgumentException.class)
+	public void testIndexValidation() {
+		new SynthesizingMethodParameter(method, 2);
 	}
 
 

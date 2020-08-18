@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,33 +25,27 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.hamcrest.Matchers;
+import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
-import reactor.util.retry.Retry;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping;
-import org.springframework.web.reactive.socket.client.WebSocketClient;
-import org.springframework.web.server.WebFilter;
-import org.springframework.web.testfixture.http.server.reactive.bootstrap.HttpServer;
-import org.springframework.web.testfixture.http.server.reactive.bootstrap.TomcatHttpServer;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Integration tests with server-side {@link WebSocketHandler}s.
  *
  * @author Rossen Stoyanchev
- * @author Sam Brannen
- * @author Brian Clozel
  */
-class WebSocketIntegrationTests extends AbstractWebSocketIntegrationTests {
+public class WebSocketIntegrationTests extends AbstractWebSocketIntegrationTests {
 
 	private static final Log logger = LogFactory.getLog(WebSocketIntegrationTests.class);
 
@@ -64,38 +58,24 @@ class WebSocketIntegrationTests extends AbstractWebSocketIntegrationTests {
 	}
 
 
-	@ParameterizedWebSocketTest
-	void echo(WebSocketClient client, HttpServer server, Class<?> serverConfigClass) throws Exception {
-		startServer(client, server, serverConfigClass);
-
-		if (server instanceof TomcatHttpServer) {
-			Mono.fromRunnable(this::testEcho)
-					.retryWhen(Retry.max(3).filter(ex -> ex instanceof IllegalStateException))
-					.block();
-		}
-		else {
-			testEcho();
-		}
-	}
-
-	private void testEcho() {
+	@Test
+	public void echo() throws Exception {
 		int count = 100;
 		Flux<String> input = Flux.range(1, count).map(index -> "msg-" + index);
 		ReplayProcessor<Object> output = ReplayProcessor.create(count);
+
 		this.client.execute(getUrl("/echo"), session -> session
 				.send(input.map(session::textMessage))
 				.thenMany(session.receive().take(count).map(WebSocketMessage::getPayloadAsText))
 				.subscribeWith(output)
 				.then())
 				.block(TIMEOUT);
-		assertThat(output.isTerminated()).isTrue();
-		assertThat(output.collectList().block()).isEqualTo(input.collectList().block());
+
+		assertEquals(input.collectList().block(TIMEOUT), output.collectList().block(TIMEOUT));
 	}
 
-	@ParameterizedWebSocketTest
-	void subProtocol(WebSocketClient client, HttpServer server, Class<?> serverConfigClass) throws Exception {
-		startServer(client, server, serverConfigClass);
-
+	@Test
+	public void subProtocol() throws Exception {
 		String protocol = "echo-v1";
 		AtomicReference<HandshakeInfo> infoRef = new AtomicReference<>();
 		MonoProcessor<Object> output = MonoProcessor.create();
@@ -106,7 +86,6 @@ class WebSocketIntegrationTests extends AbstractWebSocketIntegrationTests {
 					public List<String> getSubProtocols() {
 						return Collections.singletonList(protocol);
 					}
-
 					@Override
 					public Mono<Void> handle(WebSocketSession session) {
 						infoRef.set(session.getHandshakeInfo());
@@ -119,16 +98,14 @@ class WebSocketIntegrationTests extends AbstractWebSocketIntegrationTests {
 				.block(TIMEOUT);
 
 		HandshakeInfo info = infoRef.get();
-		assertThat(info.getHeaders().getFirst("Upgrade")).isEqualToIgnoringCase("websocket");
-		assertThat(info.getHeaders().getFirst("Sec-WebSocket-Protocol")).isEqualTo(protocol);
-		assertThat(info.getSubProtocol()).as("Wrong protocol accepted").isEqualTo(protocol);
-		assertThat(output.block(TIMEOUT)).as("Wrong protocol detected on the server side").isEqualTo(protocol);
+		assertThat(info.getHeaders().getFirst("Upgrade"), Matchers.equalToIgnoringCase("websocket"));
+		assertEquals(protocol, info.getHeaders().getFirst("Sec-WebSocket-Protocol"));
+		assertEquals("Wrong protocol accepted", protocol, info.getSubProtocol());
+		assertEquals("Wrong protocol detected on the server side", protocol, output.block(TIMEOUT));
 	}
 
-	@ParameterizedWebSocketTest
-	void customHeader(WebSocketClient client, HttpServer server, Class<?> serverConfigClass) throws Exception {
-		startServer(client, server, serverConfigClass);
-
+	@Test
+	public void customHeader() throws Exception {
 		HttpHeaders headers = new HttpHeaders();
 		headers.add("my-header", "my-value");
 		MonoProcessor<Object> output = MonoProcessor.create();
@@ -140,43 +117,22 @@ class WebSocketIntegrationTests extends AbstractWebSocketIntegrationTests {
 						.then())
 				.block(TIMEOUT);
 
-		assertThat(output.block(TIMEOUT)).isEqualTo("my-header:my-value");
+		assertEquals("my-header:my-value", output.block(TIMEOUT));
 	}
 
-	@ParameterizedWebSocketTest
-	void sessionClosing(WebSocketClient client, HttpServer server, Class<?> serverConfigClass) throws Exception {
-		startServer(client, server, serverConfigClass);
-
+	@Test
+	public void sessionClosing() throws Exception {
 		this.client.execute(getUrl("/close"),
 				session -> {
 					logger.debug("Starting..");
 					return session.receive()
 							.doOnNext(s -> logger.debug("inbound " + s))
 							.then()
-							.doFinally(signalType ->
-									logger.debug("Completed with: " + signalType)
-							);
+							.doFinally(signalType -> {
+								logger.debug("Completed with: " + signalType);
+							});
 				})
 				.block(TIMEOUT);
-	}
-
-	@ParameterizedWebSocketTest
-	void cookie(WebSocketClient client, HttpServer server, Class<?> serverConfigClass) throws Exception {
-		startServer(client, server, serverConfigClass);
-
-		MonoProcessor<Object> output = MonoProcessor.create();
-		AtomicReference<String> cookie = new AtomicReference<>();
-		this.client.execute(getUrl("/cookie"),
-				session -> {
-					cookie.set(session.getHandshakeInfo().getHeaders().getFirst("Set-Cookie"));
-					return session.receive()
-							.map(WebSocketMessage::getPayloadAsText)
-							.subscribeWith(output)
-							.then();
-				})
-				.block(TIMEOUT);
-		assertThat(output.block(TIMEOUT)).isEqualTo("cookie");
-		assertThat(cookie.get()).isEqualTo("project=spring");
 	}
 
 
@@ -190,19 +146,12 @@ class WebSocketIntegrationTests extends AbstractWebSocketIntegrationTests {
 			map.put("/sub-protocol", new SubProtocolWebSocketHandler());
 			map.put("/custom-header", new CustomHeaderHandler());
 			map.put("/close", new SessionClosingHandler());
-			map.put("/cookie", new CookieHandler());
-			return new SimpleUrlHandlerMapping(map);
+
+			SimpleUrlHandlerMapping mapping = new SimpleUrlHandlerMapping();
+			mapping.setUrlMap(map);
+			return mapping;
 		}
 
-		@Bean
-		public WebFilter cookieWebFilter() {
-			return (exchange, chain) -> {
-				if (exchange.getRequest().getPath().value().startsWith("/cookie")) {
-					exchange.getResponse().addCookie(ResponseCookie.from("project", "spring").build());
-				}
-				return chain.filter(exchange);
-			};
-		}
 	}
 
 
@@ -252,15 +201,6 @@ class WebSocketIntegrationTests extends AbstractWebSocketIntegrationTests {
 					.error(new Throwable())
 					.onErrorResume(ex -> session.close(CloseStatus.GOING_AWAY)) // SPR-17306 (nested close)
 					.cast(WebSocketMessage.class));
-		}
-	}
-
-	private static class CookieHandler implements WebSocketHandler {
-
-		@Override
-		public Mono<Void> handle(WebSocketSession session) {
-			WebSocketMessage message = session.textMessage("cookie");
-			return session.send(Mono.just(message));
 		}
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
 package org.springframework.http.codec.multipart;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -56,9 +55,6 @@ public class MultipartHttpMessageReader extends LoggingCodecSupport
 	private static final ResolvableType MULTIPART_VALUE_TYPE = ResolvableType.forClassWithGenerics(
 			MultiValueMap.class, String.class, Part.class);
 
-	static final List<MediaType> MIME_TYPES = Collections.unmodifiableList(Arrays.asList(
-			MediaType.MULTIPART_FORM_DATA, MediaType.MULTIPART_MIXED, MediaType.MULTIPART_RELATED));
-
 
 	private final HttpMessageReader<Part> partReader;
 
@@ -69,32 +65,15 @@ public class MultipartHttpMessageReader extends LoggingCodecSupport
 	}
 
 
-	/**
-	 * Return the configured parts reader.
-	 * @since 5.1.11
-	 */
-	public HttpMessageReader<Part> getPartReader() {
-		return this.partReader;
-	}
-
 	@Override
 	public List<MediaType> getReadableMediaTypes() {
-		return MIME_TYPES;
+		return Collections.singletonList(MediaType.MULTIPART_FORM_DATA);
 	}
 
 	@Override
 	public boolean canRead(ResolvableType elementType, @Nullable MediaType mediaType) {
-		if (MULTIPART_VALUE_TYPE.isAssignableFrom(elementType)) {
-			if (mediaType == null) {
-				return true;
-			}
-			for (MediaType supportedMediaType : MIME_TYPES) {
-				if (supportedMediaType.isCompatibleWith(mediaType)) {
-					return true;
-				}
-			}
-		}
-		return false;
+		return MULTIPART_VALUE_TYPE.isAssignableFrom(elementType) &&
+				(mediaType == null || MediaType.MULTIPART_FORM_DATA.isCompatibleWith(mediaType));
 	}
 
 
@@ -115,12 +94,12 @@ public class MultipartHttpMessageReader extends LoggingCodecSupport
 
 		return this.partReader.read(elementType, inputMessage, allHints)
 				.collectMultimap(Part::name)
-				.doOnNext(map ->
+				.doOnNext(map -> {
 					LogFormatUtils.traceDebug(logger, traceOn -> Hints.getLogPrefix(hints) + "Parsed " +
 							(isEnableLoggingRequestDetails() ?
 									LogFormatUtils.formatValue(map, !traceOn) :
-									"parts " + map.keySet() + " (content masked)"))
-				)
+									"parts " + map.keySet() + " (content masked)"));
+				})
 				.map(this::toMultiValueMap);
 	}
 

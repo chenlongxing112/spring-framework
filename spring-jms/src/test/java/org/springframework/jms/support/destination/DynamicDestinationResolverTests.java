@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,14 +24,13 @@ import javax.jms.Session;
 import javax.jms.Topic;
 import javax.jms.TopicSession;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.jms.StubQueue;
 import org.springframework.jms.StubTopic;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Rick Evans
@@ -76,8 +75,8 @@ public class DynamicDestinationResolverTests {
 	private static void testResolveDestination(Session session, Destination expectedDestination, boolean isPubSub) throws JMSException {
 		DynamicDestinationResolver resolver = new DynamicDestinationResolver();
 		Destination destination = resolver.resolveDestinationName(session, DESTINATION_NAME, isPubSub);
-		assertThat(destination).isNotNull();
-		assertThat(destination).isSameAs(expectedDestination);
+		assertNotNull(destination);
+		assertSame(expectedDestination, destination);
 	}
 
 }

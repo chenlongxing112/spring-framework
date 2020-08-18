@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -46,8 +46,9 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	/** Logger available to subclasses. */
 	protected static final Log logger = LogFactory.getLog(CallMetaDataProvider.class);
 
+	private boolean procedureColumnMetaDataUsed = false;
 
-	private final String userName;
+	private String userName;
 
 	private boolean supportsCatalogsInProcedureCalls = true;
 
@@ -57,9 +58,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 
 	private boolean storesLowerCaseIdentifiers = false;
 
-	private boolean procedureColumnMetaDataUsed = false;
-
-	private final List<CallParameterMetaData> callParameterMetaData = new ArrayList<>();
+	private List<CallParameterMetaData> callParameterMetaData = new ArrayList<>();
 
 
 	/**
@@ -329,34 +328,20 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 					metaDataSchemaName + '/' + metaDataProcedureName);
 		}
 
+		ResultSet procs = null;
 		try {
+			procs = databaseMetaData.getProcedures(metaDataCatalogName, metaDataSchemaName, metaDataProcedureName);
 			List<String> found = new ArrayList<>();
-			boolean function = false;
-
-			try (ResultSet procedures = databaseMetaData.getProcedures(
-					metaDataCatalogName, metaDataSchemaName, metaDataProcedureName)) {
-				while (procedures.next()) {
-					found.add(procedures.getString("PROCEDURE_CAT") + '.' + procedures.getString("PROCEDURE_SCHEM") +
-							'.' + procedures.getString("PROCEDURE_NAME"));
-				}
+			while (procs.next()) {
+				found.add(procs.getString("PROCEDURE_CAT") + '.' + procs.getString("PROCEDURE_SCHEM") +
+						'.' + procs.getString("PROCEDURE_NAME"));
 			}
-
-			if (found.isEmpty()) {
-				// Functions not exposed as procedures anymore on PostgreSQL driver 42.2.11
-				try (ResultSet functions = databaseMetaData.getFunctions(
-						metaDataCatalogName, metaDataSchemaName, metaDataProcedureName)) {
-					while (functions.next()) {
-						found.add(functions.getString("FUNCTION_CAT") + '.' + functions.getString("FUNCTION_SCHEM") +
-								'.' + functions.getString("FUNCTION_NAME"));
-						function = true;
-					}
-				}
-			}
+			procs.close();
 
 			if (found.size() > 1) {
 				throw new InvalidDataAccessApiUsageException(
-						"Unable to determine the correct call signature - multiple signatures for '" +
-						metaDataProcedureName + "': found " + found + " " + (function ? "functions" : "procedures"));
+						"Unable to determine the correct call signature - multiple " +
+						"procedures/functions/signatures for '" + metaDataProcedureName + "': found " + found);
 			}
 			else if (found.isEmpty()) {
 				if (metaDataProcedureName != null && metaDataProcedureName.contains(".") &&
@@ -380,34 +365,30 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 				}
 			}
 
-			if (logger.isDebugEnabled()) {
-				logger.debug("Retrieving column meta-data for " + (function ? "function" : "procedure") + ' ' +
-						metaDataCatalogName + '/' + metaDataSchemaName + '/' + metaDataProcedureName);
-			}
-			try (ResultSet columns = function ?
-					databaseMetaData.getFunctionColumns(metaDataCatalogName, metaDataSchemaName, metaDataProcedureName, null) :
-					databaseMetaData.getProcedureColumns(metaDataCatalogName, metaDataSchemaName, metaDataProcedureName, null)) {
-				while (columns.next()) {
-					String columnName = columns.getString("COLUMN_NAME");
-					int columnType = columns.getInt("COLUMN_TYPE");
-					if (columnName == null && isInOrOutColumn(columnType, function)) {
-						if (logger.isDebugEnabled()) {
-							logger.debug("Skipping meta-data for: " + columnType + " " + columns.getInt("DATA_TYPE") +
-									" " + columns.getString("TYPE_NAME") + " " + columns.getInt("NULLABLE") +
-									" (probably a member of a collection)");
-						}
+			procs = databaseMetaData.getProcedureColumns(
+					metaDataCatalogName, metaDataSchemaName, metaDataProcedureName, null);
+			while (procs.next()) {
+				String columnName = procs.getString("COLUMN_NAME");
+				int columnType = procs.getInt("COLUMN_TYPE");
+				if (columnName == null && (
+						columnType == DatabaseMetaData.procedureColumnIn  ||
+						columnType == DatabaseMetaData.procedureColumnInOut ||
+						columnType == DatabaseMetaData.procedureColumnOut)) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Skipping meta-data for: " + columnType + " " + procs.getInt("DATA_TYPE") +
+							" " + procs.getString("TYPE_NAME") + " " + procs.getInt("NULLABLE") +
+							" (probably a member of a collection)");
 					}
-					else {
-						int nullable = (function ? DatabaseMetaData.functionNullable : DatabaseMetaData.procedureNullable);
-						CallParameterMetaData meta = new CallParameterMetaData(columnName, columnType,
-								columns.getInt("DATA_TYPE"), columns.getString("TYPE_NAME"),
-								columns.getInt("NULLABLE") == nullable);
-						this.callParameterMetaData.add(meta);
-						if (logger.isDebugEnabled()) {
-							logger.debug("Retrieved meta-data: " + meta.getParameterName() + " " +
-									meta.getParameterType() + " " + meta.getSqlType() + " " +
-									meta.getTypeName() + " " + meta.isNullable());
-						}
+				}
+				else {
+					CallParameterMetaData meta = new CallParameterMetaData(columnName, columnType,
+							procs.getInt("DATA_TYPE"), procs.getString("TYPE_NAME"),
+							procs.getInt("NULLABLE") == DatabaseMetaData.procedureNullable);
+					this.callParameterMetaData.add(meta);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Retrieved meta-data: " + meta.getParameterName() + " " +
+								meta.getParameterType() + " " + meta.getSqlType() + " " +
+								meta.getTypeName() + " " + meta.isNullable());
 					}
 				}
 			}
@@ -417,18 +398,17 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 				logger.warn("Error while retrieving meta-data for procedure columns: " + ex);
 			}
 		}
-	}
-
-	private static boolean isInOrOutColumn(int columnType, boolean function) {
-		if (function) {
-			return (columnType == DatabaseMetaData.functionColumnIn ||
-					columnType == DatabaseMetaData.functionColumnInOut ||
-					columnType == DatabaseMetaData.functionColumnOut);
-		}
-		else {
-			return (columnType == DatabaseMetaData.procedureColumnIn ||
-					columnType == DatabaseMetaData.procedureColumnInOut ||
-					columnType == DatabaseMetaData.procedureColumnOut);
+		finally {
+			try {
+				if (procs != null) {
+					procs.close();
+				}
+			}
+			catch (SQLException ex) {
+				if (logger.isWarnEnabled()) {
+					logger.warn("Problem closing ResultSet for procedure column meta-data: " + ex);
+				}
+			}
 		}
 	}
 

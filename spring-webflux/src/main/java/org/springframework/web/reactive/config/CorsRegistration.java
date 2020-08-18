@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@
 
 package org.springframework.web.reactive.config;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.springframework.web.cors.CorsConfiguration;
@@ -27,7 +28,6 @@ import org.springframework.web.cors.CorsConfiguration;
  * @author Sebastien Deleuze
  * @author Rossen Stoyanchev
  * @since 5.0
- * @see CorsConfiguration
  * @see CorsRegistry
  */
 public class CorsRegistration {
@@ -39,19 +39,18 @@ public class CorsRegistration {
 
 	public CorsRegistration(String pathPattern) {
 		this.pathPattern = pathPattern;
-		// Same implicit default values as the @CrossOrigin annotation + allows simple methods
 		this.config = new CorsConfiguration().applyPermitDefaultValues();
 	}
 
 
 	/**
 	 * The list of allowed origins that be specific origins, e.g.
-	 * {@code "https://domain1.com"}, or {@code "*"} for all origins.
+	 * {@code "http://domain1.com"}, or {@code "*"} for all origins.
 	 * <p>A matched origin is listed in the {@code Access-Control-Allow-Origin}
 	 * response header of preflight actual CORS requests.
 	 * <p>By default all origins are allowed.
 	 * <p><strong>Note:</strong> CORS checks use values from "Forwarded"
-	 * (<a href="https://tools.ietf.org/html/rfc7239">RFC 7239</a>),
+	 * (<a href="http://tools.ietf.org/html/rfc7239">RFC 7239</a>),
 	 * "X-Forwarded-Host", "X-Forwarded-Port", and "X-Forwarded-Proto" headers,
 	 * if present, in order to reflect the client-originated address.
 	 * Consider using the {@code ForwardedHeaderFilter} in order to choose from a
@@ -59,7 +58,7 @@ public class CorsRegistration {
 	 * See the Spring Framework reference for more on this filter.
 	 */
 	public CorsRegistration allowedOrigins(String... origins) {
-		this.config.setAllowedOrigins(Arrays.asList(origins));
+		this.config.setAllowedOrigins(new ArrayList<>(Arrays.asList(origins)));
 		return this;
 	}
 
@@ -70,7 +69,7 @@ public class CorsRegistration {
 	 * are allowed.
 	 */
 	public CorsRegistration allowedMethods(String... methods) {
-		this.config.setAllowedMethods(Arrays.asList(methods));
+		this.config.setAllowedMethods(new ArrayList<>(Arrays.asList(methods)));
 		return this;
 	}
 
@@ -84,7 +83,7 @@ public class CorsRegistration {
 	 * <p>By default all headers are allowed.
 	 */
 	public CorsRegistration allowedHeaders(String... headers) {
-		this.config.setAllowedHeaders(Arrays.asList(headers));
+		this.config.setAllowedHeaders(new ArrayList<>(Arrays.asList(headers)));
 		return this;
 	}
 
@@ -97,7 +96,7 @@ public class CorsRegistration {
 	 * <p>By default this is not set.
 	 */
 	public CorsRegistration exposedHeaders(String... headers) {
-		this.config.setExposedHeaders(Arrays.asList(headers));
+		this.config.setExposedHeaders(new ArrayList<>(Arrays.asList(headers)));
 		return this;
 	}
 

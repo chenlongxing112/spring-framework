@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.test.web.servlet.setup;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.Filter;
 import javax.servlet.ServletContext;
 
@@ -68,7 +67,6 @@ public abstract class AbstractMockMvcBuilder<B extends AbstractMockMvcBuilder<B>
 	private final List<MockMvcConfigurer> configurers = new ArrayList<>(4);
 
 
-	@Override
 	public final <T extends B> T addFilters(Filter... filters) {
 		Assert.notNull(filters, "filters cannot be null");
 		for (Filter f : filters) {
@@ -78,7 +76,6 @@ public abstract class AbstractMockMvcBuilder<B extends AbstractMockMvcBuilder<B>
 		return self();
 	}
 
-	@Override
 	public final <T extends B> T addFilter(Filter filter, String... urlPatterns) {
 		Assert.notNull(filter, "filter cannot be null");
 		Assert.notNull(urlPatterns, "urlPatterns cannot be null");
@@ -89,19 +86,16 @@ public abstract class AbstractMockMvcBuilder<B extends AbstractMockMvcBuilder<B>
 		return self();
 	}
 
-	@Override
 	public final <T extends B> T defaultRequest(RequestBuilder requestBuilder) {
 		this.defaultRequestBuilder = requestBuilder;
 		return self();
 	}
 
-	@Override
 	public final <T extends B> T alwaysExpect(ResultMatcher resultMatcher) {
 		this.globalResultMatchers.add(resultMatcher);
 		return self();
 	}
 
-	@Override
 	public final <T extends B> T alwaysDo(ResultHandler resultHandler) {
 		this.globalResultHandlers.add(resultHandler);
 		return self();
@@ -112,13 +106,11 @@ public abstract class AbstractMockMvcBuilder<B extends AbstractMockMvcBuilder<B>
 		return self();
 	}
 
-	@Override
 	public final <T extends B> T dispatchOptions(boolean dispatchOptions) {
 		return addDispatcherServletCustomizer(
 				dispatcherServlet -> dispatcherServlet.setDispatchOptionsRequest(dispatchOptions));
 	}
 
-	@Override
 	public final <T extends B> T apply(MockMvcConfigurer configurer) {
 		configurer.afterConfigurerAdded(this);
 		this.configurers.add(configurer);

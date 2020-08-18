@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,19 +15,15 @@
  */
 package org.springframework.http.client.reactive;
 
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import reactor.netty.http.HttpResources;
 import reactor.netty.resources.ConnectionProvider;
 import reactor.netty.resources.LoopResources;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for {@link ReactorResourceFactory}.
@@ -43,35 +39,35 @@ public class ReactorResourceFactoryTests {
 
 
 	@Test
-	void globalResources() throws Exception {
+	public void globalResources() throws Exception {
 
 		this.resourceFactory.setUseGlobalResources(true);
 		this.resourceFactory.afterPropertiesSet();
 
 		HttpResources globalResources = HttpResources.get();
-		assertThat(this.resourceFactory.getConnectionProvider()).isSameAs(globalResources);
-		assertThat(this.resourceFactory.getLoopResources()).isSameAs(globalResources);
-		assertThat(globalResources.isDisposed()).isFalse();
+		assertSame(globalResources, this.resourceFactory.getConnectionProvider());
+		assertSame(globalResources, this.resourceFactory.getLoopResources());
+		assertFalse(globalResources.isDisposed());
 
 		this.resourceFactory.destroy();
 
-		assertThat(globalResources.isDisposed()).isTrue();
+		assertTrue(globalResources.isDisposed());
 	}
 
 	@Test
-	void globalResourcesWithConsumer() throws Exception {
+	public void globalResourcesWithConsumer() throws Exception {
 
 		AtomicBoolean invoked = new AtomicBoolean(false);
 
 		this.resourceFactory.addGlobalResourcesConsumer(httpResources -> invoked.set(true));
 		this.resourceFactory.afterPropertiesSet();
 
-		assertThat(invoked.get()).isTrue();
+		assertTrue(invoked.get());
 		this.resourceFactory.destroy();
 	}
 
 	@Test
-	void localResources() throws Exception {
+	public void localResources() throws Exception {
 
 		this.resourceFactory.setUseGlobalResources(false);
 		this.resourceFactory.afterPropertiesSet();
@@ -79,21 +75,21 @@ public class ReactorResourceFactoryTests {
 		ConnectionProvider connectionProvider = this.resourceFactory.getConnectionProvider();
 		LoopResources loopResources = this.resourceFactory.getLoopResources();
 
-		assertThat(connectionProvider).isNotSameAs(HttpResources.get());
-		assertThat(loopResources).isNotSameAs(HttpResources.get());
+		assertNotSame(HttpResources.get(), connectionProvider);
+		assertNotSame(HttpResources.get(), loopResources);
 
 		// The below does not work since ConnectionPoolProvider simply checks if pool is empty.
 		// assertFalse(connectionProvider.isDisposed());
-		assertThat(loopResources.isDisposed()).isFalse();
+		assertFalse(loopResources.isDisposed());
 
 		this.resourceFactory.destroy();
 
-		assertThat(connectionProvider.isDisposed()).isTrue();
-		assertThat(loopResources.isDisposed()).isTrue();
+		assertTrue(connectionProvider.isDisposed());
+		assertTrue(loopResources.isDisposed());
 	}
 
 	@Test
-	void localResourcesViaSupplier() throws Exception {
+	public void localResourcesViaSupplier() throws Exception {
 
 		this.resourceFactory.setUseGlobalResources(false);
 		this.resourceFactory.setConnectionProviderSupplier(() -> this.connectionProvider);
@@ -103,38 +99,21 @@ public class ReactorResourceFactoryTests {
 		ConnectionProvider connectionProvider = this.resourceFactory.getConnectionProvider();
 		LoopResources loopResources = this.resourceFactory.getLoopResources();
 
-		assertThat(connectionProvider).isSameAs(this.connectionProvider);
-		assertThat(loopResources).isSameAs(this.loopResources);
+		assertSame(this.connectionProvider, connectionProvider);
+		assertSame(this.loopResources, loopResources);
 
 		verifyNoMoreInteractions(this.connectionProvider, this.loopResources);
 
 		this.resourceFactory.destroy();
 
 		// Managed (destroy disposes)..
-		verify(this.connectionProvider).disposeLater();
-		verify(this.loopResources).disposeLater(eq(Duration.ofSeconds(LoopResources.DEFAULT_SHUTDOWN_QUIET_PERIOD)), eq(Duration.ofSeconds(LoopResources.DEFAULT_SHUTDOWN_TIMEOUT)));
+		verify(this.connectionProvider).dispose();
+		verify(this.loopResources).dispose();
 		verifyNoMoreInteractions(this.connectionProvider, this.loopResources);
 	}
 
 	@Test
-	void customShutdownDurations() throws Exception {
-		Duration quietPeriod = Duration.ofMillis(500);
-		Duration shutdownTimeout = Duration.ofSeconds(1);
-		this.resourceFactory.setUseGlobalResources(false);
-		this.resourceFactory.setConnectionProviderSupplier(() -> this.connectionProvider);
-		this.resourceFactory.setLoopResourcesSupplier(() -> this.loopResources);
-		this.resourceFactory.setShutdownQuietPeriod(quietPeriod);
-		this.resourceFactory.setShutdownTimeout(shutdownTimeout);
-		this.resourceFactory.afterPropertiesSet();
-		this.resourceFactory.destroy();
-
-		verify(this.connectionProvider).disposeLater();
-		verify(this.loopResources).disposeLater(eq(quietPeriod), eq(shutdownTimeout));
-		verifyNoMoreInteractions(this.connectionProvider, this.loopResources);
-	}
-
-	@Test
-	void externalResources() throws Exception {
+	public void externalResources() throws Exception {
 
 		this.resourceFactory.setUseGlobalResources(false);
 		this.resourceFactory.setConnectionProvider(this.connectionProvider);
@@ -144,8 +123,8 @@ public class ReactorResourceFactoryTests {
 		ConnectionProvider connectionProvider = this.resourceFactory.getConnectionProvider();
 		LoopResources loopResources = this.resourceFactory.getLoopResources();
 
-		assertThat(connectionProvider).isSameAs(this.connectionProvider);
-		assertThat(loopResources).isSameAs(this.loopResources);
+		assertSame(this.connectionProvider, connectionProvider);
+		assertSame(this.loopResources, loopResources);
 
 		verifyNoMoreInteractions(this.connectionProvider, this.loopResources);
 

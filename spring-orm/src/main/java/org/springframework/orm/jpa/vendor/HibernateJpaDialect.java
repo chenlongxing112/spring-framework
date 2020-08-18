@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ package org.springframework.orm.jpa.vendor;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
-
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceException;
 
@@ -76,7 +75,7 @@ import org.springframework.util.ReflectionUtils;
 
 /**
  * {@link org.springframework.orm.jpa.JpaDialect} implementation for
- * Hibernate EntityManager. Developed against Hibernate 5.1/5.2/5.3/5.4.
+ * Hibernate EntityManager. Developed against Hibernate 5.1/5.2/5.3.
  *
  * @author Juergen Hoeller
  * @author Costin Leau
@@ -194,8 +193,7 @@ public class HibernateJpaDialect extends DefaultJpaDialect {
 				session.setDefaultReadOnly(true);
 			}
 		}
-		return new SessionTransactionData(
-				session, previousFlushMode, preparedCon, previousIsolationLevel, definition.isReadOnly());
+		return new SessionTransactionData(session, previousFlushMode, preparedCon, previousIsolationLevel);
 	}
 
 	@Override
@@ -204,7 +202,7 @@ public class HibernateJpaDialect extends DefaultJpaDialect {
 
 		Session session = getSession(entityManager);
 		FlushMode previousFlushMode = prepareFlushMode(session, readOnly);
-		return new SessionTransactionData(session, previousFlushMode, null, null, readOnly);
+		return new SessionTransactionData(session, previousFlushMode, null, null);
 	}
 
 	@SuppressWarnings("deprecation")
@@ -371,16 +369,13 @@ public class HibernateJpaDialect extends DefaultJpaDialect {
 		@Nullable
 		private final Integer previousIsolationLevel;
 
-		private final boolean readOnly;
-
 		public SessionTransactionData(Session session, @Nullable FlushMode previousFlushMode,
-				@Nullable Connection preparedCon, @Nullable Integer previousIsolationLevel, boolean readOnly) {
+				@Nullable Connection preparedCon, @Nullable Integer previousIsolationLevel) {
 
 			this.session = session;
 			this.previousFlushMode = previousFlushMode;
 			this.preparedCon = preparedCon;
 			this.previousIsolationLevel = previousIsolationLevel;
-			this.readOnly = readOnly;
 		}
 
 		@SuppressWarnings("deprecation")
@@ -396,8 +391,7 @@ public class HibernateJpaDialect extends DefaultJpaDialect {
 							"make sure to use connection release mode ON_CLOSE (the default) and to run against " +
 							"Hibernate 4.2+ (or switch HibernateJpaDialect's prepareConnection flag to false");
 				}
-				DataSourceUtils.resetConnectionAfterTransaction(
-						conToReset, this.previousIsolationLevel, this.readOnly);
+				DataSourceUtils.resetConnectionAfterTransaction(conToReset, this.previousIsolationLevel);
 			}
 		}
 	}

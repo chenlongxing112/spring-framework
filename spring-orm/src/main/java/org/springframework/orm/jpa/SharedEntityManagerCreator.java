@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.ParameterMode;
@@ -42,7 +41,6 @@ import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.ConcurrentReferenceHashMap;
 
 /**
  * Delegate for creating a shareable JPA {@link javax.persistence.EntityManager}
@@ -61,7 +59,6 @@ import org.springframework.util.ConcurrentReferenceHashMap;
  * @author Juergen Hoeller
  * @author Rod Johnson
  * @author Oliver Gierke
- * @author Mark Paluch
  * @since 2.0
  * @see javax.persistence.PersistenceContext
  * @see javax.persistence.PersistenceContextType#TRANSACTION
@@ -71,8 +68,6 @@ import org.springframework.util.ConcurrentReferenceHashMap;
 public abstract class SharedEntityManagerCreator {
 
 	private static final Class<?>[] NO_ENTITY_MANAGER_INTERFACES = new Class<?>[0];
-
-	private static final Map<Class<?>, Class<?>[]> cachedQueryInterfaces = new ConcurrentReferenceHashMap<>(4);
 
 	private static final Set<String> transactionRequiringMethods = new HashSet<>(8);
 
@@ -89,9 +84,8 @@ public abstract class SharedEntityManagerCreator {
 		queryTerminatingMethods.add("execute");  // JPA 2.1 StoredProcedureQuery
 		queryTerminatingMethods.add("executeUpdate");
 		queryTerminatingMethods.add("getSingleResult");
-		queryTerminatingMethods.add("getResultStream");
 		queryTerminatingMethods.add("getResultList");
-		queryTerminatingMethods.add("list");  // Hibernate Query.list() method
+		queryTerminatingMethods.add("getResultStream");
 	}
 
 
@@ -315,8 +309,7 @@ public abstract class SharedEntityManagerCreator {
 				if (result instanceof Query) {
 					Query query = (Query) result;
 					if (isNewEm) {
-						Class<?>[] ifcs = cachedQueryInterfaces.computeIfAbsent(query.getClass(), key ->
-								ClassUtils.getAllInterfacesForClass(key, this.proxyClassLoader));
+						Class<?>[] ifcs = ClassUtils.getAllInterfacesForClass(query.getClass(), this.proxyClassLoader);
 						result = Proxy.newProxyInstance(this.proxyClassLoader, ifcs,
 								new DeferredQueryInvocationHandler(query, target));
 						isNewEm = false;

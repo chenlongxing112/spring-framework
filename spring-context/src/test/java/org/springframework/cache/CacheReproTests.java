@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,10 +21,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -40,11 +41,10 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.Nullable;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Tests to reproduce raised caching issues.
@@ -55,8 +55,12 @@ import static org.mockito.Mockito.verify;
  */
 public class CacheReproTests {
 
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
+
+
 	@Test
-	public void spr11124MultipleAnnotations() {
+	public void spr11124MultipleAnnotations() throws Exception {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr11124Config.class);
 		Spr11124Service bean = context.getBean(Spr11124Service.class);
 		bean.single(2);
@@ -67,11 +71,11 @@ public class CacheReproTests {
 	}
 
 	@Test
-	public void spr11249PrimitiveVarargs() {
+	public void spr11249PrimitiveVarargs() throws Exception {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr11249Config.class);
 		Spr11249Service bean = context.getBean(Spr11249Service.class);
 		Object result = bean.doSomething("op", 2, 3);
-		assertThat(bean.doSomething("op", 2, 3)).isSameAs(result);
+		assertSame(result, bean.doSomething("op", 2, 3));
 		context.close();
 	}
 
@@ -86,7 +90,7 @@ public class CacheReproTests {
 		verify(cache, times(1)).get(key);  // first call: cache miss
 
 		Object cachedResult = bean.getSimple("1");
-		assertThat(cachedResult).isSameAs(result);
+		assertSame(result, cachedResult);
 		verify(cache, times(2)).get(key);  // second call: cache hit
 
 		context.close();
@@ -103,7 +107,7 @@ public class CacheReproTests {
 		verify(cache, times(0)).get(key);  // no cache hit at all, caching disabled
 
 		Object cachedResult = bean.getNeverCache("1");
-		assertThat(cachedResult).isNotSameAs(result);
+		assertNotSame(result, cachedResult);
 		verify(cache, times(0)).get(key);  // caching disabled
 
 		context.close();
@@ -115,9 +119,9 @@ public class CacheReproTests {
 		MyCacheResolver cacheResolver = context.getBean(MyCacheResolver.class);
 		Spr13081Service bean = context.getBean(Spr13081Service.class);
 
-		assertThat(cacheResolver.getCache("foo").get("foo")).isNull();
+		assertNull(cacheResolver.getCache("foo").get("foo"));
 		Object result = bean.getSimple("foo");  // cache name = id
-		assertThat(cacheResolver.getCache("foo").get("foo").get()).isEqualTo(result);
+		assertEquals(result, cacheResolver.getCache("foo").get("foo").get());
 	}
 
 	@Test
@@ -125,9 +129,9 @@ public class CacheReproTests {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr13081Config.class);
 		Spr13081Service bean = context.getBean(Spr13081Service.class);
 
-		assertThatIllegalStateException().isThrownBy(() ->
-				bean.getSimple(null))
-			.withMessageContaining(MyCacheResolver.class.getName());
+		this.thrown.expect(IllegalStateException.class);
+		this.thrown.expectMessage(MyCacheResolver.class.getName());
+		bean.getSimple(null);
 	}
 
 	@Test
@@ -138,13 +142,13 @@ public class CacheReproTests {
 
 		TestBean tb = new TestBean("tb1");
 		bean.insertItem(tb);
-		assertThat(bean.findById("tb1").get()).isSameAs(tb);
-		assertThat(cache.get("tb1").get()).isSameAs(tb);
+		assertSame(tb, bean.findById("tb1").get());
+		assertSame(tb, cache.get("tb1").get());
 
 		cache.clear();
 		TestBean tb2 = bean.findById("tb1").get();
-		assertThat(tb2).isNotSameAs(tb);
-		assertThat(cache.get("tb1").get()).isSameAs(tb2);
+		assertNotSame(tb, tb2);
+		assertSame(tb2, cache.get("tb1").get());
 	}
 
 	@Test
@@ -155,13 +159,13 @@ public class CacheReproTests {
 
 		TestBean tb = new TestBean("tb1");
 		bean.insertItem(tb);
-		assertThat(bean.findById("tb1").get()).isSameAs(tb);
-		assertThat(cache.get("tb1").get()).isSameAs(tb);
+		assertSame(tb, bean.findById("tb1").get());
+		assertSame(tb, cache.get("tb1").get());
 
 		cache.clear();
 		TestBean tb2 = bean.findById("tb1").get();
-		assertThat(tb2).isNotSameAs(tb);
-		assertThat(cache.get("tb1").get()).isSameAs(tb2);
+		assertNotSame(tb, tb2);
+		assertSame(tb2, cache.get("tb1").get());
 	}
 
 	@Test
@@ -172,8 +176,8 @@ public class CacheReproTests {
 
 		TestBean tb = new TestBean("tb1");
 		bean.insertItem(tb);
-		assertThat(bean.findById("tb1").get()).isSameAs(tb);
-		assertThat(cache.get("tb1").get()).isSameAs(tb);
+		assertSame(tb, bean.findById("tb1").get());
+		assertSame(tb, cache.get("tb1").get());
 	}
 
 	@Test
@@ -184,8 +188,8 @@ public class CacheReproTests {
 
 		TestBean tb = new TestBean("tb1");
 		bean.insertItem(tb);
-		assertThat(bean.findById("tb1").get()).isSameAs(tb);
-		assertThat(cache.get("tb1").get()).isSameAs(tb);
+		assertSame(tb, bean.findById("tb1").get());
+		assertSame(tb, cache.get("tb1").get());
 	}
 
 
@@ -221,7 +225,7 @@ public class CacheReproTests {
 		@Cacheable("smallCache")
 		public List<String> single(int id) {
 			if (this.multipleCount > 0) {
-				throw new AssertionError("Called too many times");
+				fail("Called too many times");
 			}
 			this.multipleCount++;
 			return Collections.emptyList();
@@ -233,7 +237,7 @@ public class CacheReproTests {
 				@Cacheable(cacheNames = "smallCache", unless = "#result.size() > 3")})
 		public List<String> multiple(int id) {
 			if (this.multipleCount > 0) {
-				throw new AssertionError("Called too many times");
+				fail("Called too many times");
 			}
 			this.multipleCount++;
 			return Collections.emptyList();
@@ -393,6 +397,7 @@ public class CacheReproTests {
 		public TestBean insertItem(TestBean item) {
 			return item;
 		}
+
 	}
 
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +28,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -40,19 +39,21 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.Timeout;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.testfixture.EnabledForTestGroups;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.tests.Assume;
+import org.springframework.tests.TestGroup;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 import org.springframework.web.socket.TextMessage;
@@ -67,9 +68,10 @@ import org.springframework.web.socket.server.HandshakeHandler;
 import org.springframework.web.socket.server.RequestUpgradeStrategy;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.springframework.core.testfixture.TestGroup.PERFORMANCE;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Abstract base class for integration tests using the
@@ -79,8 +81,10 @@ import static org.springframework.core.testfixture.TestGroup.PERFORMANCE;
  * @author Rossen Stoyanchev
  * @author Sam Brannen
  */
-@EnabledForTestGroups(PERFORMANCE)
 public abstract class AbstractSockJsIntegrationTests {
+
+	@Rule
+	public final TestName testName = new TestName();
 
 	protected Log logger = LogFactory.getLog(getClass());
 
@@ -96,10 +100,15 @@ public abstract class AbstractSockJsIntegrationTests {
 	private String baseUrl;
 
 
-	@BeforeEach
-	public void setup(TestInfo testInfo) throws Exception {
-		logger.debug("Setting up '" + testInfo.getTestMethod().get().getName() + "'");
+	@BeforeClass
+	public static void performanceTestGroupAssumption() throws Exception {
+		Assume.group(TestGroup.PERFORMANCE);
+	}
 
+
+	@Before
+	public void setup() throws Exception {
+		logger.debug("Setting up '" + this.testName.getMethodName() + "'");
 		this.testFilter = new TestFilter();
 
 		this.wac = new AnnotationConfigWebApplicationContext();
@@ -116,7 +125,7 @@ public abstract class AbstractSockJsIntegrationTests {
 		this.baseUrl = "http://localhost:" + this.server.getPort();
 	}
 
-	@AfterEach
+	@After
 	public void teardown() throws Exception {
 		try {
 			this.sockJsClient.stop();
@@ -187,7 +196,7 @@ public abstract class AbstractSockJsIntegrationTests {
 
 		for (Map.Entry<String, HttpHeaders> entry : this.testFilter.requests.entrySet()) {
 			HttpHeaders httpHeaders = entry.getValue();
-			assertThat(httpHeaders.getFirst("auth")).as("No auth header for: " + entry.getKey()).isEqualTo("123");
+			assertEquals("No auth header for: " + entry.getKey(), "123", httpHeaders.getFirst("auth"));
 		}
 	}
 
@@ -226,7 +235,7 @@ public abstract class AbstractSockJsIntegrationTests {
 					}
 				}
 		);
-		assertThat(latch.await(5000, TimeUnit.MILLISECONDS)).isTrue();
+		assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
 	}
 
 	@Test
@@ -236,14 +245,13 @@ public abstract class AbstractSockJsIntegrationTests {
 		TestClientHandler handler = new TestClientHandler();
 		initSockJsClient(createWebSocketTransport(), createXhrTransport());
 		WebSocketSession session = this.sockJsClient.doHandshake(handler, this.baseUrl + "/echo").get();
-		assertThat(session.getClass()).as("Fallback didn't occur").isEqualTo(XhrClientSockJsSession.class);
+		assertEquals("Fallback didn't occur", XhrClientSockJsSession.class, session.getClass());
 		TextMessage message = new TextMessage("message1");
 		session.sendMessage(message);
 		handler.awaitMessage(message, 5000);
 	}
 
-	@Test
-	@Timeout(5)
+	@Test(timeout = 5000)
 	public void fallbackAfterConnectTimeout() throws Exception {
 		TestClientHandler clientHandler = new TestClientHandler();
 		this.testFilter.sleepDelayMap.put("/xhr_streaming", 10000L);
@@ -251,7 +259,7 @@ public abstract class AbstractSockJsIntegrationTests {
 		initSockJsClient(createXhrTransport());
 		this.sockJsClient.setConnectTimeoutScheduler(this.wac.getBean(ThreadPoolTaskScheduler.class));
 		WebSocketSession clientSession = sockJsClient.doHandshake(clientHandler, this.baseUrl + "/echo").get();
-		assertThat(clientSession.getClass()).as("Fallback didn't occur").isEqualTo(XhrClientSockJsSession.class);
+		assertEquals("Fallback didn't occur", XhrClientSockJsSession.class, clientSession.getClass());
 		TextMessage message = new TextMessage("message1");
 		clientSession.sendMessage(message);
 		clientHandler.awaitMessage(message, 5000);
@@ -273,9 +281,9 @@ public abstract class AbstractSockJsIntegrationTests {
 		}
 		handler.awaitMessageCount(messageCount, 5000);
 		for (TextMessage message : messages) {
-			assertThat(handler.receivedMessages.remove(message)).as("Message not received: " + message).isTrue();
+			assertTrue("Message not received: " + message, handler.receivedMessages.remove(message));
 		}
-		assertThat(handler.receivedMessages.size()).as("Remaining messages: " + handler.receivedMessages).isEqualTo(0);
+		assertEquals("Remaining messages: " + handler.receivedMessages, 0, handler.receivedMessages.size());
 		session.close();
 	}
 
@@ -287,7 +295,7 @@ public abstract class AbstractSockJsIntegrationTests {
 		this.sockJsClient.doHandshake(clientHandler, headers, new URI(this.baseUrl + "/test")).get();
 		TestServerHandler serverHandler = this.wac.getBean(TestServerHandler.class);
 
-		assertThat(clientHandler.session).as("afterConnectionEstablished should have been called").isNotNull();
+		assertNotNull("afterConnectionEstablished should have been called", clientHandler.session);
 		serverHandler.awaitSession(5000);
 
 		TextMessage message = new TextMessage("message1");
@@ -364,7 +372,7 @@ public abstract class AbstractSockJsIntegrationTests {
 		public void awaitMessage(TextMessage expected, long timeToWait) throws InterruptedException {
 			TextMessage actual = this.receivedMessages.poll(timeToWait, TimeUnit.MILLISECONDS);
 			if (actual != null) {
-				assertThat(actual).isEqualTo(expected);
+				assertEquals(expected, actual);
 			}
 			else if (this.transportError != null) {
 				throw new AssertionError("Transport error", this.transportError);

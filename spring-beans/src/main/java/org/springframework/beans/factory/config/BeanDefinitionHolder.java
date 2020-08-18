@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -135,10 +135,12 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	 * @see #getAliases()
 	 */
 	public String getShortDescription() {
-		if (this.aliases == null) {
-			return "Bean definition with name '" + this.beanName + "'";
+		StringBuilder sb = new StringBuilder();
+		sb.append("Bean definition with name '").append(this.beanName).append("'");
+		if (this.aliases != null) {
+			sb.append(" and aliases [").append(StringUtils.arrayToCommaDelimitedString(this.aliases)).append("]");
 		}
-		return "Bean definition with name '" + this.beanName + "' and aliases [" + StringUtils.arrayToCommaDelimitedString(this.aliases) + ']';
+		return sb.toString();
 	}
 
 	/**
@@ -148,7 +150,9 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	 * @see #getBeanDefinition()
 	 */
 	public String getLongDescription() {
-		return getShortDescription() + ": " + this.beanDefinition;
+		StringBuilder sb = new StringBuilder(getShortDescription());
+		sb.append(": ").append(this.beanDefinition);
+		return sb.toString();
 	}
 
 	/**
@@ -164,7 +168,7 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}

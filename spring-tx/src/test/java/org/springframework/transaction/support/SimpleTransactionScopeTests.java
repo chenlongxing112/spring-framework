@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,17 +19,16 @@ package org.springframework.transaction.support;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
-import org.springframework.beans.testfixture.beans.DerivedTestBean;
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.transaction.testfixture.CallCountingTransactionManager;
+import org.springframework.tests.sample.beans.DerivedTestBean;
+import org.springframework.tests.sample.beans.TestBean;
+import org.springframework.tests.transaction.CallCountingTransactionManager;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
@@ -55,13 +54,23 @@ public class SimpleTransactionScopeTests {
 
 		context.refresh();
 
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(() ->
-				context.getBean(TestBean.class))
-			.withCauseInstanceOf(IllegalStateException.class);
+		try {
+			context.getBean(TestBean.class);
+			fail("Should have thrown BeanCreationException");
+		}
+		catch (BeanCreationException ex) {
+			// expected - no synchronization active
+			assertTrue(ex.getCause() instanceof IllegalStateException);
+		}
 
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(() ->
-				context.getBean(DerivedTestBean.class))
-			.withCauseInstanceOf(IllegalStateException.class);
+		try {
+			context.getBean(DerivedTestBean.class);
+			fail("Should have thrown BeanCreationException");
+		}
+		catch (BeanCreationException ex) {
+			// expected - no synchronization active
+			assertTrue(ex.getCause() instanceof IllegalStateException);
+		}
 
 		TestBean bean1 = null;
 		DerivedTestBean bean2 = null;
@@ -71,42 +80,52 @@ public class SimpleTransactionScopeTests {
 		TransactionSynchronizationManager.initSynchronization();
 		try {
 			bean1 = context.getBean(TestBean.class);
-			assertThat(context.getBean(TestBean.class)).isSameAs(bean1);
+			assertSame(bean1, context.getBean(TestBean.class));
 
 			bean2 = context.getBean(DerivedTestBean.class);
-			assertThat(context.getBean(DerivedTestBean.class)).isSameAs(bean2);
+			assertSame(bean2, context.getBean(DerivedTestBean.class));
 			context.getBeanFactory().destroyScopedBean("txScopedObject2");
-			assertThat(TransactionSynchronizationManager.hasResource("txScopedObject2")).isFalse();
-			assertThat(bean2.wasDestroyed()).isTrue();
+			assertFalse(TransactionSynchronizationManager.hasResource("txScopedObject2"));
+			assertTrue(bean2.wasDestroyed());
 
 			bean2a = context.getBean(DerivedTestBean.class);
-			assertThat(context.getBean(DerivedTestBean.class)).isSameAs(bean2a);
-			assertThat(bean2a).isNotSameAs(bean2);
+			assertSame(bean2a, context.getBean(DerivedTestBean.class));
+			assertNotSame(bean2, bean2a);
 			context.getBeanFactory().getRegisteredScope("tx").remove("txScopedObject2");
-			assertThat(TransactionSynchronizationManager.hasResource("txScopedObject2")).isFalse();
-			assertThat(bean2a.wasDestroyed()).isFalse();
+			assertFalse(TransactionSynchronizationManager.hasResource("txScopedObject2"));
+			assertFalse(bean2a.wasDestroyed());
 
 			bean2b = context.getBean(DerivedTestBean.class);
-			assertThat(context.getBean(DerivedTestBean.class)).isSameAs(bean2b);
-			assertThat(bean2b).isNotSameAs(bean2);
-			assertThat(bean2b).isNotSameAs(bean2a);
+			assertSame(bean2b, context.getBean(DerivedTestBean.class));
+			assertNotSame(bean2, bean2b);
+			assertNotSame(bean2a, bean2b);
 		}
 		finally {
 			TransactionSynchronizationUtils.triggerAfterCompletion(TransactionSynchronization.STATUS_COMMITTED);
 			TransactionSynchronizationManager.clearSynchronization();
 		}
 
-		assertThat(bean2a.wasDestroyed()).isFalse();
-		assertThat(bean2b.wasDestroyed()).isTrue();
-		assertThat(TransactionSynchronizationManager.getResourceMap().isEmpty()).isTrue();
+		assertFalse(bean2a.wasDestroyed());
+		assertTrue(bean2b.wasDestroyed());
+		assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty());
 
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(() ->
-				context.getBean(TestBean.class))
-			.withCauseInstanceOf(IllegalStateException.class);
+		try {
+			context.getBean(TestBean.class);
+			fail("Should have thrown IllegalStateException");
+		}
+		catch (BeanCreationException ex) {
+			// expected - no synchronization active
+			assertTrue(ex.getCause() instanceof IllegalStateException);
+		}
 
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(() ->
-				context.getBean(DerivedTestBean.class))
-			.withCauseInstanceOf(IllegalStateException.class);
+		try {
+			context.getBean(DerivedTestBean.class);
+			fail("Should have thrown IllegalStateException");
+		}
+		catch (BeanCreationException ex) {
+			// expected - no synchronization active
+			assertTrue(ex.getCause() instanceof IllegalStateException);
+		}
 	}
 
 	@Test
@@ -133,26 +152,26 @@ public class SimpleTransactionScopeTests {
 
 			tt.execute(status -> {
 				TestBean bean1 = context.getBean(TestBean.class);
-				assertThat(context.getBean(TestBean.class)).isSameAs(bean1);
+				assertSame(bean1, context.getBean(TestBean.class));
 
 				DerivedTestBean bean2 = context.getBean(DerivedTestBean.class);
-				assertThat(context.getBean(DerivedTestBean.class)).isSameAs(bean2);
+				assertSame(bean2, context.getBean(DerivedTestBean.class));
 				context.getBeanFactory().destroyScopedBean("txScopedObject2");
-				assertThat(TransactionSynchronizationManager.hasResource("txScopedObject2")).isFalse();
-				assertThat(bean2.wasDestroyed()).isTrue();
+				assertFalse(TransactionSynchronizationManager.hasResource("txScopedObject2"));
+				assertTrue(bean2.wasDestroyed());
 
 				DerivedTestBean bean2a = context.getBean(DerivedTestBean.class);
-				assertThat(context.getBean(DerivedTestBean.class)).isSameAs(bean2a);
-				assertThat(bean2a).isNotSameAs(bean2);
+				assertSame(bean2a, context.getBean(DerivedTestBean.class));
+				assertNotSame(bean2, bean2a);
 				context.getBeanFactory().getRegisteredScope("tx").remove("txScopedObject2");
-				assertThat(TransactionSynchronizationManager.hasResource("txScopedObject2")).isFalse();
-				assertThat(bean2a.wasDestroyed()).isFalse();
+				assertFalse(TransactionSynchronizationManager.hasResource("txScopedObject2"));
+				assertFalse(bean2a.wasDestroyed());
 
 				DerivedTestBean bean2b = context.getBean(DerivedTestBean.class);
 				finallyDestroy.add(bean2b);
-				assertThat(context.getBean(DerivedTestBean.class)).isSameAs(bean2b);
-				assertThat(bean2b).isNotSameAs(bean2);
-				assertThat(bean2b).isNotSameAs(bean2a);
+				assertSame(bean2b, context.getBean(DerivedTestBean.class));
+				assertNotSame(bean2, bean2b);
+				assertNotSame(bean2a, bean2b);
 
 				Set<DerivedTestBean> immediatelyDestroy = new HashSet<>();
 				TransactionTemplate tt2 = new TransactionTemplate(tm);
@@ -160,19 +179,19 @@ public class SimpleTransactionScopeTests {
 				tt2.execute(status2 -> {
 					DerivedTestBean bean2c = context.getBean(DerivedTestBean.class);
 					immediatelyDestroy.add(bean2c);
-					assertThat(context.getBean(DerivedTestBean.class)).isSameAs(bean2c);
-					assertThat(bean2c).isNotSameAs(bean2);
-					assertThat(bean2c).isNotSameAs(bean2a);
-					assertThat(bean2c).isNotSameAs(bean2b);
+					assertSame(bean2c, context.getBean(DerivedTestBean.class));
+					assertNotSame(bean2, bean2c);
+					assertNotSame(bean2a, bean2c);
+					assertNotSame(bean2b, bean2c);
 					return null;
 				});
-				assertThat(immediatelyDestroy.iterator().next().wasDestroyed()).isTrue();
-				assertThat(bean2b.wasDestroyed()).isFalse();
+				assertTrue(immediatelyDestroy.iterator().next().wasDestroyed());
+				assertFalse(bean2b.wasDestroyed());
 
 				return null;
 			});
 
-			assertThat(finallyDestroy.iterator().next().wasDestroyed()).isTrue();
+			assertTrue(finallyDestroy.iterator().next().wasDestroyed());
 		}
 	}
 

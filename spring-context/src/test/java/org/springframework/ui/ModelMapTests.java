@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,15 +27,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.beans.testfixture.beans.TestBean;
+import org.springframework.tests.sample.beans.TestBean;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * @author Rick Evans
@@ -46,7 +45,7 @@ public class ModelMapTests {
 
 	@Test
 	public void testNoArgCtorYieldsEmptyModel() throws Exception {
-		assertThat(new ModelMap().size()).isEqualTo(0);
+		assertEquals(0, new ModelMap().size());
 	}
 
 	/*
@@ -56,8 +55,8 @@ public class ModelMapTests {
 	public void testAddNullObjectWithExplicitKey() throws Exception {
 		ModelMap model = new ModelMap();
 		model.addAttribute("foo", null);
-		assertThat(model.containsKey("foo")).isTrue();
-		assertThat(model.get("foo")).isNull();
+		assertTrue(model.containsKey("foo"));
+		assertNull(model.get("foo"));
 	}
 
 	/*
@@ -66,102 +65,99 @@ public class ModelMapTests {
 	@Test
 	public void testAddNullObjectViaCtorWithExplicitKey() throws Exception {
 		ModelMap model = new ModelMap("foo", null);
-		assertThat(model.containsKey("foo")).isTrue();
-		assertThat(model.get("foo")).isNull();
+		assertTrue(model.containsKey("foo"));
+		assertNull(model.get("foo"));
 	}
 
 	@Test
 	public void testNamedObjectCtor() throws Exception {
 		ModelMap model = new ModelMap("foo", "bing");
-		assertThat(model.size()).isEqualTo(1);
+		assertEquals(1, model.size());
 		String bing = (String) model.get("foo");
-		assertThat(bing).isNotNull();
-		assertThat(bing).isEqualTo("bing");
+		assertNotNull(bing);
+		assertEquals("bing", bing);
 	}
 
 	@Test
 	public void testUnnamedCtorScalar() throws Exception {
 		ModelMap model = new ModelMap("foo", "bing");
-		assertThat(model.size()).isEqualTo(1);
+		assertEquals(1, model.size());
 		String bing = (String) model.get("foo");
-		assertThat(bing).isNotNull();
-		assertThat(bing).isEqualTo("bing");
+		assertNotNull(bing);
+		assertEquals("bing", bing);
 	}
 
 	@Test
 	public void testOneArgCtorWithScalar() throws Exception {
 		ModelMap model = new ModelMap("bing");
-		assertThat(model.size()).isEqualTo(1);
+		assertEquals(1, model.size());
 		String string = (String) model.get("string");
-		assertThat(string).isNotNull();
-		assertThat(string).isEqualTo("bing");
+		assertNotNull(string);
+		assertEquals("bing", string);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testOneArgCtorWithNull() {
 		//Null model arguments added without a name being explicitly supplied are not allowed
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new ModelMap(null));
+		new ModelMap(null);
 	}
 
 	@Test
 	public void testOneArgCtorWithCollection() throws Exception {
 		ModelMap model = new ModelMap(new String[]{"foo", "boing"});
-		assertThat(model.size()).isEqualTo(1);
+		assertEquals(1, model.size());
 		String[] strings = (String[]) model.get("stringList");
-		assertThat(strings).isNotNull();
-		assertThat(strings.length).isEqualTo(2);
-		assertThat(strings[0]).isEqualTo("foo");
-		assertThat(strings[1]).isEqualTo("boing");
+		assertNotNull(strings);
+		assertEquals(2, strings.length);
+		assertEquals("foo", strings[0]);
+		assertEquals("boing", strings[1]);
 	}
 
 	@Test
 	public void testOneArgCtorWithEmptyCollection() throws Exception {
 		ModelMap model = new ModelMap(new HashSet<>());
 		// must not add if collection is empty...
-		assertThat(model.size()).isEqualTo(0);
+		assertEquals(0, model.size());
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testAddObjectWithNull() throws Exception {
 		// Null model arguments added without a name being explicitly supplied are not allowed
 		ModelMap model = new ModelMap();
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				model.addAttribute(null));
+		model.addAttribute(null);
 	}
 
 	@Test
 	public void testAddObjectWithEmptyArray() throws Exception {
 		ModelMap model = new ModelMap(new int[]{});
-		assertThat(model.size()).isEqualTo(1);
+		assertEquals(1, model.size());
 		int[] ints = (int[]) model.get("intList");
-		assertThat(ints).isNotNull();
-		assertThat(ints.length).isEqualTo(0);
+		assertNotNull(ints);
+		assertEquals(0, ints.length);
 	}
 
 	@Test
 	public void testAddAllObjectsWithNullMap() throws Exception {
 		ModelMap model = new ModelMap();
 		model.addAllAttributes((Map<String, ?>) null);
-		assertThat(model.size()).isEqualTo(0);
+		assertEquals(0, model.size());
 	}
 
 	@Test
 	public void testAddAllObjectsWithNullCollection() throws Exception {
 		ModelMap model = new ModelMap();
 		model.addAllAttributes((Collection<Object>) null);
-		assertThat(model.size()).isEqualTo(0);
+		assertEquals(0, model.size());
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testAddAllObjectsWithSparseArrayList() throws Exception {
 		// Null model arguments added without a name being explicitly supplied are not allowed
 		ModelMap model = new ModelMap();
 		ArrayList<String> list = new ArrayList<>();
 		list.add("bing");
 		list.add(null);
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				model.addAllAttributes(list));
+		model.addAllAttributes(list);
 	}
 
 	@Test
@@ -171,9 +167,9 @@ public class ModelMapTests {
 		map.put("two", "two-value");
 		ModelMap model = new ModelMap();
 		model.addAttribute(map);
-		assertThat(model.size()).isEqualTo(1);
+		assertEquals(1, model.size());
 		String key = StringUtils.uncapitalize(ClassUtils.getShortName(map.getClass()));
-		assertThat(model.containsKey(key)).isTrue();
+		assertTrue(model.containsKey(key));
 	}
 
 	@Test
@@ -181,9 +177,9 @@ public class ModelMapTests {
 		ModelMap model = new ModelMap();
 		model.addAttribute("foo");
 		model.addAttribute("bar");
-		assertThat(model.size()).isEqualTo(1);
+		assertEquals(1, model.size());
 		String bar = (String) model.get("string");
-		assertThat(bar).isEqualTo("bar");
+		assertEquals("bar", bar);
 	}
 
 	@Test
@@ -194,7 +190,7 @@ public class ModelMapTests {
 		beans.add(new TestBean("three"));
 		ModelMap model = new ModelMap();
 		model.addAllAttributes(beans);
-		assertThat(model.size()).isEqualTo(1);
+		assertEquals(1, model.size());
 	}
 
 	@Test
@@ -206,8 +202,8 @@ public class ModelMapTests {
 		ModelMap model = new ModelMap();
 		model.put("one", new TestBean("oneOld"));
 		model.mergeAttributes(beans);
-		assertThat(model.size()).isEqualTo(3);
-		assertThat(((TestBean) model.get("one")).getName()).isEqualTo("oneOld");
+		assertEquals(3, model.size());
+		assertEquals("oneOld", ((TestBean) model.get("one")).getName());
 	}
 
 	@Test
@@ -215,7 +211,7 @@ public class ModelMapTests {
 		ModelMap map = new ModelMap();
 		SomeInnerClass inner = new SomeInnerClass();
 		map.addAttribute(inner);
-		assertThat(map.get("someInnerClass")).isSameAs(inner);
+		assertSame(inner, map.get("someInnerClass"));
 	}
 
 	@Test
@@ -223,7 +219,7 @@ public class ModelMapTests {
 		ModelMap map = new ModelMap();
 		UKInnerClass inner = new UKInnerClass();
 		map.addAttribute(inner);
-		assertThat(map.get("UKInnerClass")).isSameAs(inner);
+		assertSame(inner, map.get("UKInnerClass"));
 	}
 
 	@Test
@@ -234,8 +230,8 @@ public class ModelMapTests {
 		factory.setTarget(val);
 		factory.setProxyTargetClass(true);
 		map.addAttribute(factory.getProxy());
-		assertThat(map.containsKey("someInnerClass")).isTrue();
-		assertThat(val).isEqualTo(map.get("someInnerClass"));
+		assertTrue(map.containsKey("someInnerClass"));
+		assertEquals(val, map.get("someInnerClass"));
 	}
 
 	@Test
@@ -247,7 +243,7 @@ public class ModelMapTests {
 		factory.addInterface(Map.class);
 		Object proxy = factory.getProxy();
 		map.addAttribute(proxy);
-		assertThat(map.get("map")).isSameAs(proxy);
+		assertSame(proxy, map.get("map"));
 	}
 
 	@Test
@@ -262,7 +258,7 @@ public class ModelMapTests {
 		factory.addInterface(Map.class);
 		Object proxy = factory.getProxy();
 		map.addAttribute(proxy);
-		assertThat(map.get("map")).isSameAs(proxy);
+		assertSame(proxy, map.get("map"));
 	}
 
 	@Test
@@ -272,7 +268,7 @@ public class ModelMapTests {
 		ProxyFactory factory = new ProxyFactory(target);
 		Object proxy = factory.getProxy();
 		map.addAttribute(proxy);
-		assertThat(map.get("map")).isSameAs(proxy);
+		assertSame(proxy, map.get("map"));
 	}
 
 	@Test
@@ -288,7 +284,7 @@ public class ModelMapTests {
 					}
 				});
 		map.addAttribute(proxy);
-		assertThat(map.get("map")).isSameAs(proxy);
+		assertSame(proxy, map.get("map"));
 	}
 
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
 package org.springframework.jms.core;
 
 import java.util.Map;
-
 import javax.jms.Destination;
 
 import org.springframework.lang.Nullable;
@@ -66,7 +65,7 @@ public interface JmsMessageOperations extends MessageSendingOperations<Destinati
 	 * the given destination.
 	 * @param destinationName the name of the target destination
 	 * @param payload the Object to use as payload
-	 * @param headers the headers for the message to send
+	 * @param headers headers for the message to send
 	 */
 	void convertAndSend(String destinationName, Object payload, Map<String, Object> headers)
 			throws MessagingException;
@@ -90,7 +89,7 @@ public interface JmsMessageOperations extends MessageSendingOperations<Destinati
 	 * and send the resulting message to the given destination.
 	 * @param destinationName the name of the target destination
 	 * @param payload the Object to use as payload
-	 * @param headers the headers for the message to send
+	 * @param headers headers for the message to send
 	 * @param postProcessor the post processor to apply to the message
 	 */
 	void convertAndSend(String destinationName, Object payload, @Nullable Map<String, Object> headers,
@@ -147,7 +146,7 @@ public interface JmsMessageOperations extends MessageSendingOperations<Destinati
 	 * receive the reply and convert its body of the specified target class.
 	 * @param destinationName the name of the target destination
 	 * @param request payload for the request message to send
-	 * @param headers the headers for the request message to send
+	 * @param headers headers for the request message to send
 	 * @param targetClass the target type to convert the payload of the reply to
 	 * @return the payload of the reply message, possibly {@code null} if the message
 	 * could not be received, for example due to a timeout

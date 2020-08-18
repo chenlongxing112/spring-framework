@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,8 @@ package org.springframework.web.servlet.mvc.condition;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.lang.Nullable;
@@ -48,22 +46,20 @@ public final class ParamsRequestCondition extends AbstractRequestCondition<Param
 	 * 	if 0, the condition will match to every request.
 	 */
 	public ParamsRequestCondition(String... params) {
-		this.expressions = parseExpressions(params);
+		this(parseExpressions(params));
 	}
 
-	private static Set<ParamExpression> parseExpressions(String... params) {
-		if (ObjectUtils.isEmpty(params)) {
-			return Collections.emptySet();
-		}
-		Set<ParamExpression> expressions = new LinkedHashSet<>(params.length);
+	private ParamsRequestCondition(Collection<ParamExpression> conditions) {
+		this.expressions = Collections.unmodifiableSet(new LinkedHashSet<>(conditions));
+	}
+
+
+	private static Collection<ParamExpression> parseExpressions(String... params) {
+		Set<ParamExpression> expressions = new LinkedHashSet<>();
 		for (String param : params) {
 			expressions.add(new ParamExpression(param));
 		}
 		return expressions;
-	}
-
-	private ParamsRequestCondition(Set<ParamExpression> conditions) {
-		this.expressions = conditions;
 	}
 
 
@@ -90,15 +86,6 @@ public final class ParamsRequestCondition extends AbstractRequestCondition<Param
 	 */
 	@Override
 	public ParamsRequestCondition combine(ParamsRequestCondition other) {
-		if (isEmpty() && other.isEmpty()) {
-			return this;
-		}
-		else if (other.isEmpty()) {
-			return this;
-		}
-		else if (isEmpty()) {
-			return other;
-		}
 		Set<ParamExpression> set = new LinkedHashSet<>(this.expressions);
 		set.addAll(other.expressions);
 		return new ParamsRequestCondition(set);
@@ -140,13 +127,7 @@ public final class ParamsRequestCondition extends AbstractRequestCondition<Param
 	}
 
 	private long getValueMatchCount(Set<ParamExpression> expressions) {
-		long count = 0;
-		for (ParamExpression e : expressions) {
-			if (e.getValue() != null && !e.isNegated()) {
-				count++;
-			}
-		}
-		return count;
+		return expressions.stream().filter(e -> e.getValue() != null && !e.isNegated()).count();
 	}
 
 
@@ -155,15 +136,8 @@ public final class ParamsRequestCondition extends AbstractRequestCondition<Param
 	 */
 	static class ParamExpression extends AbstractNameValueExpression<String> {
 
-		private final Set<String> namesToMatch = new HashSet<>(WebUtils.SUBMIT_IMAGE_SUFFIXES.length + 1);
-
-
 		ParamExpression(String expression) {
 			super(expression);
-			this.namesToMatch.add(getName());
-			for (String suffix : WebUtils.SUBMIT_IMAGE_SUFFIXES) {
-				this.namesToMatch.add(getName() + suffix);
-			}
 		}
 
 		@Override
@@ -178,12 +152,8 @@ public final class ParamsRequestCondition extends AbstractRequestCondition<Param
 
 		@Override
 		protected boolean matchName(HttpServletRequest request) {
-			for (String current : this.namesToMatch) {
-				if (request.getParameterMap().get(current) != null) {
-					return true;
-				}
-			}
-			return request.getParameterMap().containsKey(this.name);
+			return (WebUtils.hasSubmitParameter(request, this.name) ||
+					request.getParameterMap().containsKey(this.name));
 		}
 
 		@Override

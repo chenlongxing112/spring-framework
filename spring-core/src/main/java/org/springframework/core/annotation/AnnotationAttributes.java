@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -111,22 +111,6 @@ public class AnnotationAttributes extends LinkedHashMap<String, Object> {
 		Assert.notNull(annotationType, "'annotationType' must not be null");
 		this.annotationType = annotationType;
 		this.displayName = annotationType.getName();
-	}
-
-	/**
-	 * Create a possibly already validated new, empty
-	 * {@link AnnotationAttributes} instance for the specified
-	 * {@code annotationType}.
-	 * @param annotationType the type of annotation represented by this
-	 * {@code AnnotationAttributes} instance; never {@code null}
-	 * @param validated if the attributes are considered already validated
-	 * @since 5.2
-	 */
-	AnnotationAttributes(Class<? extends Annotation> annotationType, boolean validated) {
-		Assert.notNull(annotationType, "'annotationType' must not be null");
-		this.annotationType = annotationType;
-		this.displayName = annotationType.getName();
-		this.validated = validated;
 	}
 
 	/**
@@ -369,10 +353,10 @@ public class AnnotationAttributes extends LinkedHashMap<String, Object> {
 	}
 
 	private void assertNotException(String attributeName, Object attributeValue) {
-		if (attributeValue instanceof Throwable) {
+		if (attributeValue instanceof Exception) {
 			throw new IllegalArgumentException(String.format(
 					"Attribute '%s' for annotation [%s] was not resolvable due to exception [%s]",
-					attributeName, this.displayName, attributeValue), (Throwable) attributeValue);
+					attributeName, this.displayName, attributeValue), (Exception) attributeValue);
 		}
 	}
 
@@ -383,6 +367,26 @@ public class AnnotationAttributes extends LinkedHashMap<String, Object> {
 					attributeName, attributeValue.getClass().getSimpleName(), expectedType.getSimpleName(),
 					this.displayName));
 		}
+	}
+
+	/**
+	 * Store the supplied {@code value} in this map under the specified
+	 * {@code key}, unless a value is already stored under the key.
+	 * @param key the key under which to store the value
+	 * @param value the value to store
+	 * @return the current value stored in this map, or {@code null} if no
+	 * value was previously stored in this map
+	 * @see #get
+	 * @see #put
+	 * @since 4.2
+	 */
+	@Override
+	public Object putIfAbsent(String key, Object value) {
+		Object obj = get(key);
+		if (obj == null) {
+			obj = put(key, value);
+		}
+		return obj;
 	}
 
 	@Override

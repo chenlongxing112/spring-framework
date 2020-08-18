@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,23 +17,17 @@
 package org.springframework.ejb.access;
 
 import java.lang.reflect.Proxy;
-
 import javax.ejb.CreateException;
 import javax.ejb.EJBLocalHome;
 import javax.ejb.EJBLocalObject;
 import javax.naming.NamingException;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.jndi.JndiTemplate;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Rod Johnson
@@ -58,7 +52,7 @@ public class LocalStatelessSessionProxyFactoryBeanTests {
 			@Override
 			public Object lookup(String name) throws NamingException {
 				// parameterize
-				assertThat(name.equals("java:comp/env/" + jndiName)).isTrue();
+				assertTrue(name.equals("java:comp/env/" + jndiName));
 				return home;
 			}
 		};
@@ -73,8 +67,8 @@ public class LocalStatelessSessionProxyFactoryBeanTests {
 		fb.afterPropertiesSet();
 
 		MyBusinessMethods mbm = (MyBusinessMethods) fb.getObject();
-		assertThat(Proxy.isProxyClass(mbm.getClass())).isTrue();
-		assertThat(mbm.getValue() == value).isTrue();
+		assertTrue(Proxy.isProxyClass(mbm.getClass()));
+		assertTrue(mbm.getValue() == value);
 		verify(myEjb).remove();
 	}
 
@@ -90,7 +84,7 @@ public class LocalStatelessSessionProxyFactoryBeanTests {
 			@Override
 			public Object lookup(String name) throws NamingException {
 				// parameterize
-				assertThat(name.equals("java:comp/env/" + jndiName)).isTrue();
+				assertTrue(name.equals("java:comp/env/" + jndiName));
 				return myEjb;
 			}
 		};
@@ -105,8 +99,8 @@ public class LocalStatelessSessionProxyFactoryBeanTests {
 		fb.afterPropertiesSet();
 
 		MyBusinessMethods mbm = (MyBusinessMethods) fb.getObject();
-		assertThat(Proxy.isProxyClass(mbm.getClass())).isTrue();
-		assertThat(mbm.getValue() == value).isTrue();
+		assertTrue(Proxy.isProxyClass(mbm.getClass()));
+		assertTrue(mbm.getValue() == value);
 	}
 
 	@Test
@@ -121,7 +115,7 @@ public class LocalStatelessSessionProxyFactoryBeanTests {
 			@Override
 			public Object lookup(String name) throws NamingException {
 				// parameterize
-				assertThat(name.equals(jndiName)).isTrue();
+				assertTrue(name.equals(jndiName));
 				return home;
 			}
 		};
@@ -130,18 +124,22 @@ public class LocalStatelessSessionProxyFactoryBeanTests {
 		fb.setJndiName(jndiName);
 		fb.setResourceRef(false);	// no java:comp/env prefix
 		fb.setBusinessInterface(MyBusinessMethods.class);
-		assertThat(MyBusinessMethods.class).isEqualTo(fb.getBusinessInterface());
+		assertEquals(fb.getBusinessInterface(), MyBusinessMethods.class);
 		fb.setJndiTemplate(jt);
 
 		// Need lifecycle methods
 		fb.afterPropertiesSet();
 
 		MyBusinessMethods mbm = (MyBusinessMethods) fb.getObject();
-		assertThat(Proxy.isProxyClass(mbm.getClass())).isTrue();
+		assertTrue(Proxy.isProxyClass(mbm.getClass()));
 
-		assertThatExceptionOfType(EjbAccessException.class).isThrownBy(
-				mbm::getValue)
-			.withCause(cex);
+		try {
+			mbm.getValue();
+			fail("Should have failed to create EJB");
+		}
+		catch (EjbAccessException ex) {
+			assertSame(cex, ex.getCause());
+		}
 	}
 
 	@Test
@@ -156,7 +154,7 @@ public class LocalStatelessSessionProxyFactoryBeanTests {
 			@Override
 			public Object lookup(String name) throws NamingException {
 				// parameterize
-				assertThat(name.equals("java:comp/env/" + jndiName)).isTrue();
+				assertTrue(name.equals("java:comp/env/" + jndiName));
 				return home;
 			}
 		};
@@ -168,14 +166,19 @@ public class LocalStatelessSessionProxyFactoryBeanTests {
 		fb.setJndiTemplate(jt);
 
 		// Check it's a singleton
-		assertThat(fb.isSingleton()).isTrue();
+		assertTrue(fb.isSingleton());
 
-		assertThatIllegalArgumentException().isThrownBy(
-				fb::afterPropertiesSet)
-			.withMessageContaining("businessInterface");
+		try {
+			fb.afterPropertiesSet();
+			fail("Should have failed to create EJB");
+		}
+		catch (IllegalArgumentException ex) {
+			// TODO more appropriate exception?
+			assertTrue(ex.getMessage().indexOf("businessInterface") != 1);
+		}
 
 		// Expect no methods on home
-		verifyNoInteractions(home);
+		verifyZeroInteractions(home);
 	}
 
 

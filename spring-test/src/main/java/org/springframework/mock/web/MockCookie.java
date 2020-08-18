@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,23 +16,16 @@
 
 package org.springframework.mock.web;
 
-import java.time.DateTimeException;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-
 import javax.servlet.http.Cookie;
 
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
  * Extension of {@code Cookie} with extra attributes, as defined in
  * <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a>.
  *
  * @author Vedran Pavic
- * @author Juergen Hoeller
- * @author Sam Brannen
  * @since 5.1
  */
 public class MockCookie extends Cookie {
@@ -41,15 +34,12 @@ public class MockCookie extends Cookie {
 
 
 	@Nullable
-	private ZonedDateTime expires;
-
-	@Nullable
 	private String sameSite;
 
 
 	/**
-	 * Construct a new {@link MockCookie} with the supplied name and value.
-	 * @param name the name
+	 * Constructor with the cookie name and value.
+	 * @param name  the name
 	 * @param value the value
 	 * @see Cookie#Cookie(String, String)
 	 */
@@ -57,29 +47,12 @@ public class MockCookie extends Cookie {
 		super(name, value);
 	}
 
-	/**
-	 * Set the "Expires" attribute for this cookie.
-	 * @since 5.1.11
-	 */
-	public void setExpires(@Nullable ZonedDateTime expires) {
-		this.expires = expires;
-	}
 
 	/**
-	 * Get the "Expires" attribute for this cookie.
-	 * @since 5.1.11
-	 * @return the "Expires" attribute for this cookie, or {@code null} if not set
-	 */
-	@Nullable
-	public ZonedDateTime getExpires() {
-		return this.expires;
-	}
-
-	/**
-	 * Set the "SameSite" attribute for this cookie.
+	 * Add the "SameSite" attribute to the cookie.
 	 * <p>This limits the scope of the cookie such that it will only be attached
-	 * to same-site requests if the supplied value is {@code "Strict"} or cross-site
-	 * requests if the supplied value is {@code "Lax"}.
+	 * to same site requests if {@code "Strict"} or cross-site requests if
+	 * {@code "Lax"}.
 	 * @see <a href="https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis#section-4.1.2.7">RFC6265 bis</a>
 	 */
 	public void setSameSite(@Nullable String sameSite) {
@@ -87,8 +60,7 @@ public class MockCookie extends Cookie {
 	}
 
 	/**
-	 * Get the "SameSite" attribute for this cookie.
-	 * @return the "SameSite" attribute for this cookie, or {@code null} if not set
+	 * Return the "SameSite" attribute, or {@code null} if not set.
 	 */
 	@Nullable
 	public String getSameSite() {
@@ -97,7 +69,7 @@ public class MockCookie extends Cookie {
 
 
 	/**
-	 * Factory method that parses the value of the supplied "Set-Cookie" header.
+	 * Factory method that parses the value of a "Set-Cookie" header.
 	 * @param setCookieHeader the "Set-Cookie" value; never {@code null} or empty
 	 * @return the created cookie
 	 */
@@ -114,31 +86,22 @@ public class MockCookie extends Cookie {
 
 		MockCookie cookie = new MockCookie(name, value);
 		for (String attribute : attributes) {
-			if (StringUtils.startsWithIgnoreCase(attribute, "Domain")) {
+			if (attribute.startsWith("Domain")) {
 				cookie.setDomain(extractAttributeValue(attribute, setCookieHeader));
 			}
-			else if (StringUtils.startsWithIgnoreCase(attribute, "Max-Age")) {
+			else if (attribute.startsWith("Max-Age")) {
 				cookie.setMaxAge(Integer.parseInt(extractAttributeValue(attribute, setCookieHeader)));
 			}
-			else if (StringUtils.startsWithIgnoreCase(attribute, "Expires")) {
-				try {
-					cookie.setExpires(ZonedDateTime.parse(extractAttributeValue(attribute, setCookieHeader),
-							DateTimeFormatter.RFC_1123_DATE_TIME));
-				}
-				catch (DateTimeException ex) {
-					// ignore invalid date formats
-				}
-			}
-			else if (StringUtils.startsWithIgnoreCase(attribute, "Path")) {
+			else if (attribute.startsWith("Path")) {
 				cookie.setPath(extractAttributeValue(attribute, setCookieHeader));
 			}
-			else if (StringUtils.startsWithIgnoreCase(attribute, "Secure")) {
+			else if (attribute.startsWith("Secure")) {
 				cookie.setSecure(true);
 			}
-			else if (StringUtils.startsWithIgnoreCase(attribute, "HttpOnly")) {
+			else if (attribute.startsWith("HttpOnly")) {
 				cookie.setHttpOnly(true);
 			}
-			else if (StringUtils.startsWithIgnoreCase(attribute, "SameSite")) {
+			else if (attribute.startsWith("SameSite")) {
 				cookie.setSameSite(extractAttributeValue(attribute, setCookieHeader));
 			}
 		}

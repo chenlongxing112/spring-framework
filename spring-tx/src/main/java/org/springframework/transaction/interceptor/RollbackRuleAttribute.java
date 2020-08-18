@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.transaction.interceptor;
 
 import java.io.Serializable;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -54,7 +53,7 @@ public class RollbackRuleAttribute implements Serializable{
 	/**
 	 * Create a new instance of the {@code RollbackRuleAttribute} class.
 	 * <p>This is the preferred way to construct a rollback rule that matches
-	 * the supplied {@link Exception} class, its subclasses, and its nested classes.
+	 * the supplied {@link Exception} class (and subclasses).
 	 * @param clazz throwable class; must be {@link Throwable} or a subclass
 	 * of {@code Throwable}
 	 * @throws IllegalArgumentException if the supplied {@code clazz} is
@@ -125,7 +124,7 @@ public class RollbackRuleAttribute implements Serializable{
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}

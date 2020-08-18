@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,9 +20,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.lang.Nullable;
@@ -40,16 +38,11 @@ import org.springframework.util.StringUtils;
  */
 final class DefaultPathContainer implements PathContainer {
 
-	private static final MultiValueMap<String, String> EMPTY_PARAMS = new LinkedMultiValueMap<>();
+	private static final MultiValueMap<String, String> EMPTY_MAP = new LinkedMultiValueMap<>();
 
 	private static final PathContainer EMPTY_PATH = new DefaultPathContainer("", Collections.emptyList());
 
-	private static final Map<Character, DefaultSeparator> SEPARATORS = new HashMap<>(2);
-
-	static {
-		SEPARATORS.put('/', new DefaultSeparator('/', "%2F"));
-		SEPARATORS.put('.', new DefaultSeparator('.', "%2E"));
-	}
+	private static final PathContainer.Separator SEPARATOR = () -> "/";
 
 
 	private final String path;
@@ -79,10 +72,10 @@ final class DefaultPathContainer implements PathContainer {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof PathContainer)) {
+		if (other == null || getClass() != other.getClass()) {
 			return false;
 		}
-		return value().equals(((PathContainer) other).value());
+		return this.path.equals(((DefaultPathContainer) other).path);
 	}
 
 	@Override
@@ -96,19 +89,16 @@ final class DefaultPathContainer implements PathContainer {
 	}
 
 
-	static PathContainer createFromUrlPath(String path, Options options) {
-		if (path.isEmpty()) {
+	static PathContainer createFromUrlPath(String path) {
+		if (path.equals("")) {
 			return EMPTY_PATH;
 		}
-		char separator = options.separator();
-		DefaultSeparator separatorElement = SEPARATORS.get(separator);
-		if (separatorElement == null) {
-			throw new IllegalArgumentException("Unexpected separator: '" + separator + "'");
-		}
+		String separator = "/";
+		Separator separatorElement = separator.equals(SEPARATOR.value()) ? SEPARATOR : () -> separator;
 		List<Element> elements = new ArrayList<>();
 		int begin;
-		if (path.charAt(0) == separator) {
-			begin = 1;
+		if (path.length() > 0 && path.startsWith(separator)) {
+			begin = separator.length();
 			elements.add(separatorElement);
 		}
 		else {
@@ -117,26 +107,24 @@ final class DefaultPathContainer implements PathContainer {
 		while (begin < path.length()) {
 			int end = path.indexOf(separator, begin);
 			String segment = (end != -1 ? path.substring(begin, end) : path.substring(begin));
-			if (!segment.isEmpty()) {
-				elements.add(options.shouldDecodeAndParseSegments() ?
-						decodeAndParsePathSegment(segment) :
-						new DefaultPathSegment(segment, separatorElement));
+			if (!segment.equals("")) {
+				elements.add(parsePathSegment(segment));
 			}
 			if (end == -1) {
 				break;
 			}
 			elements.add(separatorElement);
-			begin = end + 1;
+			begin = end + separator.length();
 		}
 		return new DefaultPathContainer(path, elements);
 	}
 
-	private static PathSegment decodeAndParsePathSegment(String segment) {
+	private static PathSegment parsePathSegment(String segment) {
 		Charset charset = StandardCharsets.UTF_8;
 		int index = segment.indexOf(';');
 		if (index == -1) {
 			String valueToMatch = StringUtils.uriDecode(segment, charset);
-			return new DefaultPathSegment(segment, valueToMatch, EMPTY_PARAMS);
+			return new DefaultPathSegment(segment, valueToMatch, EMPTY_MAP);
 		}
 		else {
 			String valueToMatch = StringUtils.uriDecode(segment.substring(0, index), charset);
@@ -202,30 +190,6 @@ final class DefaultPathContainer implements PathContainer {
 	}
 
 
-	private static class DefaultSeparator implements Separator {
-
-		private final String separator;
-
-		private final String encodedSequence;
-
-
-		DefaultSeparator(char separator, String encodedSequence) {
-			this.separator = String.valueOf(separator);
-			this.encodedSequence = encodedSequence;
-		}
-
-
-		@Override
-		public String value() {
-			return this.separator;
-		}
-
-		public String encodedSequence() {
-			return this.encodedSequence;
-		}
-	}
-
-
 	private static class DefaultPathSegment implements PathSegment {
 
 		private final String value;
@@ -236,28 +200,13 @@ final class DefaultPathContainer implements PathContainer {
 
 		private final MultiValueMap<String, String> parameters;
 
-
-		/**
-		 * Constructor for decoded and parsed segments.
-		 */
-		DefaultPathSegment(String value, String valueToMatch, MultiValueMap<String, String> params) {
+		public DefaultPathSegment(String value, String valueToMatch, MultiValueMap<String, String> params) {
+			Assert.isTrue(!value.contains("/"), () -> "Invalid path segment value: " + value);
 			this.value = value;
 			this.valueToMatch = valueToMatch;
 			this.valueToMatchAsChars = valueToMatch.toCharArray();
 			this.parameters = CollectionUtils.unmodifiableMultiValueMap(params);
 		}
-
-		/**
-		 * Constructor for segments without decoding and parsing.
-		 */
-		DefaultPathSegment(String value, DefaultSeparator separator) {
-			this.value = value;
-			this.valueToMatch = value.contains(separator.encodedSequence()) ?
-					value.replaceAll(separator.encodedSequence(), separator.value()) : value;
-			this.valueToMatchAsChars = this.valueToMatch.toCharArray();
-			this.parameters = EMPTY_PARAMS;
-		}
-
 
 		@Override
 		public String value() {
@@ -284,10 +233,10 @@ final class DefaultPathContainer implements PathContainer {
 			if (this == other) {
 				return true;
 			}
-			if (!(other instanceof PathSegment)) {
+			if (other == null || getClass() != other.getClass()) {
 				return false;
 			}
-			return value().equals(((PathSegment) other).value());
+			return this.value.equals(((DefaultPathSegment) other).value);
 		}
 
 		@Override
@@ -295,7 +244,6 @@ final class DefaultPathContainer implements PathContainer {
 			return this.value.hashCode();
 		}
 
-		@Override
 		public String toString() {
 			return "[value='" + this.value + "']";
 		}

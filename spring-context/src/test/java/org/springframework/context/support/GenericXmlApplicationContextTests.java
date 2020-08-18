@@ -1,28 +1,12 @@
-/*
- * Copyright 2002-2019 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.springframework.context.support;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.ClassUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link GenericXmlApplicationContext}.
@@ -43,7 +27,7 @@ public class GenericXmlApplicationContextTests {
 	@Test
 	public void classRelativeResourceLoading_ctor() {
 		ApplicationContext ctx = new GenericXmlApplicationContext(RELATIVE_CLASS, RESOURCE_NAME);
-		assertThat(ctx.containsBean(TEST_BEAN_NAME)).isTrue();
+		assertThat(ctx.containsBean(TEST_BEAN_NAME), is(true));
 	}
 
 	@Test
@@ -51,13 +35,13 @@ public class GenericXmlApplicationContextTests {
 		GenericXmlApplicationContext ctx = new GenericXmlApplicationContext();
 		ctx.load(RELATIVE_CLASS, RESOURCE_NAME);
 		ctx.refresh();
-		assertThat(ctx.containsBean(TEST_BEAN_NAME)).isTrue();
+		assertThat(ctx.containsBean(TEST_BEAN_NAME), is(true));
 	}
 
 	@Test
 	public void fullyQualifiedResourceLoading_ctor() {
 		ApplicationContext ctx = new GenericXmlApplicationContext(FQ_RESOURCE_PATH);
-		assertThat(ctx.containsBean(TEST_BEAN_NAME)).isTrue();
+		assertThat(ctx.containsBean(TEST_BEAN_NAME), is(true));
 	}
 
 	@Test
@@ -65,6 +49,6 @@ public class GenericXmlApplicationContextTests {
 		GenericXmlApplicationContext ctx = new GenericXmlApplicationContext();
 		ctx.load(FQ_RESOURCE_PATH);
 		ctx.refresh();
-		assertThat(ctx.containsBean(TEST_BEAN_NAME)).isTrue();
+		assertThat(ctx.containsBean(TEST_BEAN_NAME), is(true));
 	}
 }

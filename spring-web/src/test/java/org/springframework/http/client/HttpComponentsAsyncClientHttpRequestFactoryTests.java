@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,18 +22,18 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.http.HttpMethod;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Arjen Poutsma
  * @author Stephane Nicoll
  */
 @SuppressWarnings("deprecation")
-public class HttpComponentsAsyncClientHttpRequestFactoryTests extends AbstractAsyncHttpRequestFactoryTests {
+public class HttpComponentsAsyncClientHttpRequestFactoryTests extends AbstractAsyncHttpRequestFactoryTestCase {
 
 	@Override
 	protected AsyncClientHttpRequestFactory createRequestFactory() {
@@ -57,7 +57,8 @@ public class HttpComponentsAsyncClientHttpRequestFactoryTests extends AbstractAs
 		HttpComponentsAsyncClientHttpRequest request = (HttpComponentsAsyncClientHttpRequest)
 				factory.createAsyncRequest(uri, HttpMethod.GET);
 
-		assertThat(request.getHttpContext().getAttribute(HttpClientContext.REQUEST_CONFIG)).as("No custom config should be set with a custom HttpAsyncClient").isNull();
+		assertNull("No custom config should be set with a custom HttpAsyncClient",
+				request.getHttpContext().getAttribute(HttpClientContext.REQUEST_CONFIG));
 	}
 
 	@Test
@@ -71,18 +72,19 @@ public class HttpComponentsAsyncClientHttpRequestFactoryTests extends AbstractAs
 		HttpComponentsAsyncClientHttpRequest request = (HttpComponentsAsyncClientHttpRequest)
 				factory.createAsyncRequest(uri, HttpMethod.GET);
 
-		assertThat(request.getHttpContext().getAttribute(HttpClientContext.REQUEST_CONFIG)).as("No custom config should be set with a custom HttpClient").isNull();
+		assertNull("No custom config should be set with a custom HttpClient",
+				request.getHttpContext().getAttribute(HttpClientContext.REQUEST_CONFIG));
 
 		factory.setConnectionRequestTimeout(4567);
 		HttpComponentsAsyncClientHttpRequest request2 = (HttpComponentsAsyncClientHttpRequest)
 				factory.createAsyncRequest(uri, HttpMethod.GET);
 		Object requestConfigAttribute = request2.getHttpContext().getAttribute(HttpClientContext.REQUEST_CONFIG);
-		assertThat(requestConfigAttribute).isNotNull();
+		assertNotNull(requestConfigAttribute);
 		RequestConfig requestConfig = (RequestConfig) requestConfigAttribute;
 
-		assertThat(requestConfig.getConnectionRequestTimeout()).isEqualTo(4567);
+		assertEquals(4567, requestConfig.getConnectionRequestTimeout());
 		// No way to access the request config of the HTTP client so no way to "merge" our customizations
-		assertThat(requestConfig.getConnectTimeout()).isEqualTo(-1);
+		assertEquals(-1, requestConfig.getConnectTimeout());
 	}
 
 }

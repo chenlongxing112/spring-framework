@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,21 +23,23 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.async.AsyncWebRequest;
 import org.springframework.web.context.request.async.StandardServletAsyncWebRequest;
 import org.springframework.web.context.request.async.WebAsyncUtils;
 import org.springframework.web.method.support.ModelAndViewContainer;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -59,7 +61,7 @@ public class StreamingResponseBodyReturnValueHandlerTests {
 	private MockHttpServletResponse response;
 
 
-	@BeforeEach
+	@Before
 	public void setup() throws Exception {
 		this.handler = new StreamingResponseBodyReturnValueHandler();
 		this.mavContainer = new ModelAndViewContainer();
@@ -76,10 +78,10 @@ public class StreamingResponseBodyReturnValueHandlerTests {
 
 	@Test
 	public void supportsReturnType() throws Exception {
-		assertThat(this.handler.supportsReturnType(returnType(TestController.class, "handle"))).isTrue();
-		assertThat(this.handler.supportsReturnType(returnType(TestController.class, "handleResponseEntity"))).isTrue();
-		assertThat(this.handler.supportsReturnType(returnType(TestController.class, "handleResponseEntityString"))).isFalse();
-		assertThat(this.handler.supportsReturnType(returnType(TestController.class, "handleResponseEntityParameterized"))).isFalse();
+		assertTrue(this.handler.supportsReturnType(returnType(TestController.class, "handle")));
+		assertTrue(this.handler.supportsReturnType(returnType(TestController.class, "handleResponseEntity")));
+		assertFalse(this.handler.supportsReturnType(returnType(TestController.class, "handleResponseEntityString")));
+		assertFalse(this.handler.supportsReturnType(returnType(TestController.class, "handleResponseEntityParameterized")));
 	}
 
 	@Test
@@ -93,9 +95,9 @@ public class StreamingResponseBodyReturnValueHandlerTests {
 		};
 		this.handler.handleReturnValue(streamingBody, returnType, this.mavContainer, this.webRequest);
 
-		assertThat(this.request.isAsyncStarted()).isTrue();
-		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-		assertThat(this.response.getContentAsString()).isEqualTo("foo");
+		assertTrue(this.request.isAsyncStarted());
+		assertTrue(latch.await(5, TimeUnit.SECONDS));
+		assertEquals("foo", this.response.getContentAsString());
 	}
 
 
@@ -111,12 +113,12 @@ public class StreamingResponseBodyReturnValueHandlerTests {
 				});
 		this.handler.handleReturnValue(emitter, returnType, this.mavContainer, this.webRequest);
 
-		assertThat(this.request.isAsyncStarted()).isTrue();
-		assertThat(this.response.getStatus()).isEqualTo(200);
-		assertThat(this.response.getHeader("foo")).isEqualTo("bar");
+		assertTrue(this.request.isAsyncStarted());
+		assertEquals(200, this.response.getStatus());
+		assertEquals("bar", this.response.getHeader("foo"));
 
-		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-		assertThat(this.response.getContentAsString()).isEqualTo("foo");
+		assertTrue(latch.await(5, TimeUnit.SECONDS));
+		assertEquals("foo", this.response.getContentAsString());
 
 	}
 
@@ -126,8 +128,8 @@ public class StreamingResponseBodyReturnValueHandlerTests {
 		ResponseEntity<?> emitter = ResponseEntity.noContent().build();
 		this.handler.handleReturnValue(emitter, returnType, this.mavContainer, this.webRequest);
 
-		assertThat(this.request.isAsyncStarted()).isFalse();
-		assertThat(this.response.getStatus()).isEqualTo(204);
+		assertFalse(this.request.isAsyncStarted());
+		assertEquals(204, this.response.getStatus());
 	}
 
 	@Test
@@ -136,7 +138,7 @@ public class StreamingResponseBodyReturnValueHandlerTests {
 		MethodParameter returnType = returnType(TestController.class, "handleResponseEntity");
 		this.handler.handleReturnValue(emitter, returnType, this.mavContainer, this.webRequest);
 
-		assertThat(this.response.getHeaders("foo")).isEqualTo(Collections.singletonList("bar"));
+		assertEquals(Collections.singletonList("bar"), this.response.getHeaders("foo"));
 	}
 
 	private MethodParameter returnType(Class<?> clazz, String methodName) throws NoSuchMethodException {

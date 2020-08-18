@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,8 +41,8 @@ import org.springframework.util.ObjectUtils;
 
 /**
  * Decorator for a standard {@link BeanInfo} object, e.g. as created by
- * {@link Introspector#getBeanInfo(Class)}, designed to discover and register
- * static and/or non-void returning setter methods. For example:
+ * {@link Introspector#getBeanInfo(Class)}, designed to discover and register static
+ * and/or non-void returning setter methods. For example:
  *
  * <pre class="code">
  * public class Bean {
@@ -67,7 +67,7 @@ import org.springframework.util.ObjectUtils;
  * used within Spring {@code <beans>} XML. {@link #getPropertyDescriptors()} returns all
  * existing property descriptors from the wrapped {@code BeanInfo} as well any added for
  * non-void returning setters. Both standard ("non-indexed") and
- * <a href="https://docs.oracle.com/javase/tutorial/javabeans/writing/properties.html">
+ * <a href="http://docs.oracle.com/javase/tutorial/javabeans/writing/properties.html">
  * indexed properties</a> are fully supported.
  *
  * @author Chris Beams
@@ -138,17 +138,18 @@ class ExtendedBeanInfo implements BeanInfo {
 		}
 		// Sort non-void returning write methods to guard against the ill effects of
 		// non-deterministic sorting of methods returned from Class#getDeclaredMethods
-		// under JDK 7. See https://bugs.java.com/view_bug.do?bug_id=7023180
+		// under JDK 7. See http://bugs.sun.com/view_bug.do?bug_id=7023180
 		matches.sort((m1, m2) -> m2.toString().compareTo(m1.toString()));
 		return matches;
 	}
 
 	public static boolean isCandidateWriteMethod(Method method) {
 		String methodName = method.getName();
-		int nParams = method.getParameterCount();
+		Class<?>[] parameterTypes = method.getParameterTypes();
+		int nParams = parameterTypes.length;
 		return (methodName.length() > 3 && methodName.startsWith("set") && Modifier.isPublic(method.getModifiers()) &&
 				(!void.class.isAssignableFrom(method.getReturnType()) || Modifier.isStatic(method.getModifiers())) &&
-				(nParams == 1 || (nParams == 2 && int.class == method.getParameterTypes()[0])));
+				(nParams == 1 || (nParams == 2 && int.class == parameterTypes[0])));
 	}
 
 	private void handleCandidateWriteMethod(Method method) throws IntrospectionException {
@@ -208,7 +209,7 @@ class ExtendedBeanInfo implements BeanInfo {
 	}
 
 	private String propertyNameFor(Method method) {
-		return Introspector.decapitalize(method.getName().substring(3));
+		return Introspector.decapitalize(method.getName().substring(3, method.getName().length()));
 	}
 
 
@@ -338,7 +339,7 @@ class ExtendedBeanInfo implements BeanInfo {
 		}
 
 		@Override
-		public boolean equals(@Nullable Object other) {
+		public boolean equals(Object other) {
 			return (this == other || (other instanceof PropertyDescriptor &&
 					PropertyDescriptorUtils.equals(this, (PropertyDescriptor) other)));
 		}
@@ -487,10 +488,10 @@ class ExtendedBeanInfo implements BeanInfo {
 		}
 
 		/*
-		 * See java.beans.IndexedPropertyDescriptor#equals
+		 * See java.beans.IndexedPropertyDescriptor#equals(java.lang.Object)
 		 */
 		@Override
-		public boolean equals(@Nullable Object other) {
+		public boolean equals(Object other) {
 			if (this == other) {
 				return true;
 			}
@@ -534,13 +535,11 @@ class ExtendedBeanInfo implements BeanInfo {
 		public int compare(PropertyDescriptor desc1, PropertyDescriptor desc2) {
 			String left = desc1.getName();
 			String right = desc2.getName();
-			byte[] leftBytes = left.getBytes();
-			byte[] rightBytes = right.getBytes();
 			for (int i = 0; i < left.length(); i++) {
 				if (right.length() == i) {
 					return 1;
 				}
-				int result = leftBytes[i] - rightBytes[i];
+				int result = left.getBytes()[i] - right.getBytes()[i];
 				if (result != 0) {
 					return result;
 				}

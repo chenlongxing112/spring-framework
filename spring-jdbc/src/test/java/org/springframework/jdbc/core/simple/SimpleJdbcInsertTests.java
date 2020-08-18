@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,19 +20,17 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.util.HashMap;
-
 import javax.sql.DataSource;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.BDDMockito.*;
 
 /**
  * Mock object based tests for SimpleJdbcInsert.
@@ -47,8 +45,11 @@ public class SimpleJdbcInsertTests {
 
 	private DataSource dataSource;
 
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
 
-	@BeforeEach
+
+	@Before
 	public void setUp() throws Exception {
 		connection = mock(Connection.class);
 		databaseMetaData = mock(DatabaseMetaData.class);
@@ -57,7 +58,7 @@ public class SimpleJdbcInsertTests {
 		given(dataSource.getConnection()).willReturn(connection);
 	}
 
-	@AfterEach
+	@After
 	public void verifyClosed() throws Exception {
 		verify(connection).close();
 	}
@@ -76,9 +77,13 @@ public class SimpleJdbcInsertTests {
 
 		SimpleJdbcInsert insert = new SimpleJdbcInsert(dataSource).withTableName("x");
 		// Shouldn't succeed in inserting into table which doesn't exist
-		assertThatExceptionOfType(InvalidDataAccessApiUsageException.class).isThrownBy(() ->
-				insert.execute(new HashMap<>()));
-		verify(resultSet).close();
+		thrown.expect(InvalidDataAccessApiUsageException.class);
+		try {
+			insert.execute(new HashMap<>());
+		}
+		finally {
+			verify(resultSet).close();
+		}
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -105,17 +105,16 @@ class InternalPathPatternParser {
 
 		while (this.pos < this.pathPatternLength) {
 			char ch = this.pathPatternData[this.pos];
-			char separator = this.parser.getPathOptions().separator();
-			if (ch == separator) {
+			if (ch == this.parser.getSeparator()) {
 				if (this.pathElementStart != -1) {
 					pushPathElement(createPathElement());
 				}
 				if (peekDoubleWildcard()) {
-					pushPathElement(new WildcardTheRestPathElement(this.pos, separator));
+					pushPathElement(new WildcardTheRestPathElement(this.pos, this.parser.getSeparator()));
 					this.pos += 2;
 				}
 				else {
-					pushPathElement(new SeparatorPathElement(this.pos, separator));
+					pushPathElement(new SeparatorPathElement(this.pos, this.parser.getSeparator()));
 				}
 			}
 			else {
@@ -173,7 +172,7 @@ class InternalPathPatternParser {
 
 					}
 					else if ((this.pos > (this.variableCaptureStart + 1 + (this.isCaptureTheRestVariable ? 1 : 0)) &&
-							!Character.isJavaIdentifierPart(ch) && ch != '-')) {
+							!Character.isJavaIdentifierPart(ch))) {
 						throw new PatternParseException(this.pos, this.pathPatternData,
 								PatternMessage.ILLEGAL_CHARACTER_IN_CAPTURE_DESCRIPTOR,
 								Character.toString(ch));
@@ -222,7 +221,7 @@ class InternalPathPatternParser {
 				}
 				curlyBracketDepth--;
 			}
-			if (ch == this.parser.getPathOptions().separator() && !previousBackslash) {
+			if (ch == this.parser.getSeparator() && !previousBackslash) {
 				throw new PatternParseException(this.pos, this.pathPatternData,
 						PatternMessage.MISSING_CLOSE_CAPTURE);
 			}
@@ -310,7 +309,6 @@ class InternalPathPatternParser {
 		}
 
 		PathElement newPE = null;
-		char separator = this.parser.getPathOptions().separator();
 
 		if (this.variableCaptureCount > 0) {
 			if (this.variableCaptureCount == 1 && this.pathElementStart == this.variableCaptureStart &&
@@ -318,13 +316,13 @@ class InternalPathPatternParser {
 				if (this.isCaptureTheRestVariable) {
 					// It is {*....}
 					newPE = new CaptureTheRestPathElement(
-							this.pathElementStart, getPathElementText(), separator);
+							this.pathElementStart, getPathElementText(), this.parser.getSeparator());
 				}
 				else {
 					// It is a full capture of this element (possibly with constraint), for example: /foo/{abc}/
 					try {
 						newPE = new CaptureVariablePathElement(this.pathElementStart, getPathElementText(),
-								this.parser.isCaseSensitive(), separator);
+								this.parser.isCaseSensitive(), this.parser.getSeparator());
 					}
 					catch (PatternSyntaxException pse) {
 						throw new PatternParseException(pse,
@@ -342,7 +340,7 @@ class InternalPathPatternParser {
 				}
 				RegexPathElement newRegexSection = new RegexPathElement(this.pathElementStart,
 						getPathElementText(), this.parser.isCaseSensitive(),
-						this.pathPatternData, separator);
+						this.pathPatternData, this.parser.getSeparator());
 				for (String variableName : newRegexSection.getVariableNames()) {
 					recordCapturedVariable(this.pathElementStart, variableName);
 				}
@@ -352,20 +350,20 @@ class InternalPathPatternParser {
 		else {
 			if (this.wildcard) {
 				if (this.pos - 1 == this.pathElementStart) {
-					newPE = new WildcardPathElement(this.pathElementStart, separator);
+					newPE = new WildcardPathElement(this.pathElementStart, this.parser.getSeparator());
 				}
 				else {
 					newPE = new RegexPathElement(this.pathElementStart, getPathElementText(),
-							this.parser.isCaseSensitive(), this.pathPatternData, separator);
+							this.parser.isCaseSensitive(), this.pathPatternData, this.parser.getSeparator());
 				}
 			}
 			else if (this.singleCharWildcardCount != 0) {
 				newPE = new SingleCharWildcardedPathElement(this.pathElementStart, getPathElementText(),
-						this.singleCharWildcardCount, this.parser.isCaseSensitive(), separator);
+						this.singleCharWildcardCount, this.parser.isCaseSensitive(), this.parser.getSeparator());
 			}
 			else {
 				newPE = new LiteralPathElement(this.pathElementStart, getPathElementText(),
-						this.parser.isCaseSensitive(), separator);
+						this.parser.isCaseSensitive(), this.parser.getSeparator());
 			}
 		}
 

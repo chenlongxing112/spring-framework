@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,9 @@ package org.springframework.beans.factory.support;
 
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.Assert.*;
 
 /**
  * @author Rick Evans
@@ -41,7 +39,7 @@ public class ManagedListTests {
 		child.add("three");
 		child.setMergeEnabled(true);
 		List mergedList = child.merge(parent);
-		assertThat(mergedList.size()).as("merge() obviously did not work.").isEqualTo(3);
+		assertEquals("merge() obviously did not work.", 3, mergedList.size());
 	}
 
 	@Test
@@ -49,23 +47,21 @@ public class ManagedListTests {
 		ManagedList child = new ManagedList();
 		child.add("one");
 		child.setMergeEnabled(true);
-		assertThat(child.merge(null)).isSameAs(child);
+		assertSame(child, child.merge(null));
 	}
 
-	@Test
+	@Test(expected = IllegalStateException.class)
 	public void mergeNotAllowedWhenMergeNotEnabled() {
 		ManagedList child = new ManagedList();
-		assertThatIllegalStateException().isThrownBy(() ->
-				child.merge(null));
+		child.merge(null);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void mergeWithNonCompatibleParentType() {
 		ManagedList child = new ManagedList();
 		child.add("one");
 		child.setMergeEnabled(true);
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				child.merge("hello"));
+		child.merge("hello");
 	}
 
 	@Test
@@ -76,7 +72,7 @@ public class ManagedListTests {
 		ManagedList child = new ManagedList();
 		child.setMergeEnabled(true);
 		List mergedList = child.merge(parent);
-		assertThat(mergedList.size()).as("merge() obviously did not work.").isEqualTo(2);
+		assertEquals("merge() obviously did not work.", 2, mergedList.size());
 	}
 
 	@Test
@@ -89,7 +85,7 @@ public class ManagedListTests {
 		child.add("one");
 		child.setMergeEnabled(true);
 		List mergedList = child.merge(parent);
-		assertThat(mergedList.size()).as("merge() obviously did not work.").isEqualTo(3);
+		assertEquals("merge() obviously did not work.", 3, mergedList.size());
 	}
 
 }

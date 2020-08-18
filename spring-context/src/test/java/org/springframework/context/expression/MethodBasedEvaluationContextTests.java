@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,13 +18,13 @@ package org.springframework.context.expression;
 
 import java.lang.reflect.Method;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.util.ReflectionUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link MethodBasedEvaluationContext}.
@@ -43,16 +43,16 @@ public class MethodBasedEvaluationContextTests {
 		Method method = ReflectionUtils.findMethod(SampleMethods.class, "hello", String.class, Boolean.class);
 		MethodBasedEvaluationContext context = createEvaluationContext(method, "test", true);
 
-		assertThat(context.lookupVariable("a0")).isEqualTo("test");
-		assertThat(context.lookupVariable("p0")).isEqualTo("test");
-		assertThat(context.lookupVariable("foo")).isEqualTo("test");
+		assertEquals("test", context.lookupVariable("a0"));
+		assertEquals("test", context.lookupVariable("p0"));
+		assertEquals("test", context.lookupVariable("foo"));
 
-		assertThat(context.lookupVariable("a1")).isEqualTo(true);
-		assertThat(context.lookupVariable("p1")).isEqualTo(true);
-		assertThat(context.lookupVariable("flag")).isEqualTo(true);
+		assertEquals(true, context.lookupVariable("a1"));
+		assertEquals(true, context.lookupVariable("p1"));
+		assertEquals(true, context.lookupVariable("flag"));
 
-		assertThat(context.lookupVariable("a2")).isNull();
-		assertThat(context.lookupVariable("p2")).isNull();
+		assertNull(context.lookupVariable("a2"));
+		assertNull(context.lookupVariable("p2"));
 	}
 
 	@Test
@@ -60,13 +60,13 @@ public class MethodBasedEvaluationContextTests {
 		Method method = ReflectionUtils.findMethod(SampleMethods.class, "hello", String.class, Boolean.class);
 		MethodBasedEvaluationContext context = createEvaluationContext(method, null, null);
 
-		assertThat(context.lookupVariable("a0")).isNull();
-		assertThat(context.lookupVariable("p0")).isNull();
-		assertThat(context.lookupVariable("foo")).isNull();
+		assertNull(context.lookupVariable("a0"));
+		assertNull(context.lookupVariable("p0"));
+		assertNull(context.lookupVariable("foo"));
 
-		assertThat(context.lookupVariable("a1")).isNull();
-		assertThat(context.lookupVariable("p1")).isNull();
-		assertThat(context.lookupVariable("flag")).isNull();
+		assertNull(context.lookupVariable("a1"));
+		assertNull(context.lookupVariable("p1"));
+		assertNull(context.lookupVariable("flag"));
 	}
 
 	@Test
@@ -74,13 +74,13 @@ public class MethodBasedEvaluationContextTests {
 		Method method = ReflectionUtils.findMethod(SampleMethods.class, "hello", Boolean.class, String[].class);
 		MethodBasedEvaluationContext context = createEvaluationContext(method, new Object[] {null});
 
-		assertThat(context.lookupVariable("a0")).isNull();
-		assertThat(context.lookupVariable("p0")).isNull();
-		assertThat(context.lookupVariable("flag")).isNull();
+		assertNull(context.lookupVariable("a0"));
+		assertNull(context.lookupVariable("p0"));
+		assertNull(context.lookupVariable("flag"));
 
-		assertThat(context.lookupVariable("a1")).isNull();
-		assertThat(context.lookupVariable("p1")).isNull();
-		assertThat(context.lookupVariable("vararg")).isNull();
+		assertNull(context.lookupVariable("a1"));
+		assertNull(context.lookupVariable("p1"));
+		assertNull(context.lookupVariable("vararg"));
 	}
 
 	@Test
@@ -88,13 +88,13 @@ public class MethodBasedEvaluationContextTests {
 		Method method = ReflectionUtils.findMethod(SampleMethods.class, "hello", Boolean.class, String[].class);
 		MethodBasedEvaluationContext context = createEvaluationContext(method, null, null);
 
-		assertThat(context.lookupVariable("a0")).isNull();
-		assertThat(context.lookupVariable("p0")).isNull();
-		assertThat(context.lookupVariable("flag")).isNull();
+		assertNull(context.lookupVariable("a0"));
+		assertNull(context.lookupVariable("p0"));
+		assertNull(context.lookupVariable("flag"));
 
-		assertThat(context.lookupVariable("a1")).isNull();
-		assertThat(context.lookupVariable("p1")).isNull();
-		assertThat(context.lookupVariable("vararg")).isNull();
+		assertNull(context.lookupVariable("a1"));
+		assertNull(context.lookupVariable("p1"));
+		assertNull(context.lookupVariable("vararg"));
 	}
 
 	@Test
@@ -102,13 +102,13 @@ public class MethodBasedEvaluationContextTests {
 		Method method = ReflectionUtils.findMethod(SampleMethods.class, "hello", Boolean.class, String[].class);
 		MethodBasedEvaluationContext context = createEvaluationContext(method, null, "hello");
 
-		assertThat(context.lookupVariable("a0")).isNull();
-		assertThat(context.lookupVariable("p0")).isNull();
-		assertThat(context.lookupVariable("flag")).isNull();
+		assertNull(context.lookupVariable("a0"));
+		assertNull(context.lookupVariable("p0"));
+		assertNull(context.lookupVariable("flag"));
 
-		assertThat(context.lookupVariable("a1")).isEqualTo("hello");
-		assertThat(context.lookupVariable("p1")).isEqualTo("hello");
-		assertThat(context.lookupVariable("vararg")).isEqualTo("hello");
+		assertEquals("hello", context.lookupVariable("a1"));
+		assertEquals("hello", context.lookupVariable("p1"));
+		assertEquals("hello", context.lookupVariable("vararg"));
 	}
 
 	@Test
@@ -116,13 +116,13 @@ public class MethodBasedEvaluationContextTests {
 		Method method = ReflectionUtils.findMethod(SampleMethods.class, "hello", Boolean.class, String[].class);
 		MethodBasedEvaluationContext context = createEvaluationContext(method, null, "hello", "hi");
 
-		assertThat(context.lookupVariable("a0")).isNull();
-		assertThat(context.lookupVariable("p0")).isNull();
-		assertThat(context.lookupVariable("flag")).isNull();
+		assertNull(context.lookupVariable("a0"));
+		assertNull(context.lookupVariable("p0"));
+		assertNull(context.lookupVariable("flag"));
 
-		assertThat(context.lookupVariable("a1")).isEqualTo(new Object[] {"hello", "hi"});
-		assertThat(context.lookupVariable("p1")).isEqualTo(new Object[] {"hello", "hi"});
-		assertThat(context.lookupVariable("vararg")).isEqualTo(new Object[] {"hello", "hi"});
+		assertArrayEquals(new Object[] {"hello", "hi"}, (Object[]) context.lookupVariable("a1"));
+		assertArrayEquals(new Object[] {"hello", "hi"}, (Object[]) context.lookupVariable("p1"));
+		assertArrayEquals(new Object[] {"hello", "hi"}, (Object[]) context.lookupVariable("vararg"));
 	}
 
 	private MethodBasedEvaluationContext createEvaluationContext(Method method, Object... args) {

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,13 +29,11 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionManager;
 
 /**
  * AOP Alliance MethodInterceptor for declarative transaction
  * management using the common Spring transaction infrastructure
- * ({@link org.springframework.transaction.PlatformTransactionManager}/
- * {@link org.springframework.transaction.ReactiveTransactionManager}).
+ * ({@link org.springframework.transaction.PlatformTransactionManager}).
  *
  * <p>Derives from the {@link TransactionAspectSupport} class which
  * contains the integration with Spring's underlying transaction API.
@@ -66,43 +64,25 @@ public class TransactionInterceptor extends TransactionAspectSupport implements 
 	/**
 	 * Create a new TransactionInterceptor.
 	 * @param ptm the default transaction manager to perform the actual transaction management
-	 * @param tas the attribute source to be used to find transaction attributes
-	 * @since 5.2.5
-	 * @see #setTransactionManager
-	 * @see #setTransactionAttributeSource
-	 */
-	public TransactionInterceptor(TransactionManager ptm, TransactionAttributeSource tas) {
-		setTransactionManager(ptm);
-		setTransactionAttributeSource(tas);
-	}
-
-	/**
-	 * Create a new TransactionInterceptor.
-	 * @param ptm the default transaction manager to perform the actual transaction management
-	 * @param tas the attribute source to be used to find transaction attributes
-	 * @see #setTransactionManager
-	 * @see #setTransactionAttributeSource
-	 * @deprecated as of 5.2.5, in favor of
-	 * {@link #TransactionInterceptor(TransactionManager, TransactionAttributeSource)}
-	 */
-	@Deprecated
-	public TransactionInterceptor(PlatformTransactionManager ptm, TransactionAttributeSource tas) {
-		setTransactionManager(ptm);
-		setTransactionAttributeSource(tas);
-	}
-
-	/**
-	 * Create a new TransactionInterceptor.
-	 * @param ptm the default transaction manager to perform the actual transaction management
 	 * @param attributes the transaction attributes in properties format
 	 * @see #setTransactionManager
 	 * @see #setTransactionAttributes(java.util.Properties)
-	 * @deprecated as of 5.2.5, in favor of {@link #setTransactionAttributes(Properties)}
 	 */
-	@Deprecated
 	public TransactionInterceptor(PlatformTransactionManager ptm, Properties attributes) {
 		setTransactionManager(ptm);
 		setTransactionAttributes(attributes);
+	}
+
+	/**
+	 * Create a new TransactionInterceptor.
+	 * @param ptm the default transaction manager to perform the actual transaction management
+	 * @param tas the attribute source to be used to find transaction attributes
+	 * @see #setTransactionManager
+	 * @see #setTransactionAttributeSource(TransactionAttributeSource)
+	 */
+	public TransactionInterceptor(PlatformTransactionManager ptm, TransactionAttributeSource tas) {
+		setTransactionManager(ptm);
+		setTransactionAttributeSource(tas);
 	}
 
 

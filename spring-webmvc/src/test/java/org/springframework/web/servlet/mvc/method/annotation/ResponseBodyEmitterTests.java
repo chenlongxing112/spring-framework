@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,23 +18,16 @@ package org.springframework.web.servlet.mvc.method.annotation;
 
 import java.io.IOException;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
 import org.springframework.http.MediaType;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIOException;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for {@link ResponseBodyEmitter}.
@@ -42,13 +35,19 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
  * @author Rossen Stoyanchev
  * @author Tomasz Nurkiewicz
  */
-@ExtendWith(MockitoExtension.class)
 public class ResponseBodyEmitterTests {
+
+	private ResponseBodyEmitter emitter;
 
 	@Mock
 	private ResponseBodyEmitter.Handler handler;
 
-	private final ResponseBodyEmitter emitter = new ResponseBodyEmitter();
+
+	@Before
+	public void setup() {
+		MockitoAnnotations.initMocks(this);
+		this.emitter = new ResponseBodyEmitter();
+	}
 
 
 	@Test
@@ -93,11 +92,10 @@ public class ResponseBodyEmitterTests {
 		verifyNoMoreInteractions(this.handler);
 	}
 
-	@Test
+	@Test(expected = IllegalStateException.class)
 	public void sendFailsAfterComplete() throws Exception {
 		this.emitter.complete();
-		assertThatIllegalStateException().isThrownBy(() ->
-				this.emitter.send("foo"));
+		this.emitter.send("foo");
 	}
 
 	@Test
@@ -146,9 +144,14 @@ public class ResponseBodyEmitterTests {
 		verifyNoMoreInteractions(this.handler);
 
 		IOException failure = new IOException();
-		willThrow(failure).given(this.handler).send("foo", MediaType.TEXT_PLAIN);
-		assertThatIOException().isThrownBy(() ->
-				this.emitter.send("foo", MediaType.TEXT_PLAIN));
+		doThrow(failure).when(this.handler).send("foo", MediaType.TEXT_PLAIN);
+		try {
+			this.emitter.send("foo", MediaType.TEXT_PLAIN);
+			fail("Expected exception");
+		}
+		catch (IOException ex) {
+			// expected
+		}
 		verify(this.handler).send("foo", MediaType.TEXT_PLAIN);
 		verifyNoMoreInteractions(this.handler);
 	}
@@ -163,7 +166,7 @@ public class ResponseBodyEmitterTests {
 		verify(this.handler).onTimeout(captor.capture());
 		verify(this.handler).onCompletion(any());
 
-		assertThat(captor.getValue()).isNotNull();
+		assertNotNull(captor.getValue());
 		captor.getValue().run();
 		verify(runnable).run();
 	}
@@ -179,7 +182,7 @@ public class ResponseBodyEmitterTests {
 		Runnable runnable = mock(Runnable.class);
 		this.emitter.onTimeout(runnable);
 
-		assertThat(captor.getValue()).isNotNull();
+		assertNotNull(captor.getValue());
 		captor.getValue().run();
 		verify(runnable).run();
 	}
@@ -194,7 +197,7 @@ public class ResponseBodyEmitterTests {
 		verify(this.handler).onTimeout(any());
 		verify(this.handler).onCompletion(captor.capture());
 
-		assertThat(captor.getValue()).isNotNull();
+		assertNotNull(captor.getValue());
 		captor.getValue().run();
 		verify(runnable).run();
 	}
@@ -210,7 +213,7 @@ public class ResponseBodyEmitterTests {
 		Runnable runnable = mock(Runnable.class);
 		this.emitter.onCompletion(runnable);
 
-		assertThat(captor.getValue()).isNotNull();
+		assertNotNull(captor.getValue());
 		captor.getValue().run();
 		verify(runnable).run();
 	}

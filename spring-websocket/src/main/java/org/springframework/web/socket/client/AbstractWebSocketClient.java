@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -116,7 +116,7 @@ public abstract class AbstractWebSocketClient implements WebSocketClient {
 	 * @param uri the target URI for the handshake (never {@code null})
 	 * @param subProtocols requested sub-protocols, or an empty list
 	 * @param extensions requested WebSocket extensions, or an empty list
-	 * @param attributes the attributes to associate with the WebSocketSession, i.e. via
+	 * @param attributes attributes to associate with the WebSocketSession, i.e. via
 	 * {@link WebSocketSession#getAttributes()}; currently always an empty map.
 	 * @return the established WebSocket session wrapped in a ListenableFuture.
 	 */

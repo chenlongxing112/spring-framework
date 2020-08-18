@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,8 +36,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Contextual descriptor about a type to convert from or to.
- * Capable of representing arrays and generic collection types.
+ * Context about a type to convert from or to.
  *
  * @author Keith Donald
  * @author Andy Clement
@@ -46,8 +45,6 @@ import org.springframework.util.ObjectUtils;
  * @author Sam Brannen
  * @author Stephane Nicoll
  * @since 3.0
- * @see ConversionService#canConvert(TypeDescriptor, TypeDescriptor)
- * @see ConversionService#convert(Object, TypeDescriptor, TypeDescriptor)
  */
 @SuppressWarnings("serial")
 public class TypeDescriptor implements Serializable {
@@ -325,9 +322,9 @@ public class TypeDescriptor implements Serializable {
 	 * If this type is a {@code Stream}, returns the stream's component type.
 	 * If this type is a {@link Collection} and it is parameterized, returns the Collection's element type.
 	 * If the Collection is not parameterized, returns {@code null} indicating the element type is not declared.
-	 * @return the array component type or Collection element type, or {@code null} if this type is not
-	 * an array type or a {@code java.util.Collection} or if its element type is not parameterized
-	 * @see #elementTypeDescriptor(Object)
+	 * @return the array component type or Collection element type, or {@code null} if this type is a
+	 * Collection but its element type is not parameterized
+	 * @throws IllegalStateException if this type is not a {@code java.util.Collection} or array type
 	 */
 	@Nullable
 	public TypeDescriptor getElementTypeDescriptor() {
@@ -354,7 +351,8 @@ public class TypeDescriptor implements Serializable {
 	 * TypeDescriptor that is returned.
 	 * @param element the collection or array element
 	 * @return a element type descriptor, narrowed to the type of the provided element
-	 * @see #getElementTypeDescriptor()
+	 * @throws IllegalStateException if this type is not a {@code java.util.Collection}
+	 * or array type
 	 * @see #narrow(Object)
 	 */
 	@Nullable
@@ -454,7 +452,7 @@ public class TypeDescriptor implements Serializable {
 	}
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
@@ -767,7 +765,7 @@ public class TypeDescriptor implements Serializable {
 
 		@Override
 		public Annotation[] getAnnotations() {
-			return (this.annotations != null ? this.annotations.clone() : EMPTY_ANNOTATION_ARRAY);
+			return (this.annotations != null ? this.annotations : EMPTY_ANNOTATION_ARRAY);
 		}
 
 		@Override
@@ -780,7 +778,7 @@ public class TypeDescriptor implements Serializable {
 		}
 
 		@Override
-		public boolean equals(@Nullable Object other) {
+		public boolean equals(Object other) {
 			return (this == other || (other instanceof AnnotatedElementAdapter &&
 					Arrays.equals(this.annotations, ((AnnotatedElementAdapter) other).annotations)));
 		}

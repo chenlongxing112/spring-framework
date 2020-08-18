@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,15 +23,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpResponse;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpRequest;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Unit tests for {@link ContextPathCompositeHandler}.
@@ -39,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  * @author Rossen Stoyanchev
  */
 public class ContextPathCompositeHandlerTests {
+
 
 	@Test
 	public void invalidContextPath() {
@@ -48,9 +51,13 @@ public class ContextPathCompositeHandlerTests {
 	}
 
 	private void testInvalid(String contextPath, String expectedError) {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new ContextPathCompositeHandler(Collections.singletonMap(contextPath, new TestHttpHandler())))
-			.withMessage(expectedError);
+		try {
+			new ContextPathCompositeHandler(Collections.singletonMap(contextPath, new TestHttpHandler()));
+			fail();
+		}
+		catch (IllegalArgumentException ex) {
+			assertEquals(expectedError, ex.getMessage());
+		}
 	}
 
 	@Test
@@ -99,8 +106,8 @@ public class ContextPathCompositeHandlerTests {
 
 		new ContextPathCompositeHandler(map).handle(request, new MockServerHttpResponse());
 
-		assertThat(handler.wasInvoked()).isTrue();
-		assertThat(handler.getRequest().getPath().contextPath().value()).isEqualTo("/yet/another/path");
+		assertTrue(handler.wasInvoked());
+		assertEquals("/yet/another/path", handler.getRequest().getPath().contextPath().value());
 	}
 
 	@Test
@@ -115,7 +122,7 @@ public class ContextPathCompositeHandlerTests {
 		ServerHttpResponse response = testHandle("/yet/another/path", map);
 
 		assertNotInvoked(handler1, handler2);
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 	}
 
 	@Test // SPR-17144
@@ -136,8 +143,8 @@ public class ContextPathCompositeHandlerTests {
 		new ContextPathCompositeHandler(map).handle(request, response).block(Duration.ofSeconds(5));
 
 		assertNotInvoked(handler);
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-		assertThat(commitInvoked.get()).isTrue();
+		assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+		assertTrue(commitInvoked.get());
 	}
 
 
@@ -149,12 +156,12 @@ public class ContextPathCompositeHandlerTests {
 	}
 
 	private void assertInvoked(TestHttpHandler handler, String contextPath) {
-		assertThat(handler.wasInvoked()).isTrue();
-		assertThat(handler.getRequest().getPath().contextPath().value()).isEqualTo(contextPath);
+		assertTrue(handler.wasInvoked());
+		assertEquals(contextPath, handler.getRequest().getPath().contextPath().value());
 	}
 
 	private void assertNotInvoked(TestHttpHandler... handlers) {
-		Arrays.stream(handlers).forEach(handler -> assertThat(handler.wasInvoked()).isFalse());
+		Arrays.stream(handlers).forEach(handler -> assertFalse(handler.wasInvoked()));
 	}
 
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,16 @@
 
 package org.springframework.web.reactive.result.condition;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
+import org.springframework.mock.http.server.reactive.test.MockServerHttpRequest;
+import org.springframework.mock.web.test.server.MockServerWebExchange;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest;
-import org.springframework.web.testfixture.server.MockServerWebExchange;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 
 /**
  * Unit tests for {@link CompositeRequestCondition}.
@@ -42,7 +43,7 @@ public class CompositeRequestConditionTests {
 	private HeadersRequestCondition header3;
 
 
-	@BeforeEach
+	@Before
 	public void setup() throws Exception {
 		this.param1 = new ParamsRequestCondition("param1");
 		this.param2 = new ParamsRequestCondition("param2");
@@ -60,7 +61,7 @@ public class CompositeRequestConditionTests {
 		CompositeRequestCondition cond2 = new CompositeRequestCondition(this.param2, this.header2);
 		CompositeRequestCondition cond3 = new CompositeRequestCondition(this.param3, this.header3);
 
-		assertThat(cond1.combine(cond2)).isEqualTo(cond3);
+		assertEquals(cond3, cond1.combine(cond2));
 	}
 
 	@Test
@@ -68,17 +69,16 @@ public class CompositeRequestConditionTests {
 		CompositeRequestCondition empty = new CompositeRequestCondition();
 		CompositeRequestCondition notEmpty = new CompositeRequestCondition(this.param1);
 
-		assertThat(empty.combine(empty)).isSameAs(empty);
-		assertThat(notEmpty.combine(empty)).isSameAs(notEmpty);
-		assertThat(empty.combine(notEmpty)).isSameAs(notEmpty);
+		assertSame(empty, empty.combine(empty));
+		assertSame(notEmpty, notEmpty.combine(empty));
+		assertSame(notEmpty, empty.combine(notEmpty));
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void combineDifferentLength() {
 		CompositeRequestCondition cond1 = new CompositeRequestCondition(this.param1);
 		CompositeRequestCondition cond2 = new CompositeRequestCondition(this.param1, this.header1);
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				cond1.combine(cond2));
+		cond1.combine(cond2);
 	}
 
 	@Test
@@ -92,19 +92,19 @@ public class CompositeRequestConditionTests {
 		CompositeRequestCondition composite1 = new CompositeRequestCondition(this.param1, condition1);
 		CompositeRequestCondition composite2 = new CompositeRequestCondition(this.param1, condition2);
 
-		assertThat(composite1.getMatchingCondition(exchange)).isEqualTo(composite2);
+		assertEquals(composite2, composite1.getMatchingCondition(exchange));
 	}
 
 	@Test
 	public void noMatch() {
 		CompositeRequestCondition cond = new CompositeRequestCondition(this.param1);
-		assertThat(cond.getMatchingCondition(MockServerWebExchange.from(MockServerHttpRequest.get("/")))).isNull();
+		assertNull(cond.getMatchingCondition(MockServerWebExchange.from(MockServerHttpRequest.get("/"))));
 	}
 
 	@Test
 	public void matchEmpty() {
 		CompositeRequestCondition empty = new CompositeRequestCondition();
-		assertThat(empty.getMatchingCondition(MockServerWebExchange.from(MockServerHttpRequest.get("/")))).isSameAs(empty);
+		assertSame(empty, empty.getMatchingCondition(MockServerWebExchange.from(MockServerHttpRequest.get("/"))));
 	}
 
 	@Test
@@ -113,8 +113,8 @@ public class CompositeRequestConditionTests {
 		CompositeRequestCondition cond3 = new CompositeRequestCondition(this.param3);
 		MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/"));
 
-		assertThat(cond1.compareTo(cond3, exchange)).isEqualTo(1);
-		assertThat(cond3.compareTo(cond1, exchange)).isEqualTo(-1);
+		assertEquals(1, cond1.compareTo(cond3, exchange));
+		assertEquals(-1, cond3.compareTo(cond1, exchange));
 	}
 
 	@Test
@@ -123,17 +123,16 @@ public class CompositeRequestConditionTests {
 		CompositeRequestCondition notEmpty = new CompositeRequestCondition(this.param1);
 		MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/"));
 
-		assertThat(empty.compareTo(empty, exchange)).isEqualTo(0);
-		assertThat(notEmpty.compareTo(empty, exchange)).isEqualTo(-1);
-		assertThat(empty.compareTo(notEmpty, exchange)).isEqualTo(1);
+		assertEquals(0, empty.compareTo(empty, exchange));
+		assertEquals(-1, notEmpty.compareTo(empty, exchange));
+		assertEquals(1, empty.compareTo(notEmpty, exchange));
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void compareDifferentLength() {
 		CompositeRequestCondition cond1 = new CompositeRequestCondition(this.param1);
 		CompositeRequestCondition cond2 = new CompositeRequestCondition(this.param1, this.header1);
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				cond1.compareTo(cond2, MockServerWebExchange.from(MockServerHttpRequest.get("/"))));
+		cond1.compareTo(cond2, MockServerWebExchange.from(MockServerHttpRequest.get("/")));
 	}
 
 

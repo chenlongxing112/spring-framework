@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,8 +20,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import reactor.core.publisher.Mono;
 import rx.Completable;
 import rx.Single;
@@ -41,15 +41,17 @@ import org.springframework.web.reactive.HandlerResult;
 import org.springframework.web.reactive.accept.RequestedContentTypeResolver;
 import org.springframework.web.reactive.accept.RequestedContentTypeResolverBuilder;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.web.testfixture.method.ResolvableMethod.on;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.springframework.web.method.ResolvableMethod.on;
 
 /**
  * Unit tests for {@link ResponseBodyResultHandler}.When adding a test also
  * consider whether the logic under test is in a parent class, then see:
  * <ul>
- * <li>{@code MessageWriterResultHandlerTests},
- * <li>{@code ContentNegotiatingResultHandlerSupportTests}
+ * 	<li>{@code MessageWriterResultHandlerTests},
+ *  <li>{@code ContentNegotiatingResultHandlerSupportTests}
  * </ul>
  *
  * @author Sebastien Deleuze
@@ -60,7 +62,7 @@ public class ResponseBodyResultHandlerTests {
 	private ResponseBodyResultHandler resultHandler;
 
 
-	@BeforeEach
+	@Before
 	public void setup() throws Exception {
 		List<HttpMessageWriter<?>> writerList = new ArrayList<>(5);
 		writerList.add(new EncoderHttpMessageWriter<>(new ByteBufferEncoder()));
@@ -74,7 +76,7 @@ public class ResponseBodyResultHandlerTests {
 
 
 	@Test
-	public void supports() {
+	public void supports() throws NoSuchMethodException {
 		Object controller = new TestController();
 		Method method;
 
@@ -83,11 +85,11 @@ public class ResponseBodyResultHandlerTests {
 
 		method = on(TestController.class).annotNotPresent(ResponseBody.class).resolveMethod("doWork");
 		HandlerResult handlerResult = getHandlerResult(controller, method);
-		assertThat(this.resultHandler.supports(handlerResult)).isFalse();
+		assertFalse(this.resultHandler.supports(handlerResult));
 	}
 
 	@Test
-	public void supportsRestController() {
+	public void supportsRestController() throws NoSuchMethodException {
 		Object controller = new TestRestController();
 		Method method;
 
@@ -106,7 +108,7 @@ public class ResponseBodyResultHandlerTests {
 
 	private void testSupports(Object controller, Method method) {
 		HandlerResult handlerResult = getHandlerResult(controller, method);
-		assertThat(this.resultHandler.supports(handlerResult)).isTrue();
+		assertTrue(this.resultHandler.supports(handlerResult));
 	}
 
 	private HandlerResult getHandlerResult(Object controller, Method method) {
@@ -115,8 +117,8 @@ public class ResponseBodyResultHandlerTests {
 	}
 
 	@Test
-	public void defaultOrder() {
-		assertThat(this.resultHandler.getOrder()).isEqualTo(100);
+	public void defaultOrder() throws Exception {
+		assertEquals(100, this.resultHandler.getOrder());
 	}
 
 

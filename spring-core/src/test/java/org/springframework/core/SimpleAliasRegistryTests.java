@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,48 +16,48 @@
 
 package org.springframework.core;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
  */
-class SimpleAliasRegistryTests {
+public class SimpleAliasRegistryTests {
 
 	@Test
-	void aliasChaining() {
+	public void testAliasChaining() {
 		SimpleAliasRegistry registry = new SimpleAliasRegistry();
 		registry.registerAlias("test", "testAlias");
 		registry.registerAlias("testAlias", "testAlias2");
 		registry.registerAlias("testAlias2", "testAlias3");
 
-		assertThat(registry.hasAlias("test", "testAlias")).isTrue();
-		assertThat(registry.hasAlias("test", "testAlias2")).isTrue();
-		assertThat(registry.hasAlias("test", "testAlias3")).isTrue();
-		assertThat(registry.canonicalName("testAlias")).isEqualTo("test");
-		assertThat(registry.canonicalName("testAlias2")).isEqualTo("test");
-		assertThat(registry.canonicalName("testAlias3")).isEqualTo("test");
+		assertTrue(registry.hasAlias("test", "testAlias"));
+		assertTrue(registry.hasAlias("test", "testAlias2"));
+		assertTrue(registry.hasAlias("test", "testAlias3"));
+		assertSame("test", registry.canonicalName("testAlias"));
+		assertSame("test", registry.canonicalName("testAlias2"));
+		assertSame("test", registry.canonicalName("testAlias3"));
 	}
 
 	@Test  // SPR-17191
-	void aliasChainingWithMultipleAliases() {
+	public void testAliasChainingWithMultipleAliases() {
 		SimpleAliasRegistry registry = new SimpleAliasRegistry();
 		registry.registerAlias("name", "alias_a");
 		registry.registerAlias("name", "alias_b");
-		assertThat(registry.hasAlias("name", "alias_a")).isTrue();
-		assertThat(registry.hasAlias("name", "alias_b")).isTrue();
+		assertTrue(registry.hasAlias("name", "alias_a"));
+		assertTrue(registry.hasAlias("name", "alias_b"));
 
 		registry.registerAlias("real_name", "name");
-		assertThat(registry.hasAlias("real_name", "name")).isTrue();
-		assertThat(registry.hasAlias("real_name", "alias_a")).isTrue();
-		assertThat(registry.hasAlias("real_name", "alias_b")).isTrue();
+		assertTrue(registry.hasAlias("real_name", "name"));
+		assertTrue(registry.hasAlias("real_name", "alias_a"));
+		assertTrue(registry.hasAlias("real_name", "alias_b"));
 
 		registry.registerAlias("name", "alias_c");
-		assertThat(registry.hasAlias("real_name", "name")).isTrue();
-		assertThat(registry.hasAlias("real_name", "alias_a")).isTrue();
-		assertThat(registry.hasAlias("real_name", "alias_b")).isTrue();
-		assertThat(registry.hasAlias("real_name", "alias_c")).isTrue();
+		assertTrue(registry.hasAlias("real_name", "name"));
+		assertTrue(registry.hasAlias("real_name", "alias_a"));
+		assertTrue(registry.hasAlias("real_name", "alias_b"));
+		assertTrue(registry.hasAlias("real_name", "alias_c"));
 	}
 
 }

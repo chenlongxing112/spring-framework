@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,20 +16,19 @@
 
 package org.springframework.web.method.annotation;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.core.MethodParameter;
+import org.springframework.mock.web.test.MockHttpServletRequest;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.method.support.ModelAndViewContainer;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.Assert.*;
 
 /**
  * Test fixture with {@link ErrorsMethodArgumentResolver}.
@@ -47,7 +46,7 @@ public class ErrorsMethodArgumentResolverTests {
 	private NativeWebRequest webRequest;
 
 
-	@BeforeEach
+	@Before
 	public void setup() throws Exception {
 		paramErrors = new MethodParameter(getClass().getDeclaredMethod("handle", Errors.class), 0);
 		bindingResult = new WebDataBinder(new Object(), "attr").getBindingResult();
@@ -71,23 +70,21 @@ public class ErrorsMethodArgumentResolverTests {
 		mavContainer.addAllAttributes(bindingResult.getModel());
 
 		Object actual = resolver.resolveArgument(paramErrors, mavContainer, webRequest, null);
-		assertThat(bindingResult).isSameAs(actual);
+		assertSame(actual, bindingResult);
 	}
 
-	@Test
+	@Test(expected = IllegalStateException.class)
 	public void bindingResultNotFound() throws Exception {
 		ModelAndViewContainer mavContainer = new ModelAndViewContainer();
 		mavContainer.addAllAttributes(bindingResult.getModel());
 		mavContainer.addAttribute("ignore1", "value1");
 
-		assertThatIllegalStateException().isThrownBy(() ->
-				resolver.resolveArgument(paramErrors, mavContainer, webRequest, null));
+		resolver.resolveArgument(paramErrors, mavContainer, webRequest, null);
 	}
 
-	@Test
+	@Test(expected = IllegalStateException.class)
 	public void noBindingResult() throws Exception {
-		assertThatIllegalStateException().isThrownBy(() ->
-				resolver.resolveArgument(paramErrors, new ModelAndViewContainer(), webRequest, null));
+		resolver.resolveArgument(paramErrors, new ModelAndViewContainer(), webRequest, null);
 	}
 
 

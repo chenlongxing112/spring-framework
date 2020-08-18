@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.web.servlet.tags.form;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.tagext.DynamicAttributes;
 
@@ -486,8 +485,8 @@ public abstract class AbstractHtmlElementTag extends AbstractDataBoundFormElemen
 		writeOptionalAttribute(tagWriter, ONKEYDOWN_ATTRIBUTE, getOnkeydown());
 
 		if (!CollectionUtils.isEmpty(this.dynamicAttributes)) {
-			for (Map.Entry<String, Object> entry : this.dynamicAttributes.entrySet()) {
-				tagWriter.writeOptionalAttributeValue(entry.getKey(), getDisplayString(entry.getValue()));
+			for (String attr : this.dynamicAttributes.keySet()) {
+				tagWriter.writeOptionalAttributeValue(attr, getDisplayString(this.dynamicAttributes.get(attr)));
 			}
 		}
 	}

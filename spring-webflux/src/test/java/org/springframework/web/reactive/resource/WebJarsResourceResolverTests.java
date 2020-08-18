@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,23 +19,24 @@ package org.springframework.web.reactive.resource;
 import java.time.Duration;
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import reactor.core.publisher.Mono;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpRequest;
+import org.springframework.mock.web.test.server.MockServerWebExchange;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest;
-import org.springframework.web.testfixture.server.MockServerWebExchange;
 
 import static java.util.Collections.singletonList;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.times;
+import static org.mockito.BDDMockito.verify;
 
 /**
  * Unit tests for {@link WebJarsResourceResolver}.
@@ -57,7 +58,7 @@ public class WebJarsResourceResolverTests {
 	private ServerWebExchange exchange;
 
 
-	@BeforeEach
+	@Before
 	public void setup() {
 		// for this to work, an actual WebJar must be on the test classpath
 		this.locations = singletonList(new ClassPathResource("/META-INF/resources/webjars"));
@@ -75,7 +76,7 @@ public class WebJarsResourceResolverTests {
 
 		String actual = this.resolver.resolveUrlPath(file, this.locations, this.chain).block(TIMEOUT);
 
-		assertThat(actual).isEqualTo(file);
+		assertEquals(file, actual);
 		verify(this.chain, times(1)).resolveUrlPath(file, this.locations);
 	}
 
@@ -87,7 +88,7 @@ public class WebJarsResourceResolverTests {
 
 		String actual = this.resolver.resolveUrlPath(file, this.locations, this.chain).block(TIMEOUT);
 
-		assertThat(actual).isNull();
+		assertNull(actual);
 		verify(this.chain, times(1)).resolveUrlPath(file, this.locations);
 		verify(this.chain, never()).resolveUrlPath("foo/2.3/foo.txt", this.locations);
 	}
@@ -101,7 +102,7 @@ public class WebJarsResourceResolverTests {
 
 		String actual = this.resolver.resolveUrlPath(file, this.locations, this.chain).block(TIMEOUT);
 
-		assertThat(actual).isEqualTo(expected);
+		assertEquals(expected, actual);
 		verify(this.chain, times(1)).resolveUrlPath(file, this.locations);
 		verify(this.chain, times(1)).resolveUrlPath(expected, this.locations);
 	}
@@ -113,7 +114,7 @@ public class WebJarsResourceResolverTests {
 
 		String actual = this.resolver.resolveUrlPath(file, this.locations, this.chain).block(TIMEOUT);
 
-		assertThat(actual).isNull();
+		assertNull(actual);
 		verify(this.chain, times(1)).resolveUrlPath(file, this.locations);
 		verify(this.chain, never()).resolveUrlPath(null, this.locations);
 	}
@@ -129,7 +130,7 @@ public class WebJarsResourceResolverTests {
 				.resolveResource(this.exchange, file, this.locations, this.chain)
 				.block(TIMEOUT);
 
-		assertThat(actual).isEqualTo(expected);
+		assertEquals(expected, actual);
 		verify(this.chain, times(1)).resolveResource(this.exchange, file, this.locations);
 	}
 
@@ -142,7 +143,7 @@ public class WebJarsResourceResolverTests {
 				.resolveResource(this.exchange, file, this.locations, this.chain)
 				.block(TIMEOUT);
 
-		assertThat(actual).isNull();
+		assertNull(actual);
 		verify(this.chain, times(1)).resolveResource(this.exchange, file, this.locations);
 		verify(this.chain, never()).resolveResource(this.exchange, null, this.locations);
 	}
@@ -164,7 +165,7 @@ public class WebJarsResourceResolverTests {
 				.resolveResource(this.exchange, file, this.locations, this.chain)
 				.block(TIMEOUT);
 
-		assertThat(actual).isEqualTo(expected);
+		assertEquals(expected, actual);
 		verify(this.chain, times(1)).resolveResource(this.exchange, file, this.locations);
 	}
 

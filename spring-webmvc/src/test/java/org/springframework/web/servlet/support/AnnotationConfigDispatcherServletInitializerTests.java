@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,6 @@ import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration.Dynamic;
@@ -31,20 +30,20 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.mock.web.test.MockServletConfig;
+import org.springframework.mock.web.test.MockServletContext;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 import org.springframework.web.filter.DelegatingFilterProxy;
 import org.springframework.web.filter.HiddenHttpMethodFilter;
 import org.springframework.web.servlet.DispatcherServlet;
-import org.springframework.web.testfixture.servlet.MockServletConfig;
-import org.springframework.web.testfixture.servlet.MockServletContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Test case for {@link AbstractAnnotationConfigDispatcherServletInitializer}.
@@ -72,7 +71,7 @@ public class AnnotationConfigDispatcherServletInitializerTests {
 	private Map<String, MockFilterRegistration> filterRegistrations;
 
 
-	@BeforeEach
+	@Before
 	public void setUp() throws Exception {
 		servletContext = new MyMockServletContext();
 		initializer = new MyAnnotationConfigDispatcherServletInitializer();
@@ -86,38 +85,37 @@ public class AnnotationConfigDispatcherServletInitializerTests {
 	public void register() throws ServletException {
 		initializer.onStartup(servletContext);
 
-		assertThat(servlets.size()).isEqualTo(1);
-		assertThat(servlets.get(SERVLET_NAME)).isNotNull();
+		assertEquals(1, servlets.size());
+		assertNotNull(servlets.get(SERVLET_NAME));
 
 		DispatcherServlet servlet = (DispatcherServlet) servlets.get(SERVLET_NAME);
 		WebApplicationContext wac = servlet.getWebApplicationContext();
 		((AnnotationConfigWebApplicationContext) wac).refresh();
 
-		assertThat(wac.containsBean("bean")).isTrue();
-		boolean condition = wac.getBean("bean") instanceof MyBean;
-		assertThat(condition).isTrue();
+		assertTrue(wac.containsBean("bean"));
+		assertTrue(wac.getBean("bean") instanceof MyBean);
 
-		assertThat(servletRegistrations.size()).isEqualTo(1);
-		assertThat(servletRegistrations.get(SERVLET_NAME)).isNotNull();
+		assertEquals(1, servletRegistrations.size());
+		assertNotNull(servletRegistrations.get(SERVLET_NAME));
 
 		MockServletRegistration servletRegistration = servletRegistrations.get(SERVLET_NAME);
 
-		assertThat(servletRegistration.getMappings()).isEqualTo(Collections.singleton(SERVLET_MAPPING));
-		assertThat(servletRegistration.getLoadOnStartup()).isEqualTo(1);
-		assertThat(servletRegistration.getRunAsRole()).isEqualTo(ROLE_NAME);
-		assertThat(servletRegistration.isAsyncSupported()).isTrue();
+		assertEquals(Collections.singleton(SERVLET_MAPPING), servletRegistration.getMappings());
+		assertEquals(1, servletRegistration.getLoadOnStartup());
+		assertEquals(ROLE_NAME, servletRegistration.getRunAsRole());
+		assertTrue(servletRegistration.isAsyncSupported());
 
-		assertThat(filterRegistrations.size()).isEqualTo(4);
-		assertThat(filterRegistrations.get("hiddenHttpMethodFilter")).isNotNull();
-		assertThat(filterRegistrations.get("delegatingFilterProxy")).isNotNull();
-		assertThat(filterRegistrations.get("delegatingFilterProxy#0")).isNotNull();
-		assertThat(filterRegistrations.get("delegatingFilterProxy#1")).isNotNull();
+		assertEquals(4, filterRegistrations.size());
+		assertNotNull(filterRegistrations.get("hiddenHttpMethodFilter"));
+		assertNotNull(filterRegistrations.get("delegatingFilterProxy"));
+		assertNotNull(filterRegistrations.get("delegatingFilterProxy#0"));
+		assertNotNull(filterRegistrations.get("delegatingFilterProxy#1"));
 
 		for (MockFilterRegistration filterRegistration : filterRegistrations.values()) {
-			assertThat(filterRegistration.isAsyncSupported()).isTrue();
+			assertTrue(filterRegistration.isAsyncSupported());
 			EnumSet<DispatcherType> enumSet = EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD,
 					DispatcherType.INCLUDE, DispatcherType.ASYNC);
-			assertThat(filterRegistration.getMappings().get(SERVLET_NAME)).isEqualTo(enumSet);
+			assertEquals(enumSet, filterRegistration.getMappings().get(SERVLET_NAME));
 		}
 
 	}
@@ -134,11 +132,12 @@ public class AnnotationConfigDispatcherServletInitializerTests {
 		initializer.onStartup(servletContext);
 
 		MockServletRegistration servletRegistration = servletRegistrations.get(SERVLET_NAME);
-		assertThat(servletRegistration.isAsyncSupported()).isFalse();
+		assertFalse(servletRegistration.isAsyncSupported());
 
 		for (MockFilterRegistration filterRegistration : filterRegistrations.values()) {
-			assertThat(filterRegistration.isAsyncSupported()).isFalse();
-			assertThat(filterRegistration.getMappings().get(SERVLET_NAME)).isEqualTo(EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.INCLUDE));
+			assertFalse(filterRegistration.isAsyncSupported());
+			assertEquals(EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.INCLUDE),
+					filterRegistration.getMappings().get(SERVLET_NAME));
 		}
 	}
 
@@ -164,9 +163,8 @@ public class AnnotationConfigDispatcherServletInitializerTests {
 		WebApplicationContext wac = servlet.getWebApplicationContext();
 		((AnnotationConfigWebApplicationContext) wac).refresh();
 
-		assertThat(wac.containsBean("bean")).isTrue();
-		boolean condition = wac.getBean("bean") instanceof MyBean;
-		assertThat(condition).isTrue();
+		assertTrue(wac.containsBean("bean"));
+		assertTrue(wac.getBean("bean") instanceof MyBean);
 	}
 
 	@Test
@@ -180,7 +178,7 @@ public class AnnotationConfigDispatcherServletInitializerTests {
 
 		initializer.onStartup(servletContext);
 
-		assertThat(filterRegistrations.size()).isEqualTo(0);
+		assertEquals(0, filterRegistrations.size());
 	}
 
 

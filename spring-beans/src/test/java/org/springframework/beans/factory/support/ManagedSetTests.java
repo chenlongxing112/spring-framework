@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,9 @@ package org.springframework.beans.factory.support;
 
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.Assert.*;
 
 /**
  * @author Rick Evans
@@ -41,7 +39,7 @@ public class ManagedSetTests {
 		child.add("three");
 		child.setMergeEnabled(true);
 		Set mergedSet = child.merge(parent);
-		assertThat(mergedSet.size()).as("merge() obviously did not work.").isEqualTo(3);
+		assertEquals("merge() obviously did not work.", 3, mergedSet.size());
 	}
 
 	@Test
@@ -49,22 +47,20 @@ public class ManagedSetTests {
 		ManagedSet child = new ManagedSet();
 		child.add("one");
 		child.setMergeEnabled(true);
-		assertThat(child.merge(null)).isSameAs(child);
+		assertSame(child, child.merge(null));
 	}
 
-	@Test
+	@Test(expected = IllegalStateException.class)
 	public void mergeNotAllowedWhenMergeNotEnabled() {
-		assertThatIllegalStateException().isThrownBy(() ->
-				new ManagedSet().merge(null));
+		new ManagedSet().merge(null);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void mergeWithNonCompatibleParentType() {
 		ManagedSet child = new ManagedSet();
 		child.add("one");
 		child.setMergeEnabled(true);
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				child.merge("hello"));
+		child.merge("hello");
 	}
 
 	@Test
@@ -75,7 +71,7 @@ public class ManagedSetTests {
 		ManagedSet child = new ManagedSet();
 		child.setMergeEnabled(true);
 		Set mergedSet = child.merge(parent);
-		assertThat(mergedSet.size()).as("merge() obviously did not work.").isEqualTo(2);
+		assertEquals("merge() obviously did not work.", 2, mergedSet.size());
 	}
 
 	@Test
@@ -88,7 +84,7 @@ public class ManagedSetTests {
 		child.add("one");
 		child.setMergeEnabled(true);
 		Set mergedSet = child.merge(parent);
-		assertThat(mergedSet.size()).as("merge() obviously did not work.").isEqualTo(2);
+		assertEquals("merge() obviously did not work.", 2, mergedSet.size());
 	}
 
 }

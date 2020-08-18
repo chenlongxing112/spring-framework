@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,9 +20,9 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.context.annotation.AnnotatedBeanDefinitionReader;
 import org.springframework.context.annotation.Bean;
@@ -41,7 +41,10 @@ import org.springframework.web.context.support.GenericWebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
@@ -65,7 +68,7 @@ public class CustomRequestAttributesRequestContextHolderTests {
 	private MockMvc mockMvc;
 
 
-	@BeforeEach
+	@Before
 	public void setUp() {
 		ServletContext servletContext = new MockServletContext();
 		MockHttpServletRequest mockRequest = new MockHttpServletRequest(servletContext);
@@ -87,15 +90,15 @@ public class CustomRequestAttributesRequestContextHolderTests {
 		this.mockMvc.perform(get("/singletonController").requestAttr(FROM_MVC_TEST_MOCK, FROM_MVC_TEST_MOCK));
 	}
 
-	@AfterEach
+	@After
 	public void verifyCustomRequestAttributesAreRestored() {
 		RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-		assertThat(requestAttributes).isInstanceOf(ServletRequestAttributes.class);
+		assertThat(requestAttributes, instanceOf(ServletRequestAttributes.class));
 		HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
 
-		assertThat(request.getAttribute(FROM_CUSTOM_MOCK)).isEqualTo(FROM_CUSTOM_MOCK);
-		assertThat(request.getAttribute(FROM_MVC_TEST_DEFAULT)).isNull();
-		assertThat(request.getAttribute(FROM_MVC_TEST_MOCK)).isNull();
+		assertThat(request.getAttribute(FROM_CUSTOM_MOCK), is(FROM_CUSTOM_MOCK));
+		assertThat(request.getAttribute(FROM_MVC_TEST_DEFAULT), is(nullValue()));
+		assertThat(request.getAttribute(FROM_MVC_TEST_MOCK), is(nullValue()));
 
 		RequestContextHolder.resetRequestAttributes();
 		this.wac.close();
@@ -125,14 +128,14 @@ public class CustomRequestAttributesRequestContextHolderTests {
 
 	private static void assertRequestAttributes() {
 		RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-		assertThat(requestAttributes).isInstanceOf(ServletRequestAttributes.class);
+		assertThat(requestAttributes, instanceOf(ServletRequestAttributes.class));
 		assertRequestAttributes(((ServletRequestAttributes) requestAttributes).getRequest());
 	}
 
 	private static void assertRequestAttributes(ServletRequest request) {
-		assertThat(request.getAttribute(FROM_CUSTOM_MOCK)).isNull();
-		assertThat(request.getAttribute(FROM_MVC_TEST_DEFAULT)).isEqualTo(FROM_MVC_TEST_DEFAULT);
-		assertThat(request.getAttribute(FROM_MVC_TEST_MOCK)).isEqualTo(FROM_MVC_TEST_MOCK);
+		assertThat(request.getAttribute(FROM_CUSTOM_MOCK), is(nullValue()));
+		assertThat(request.getAttribute(FROM_MVC_TEST_DEFAULT), is(FROM_MVC_TEST_DEFAULT));
+		assertThat(request.getAttribute(FROM_MVC_TEST_MOCK), is(FROM_MVC_TEST_MOCK));
 	}
 
 }

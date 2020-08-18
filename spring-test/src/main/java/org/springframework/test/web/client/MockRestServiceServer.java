@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -150,9 +150,9 @@ public final class MockRestServiceServer {
 	 * to reply to the given {@code RestGatewaySupport}.
 	 * @since 4.3
 	 */
-	public static MockRestServiceServerBuilder bindTo(RestGatewaySupport restGatewaySupport) {
-		Assert.notNull(restGatewaySupport, "'restGatewaySupport' must not be null");
-		return new DefaultBuilder(restGatewaySupport.getRestTemplate());
+	public static MockRestServiceServerBuilder bindTo(RestGatewaySupport restGateway) {
+		Assert.notNull(restGateway, "'gatewaySupport' must not be null");
+		return new DefaultBuilder(restGateway.getRestTemplate());
 	}
 
 
@@ -305,19 +305,15 @@ public final class MockRestServiceServer {
 		}
 
 		@Override
-		public org.springframework.http.client.AsyncClientHttpRequest createAsyncRequest(
-				URI uri, HttpMethod httpMethod) {
-
+		public org.springframework.http.client.AsyncClientHttpRequest createAsyncRequest(URI uri, HttpMethod httpMethod) {
 			return createRequestInternal(uri, httpMethod);
 		}
 
-		private org.springframework.mock.http.client.MockAsyncClientHttpRequest createRequestInternal(
-				URI uri, HttpMethod httpMethod) {
-
+		private org.springframework.mock.http.client.MockAsyncClientHttpRequest createRequestInternal(URI uri, HttpMethod method) {
 			Assert.notNull(uri, "'uri' must not be null");
-			Assert.notNull(httpMethod, "'httpMethod' must not be null");
+			Assert.notNull(method, "'httpMethod' must not be null");
 
-			return new org.springframework.mock.http.client.MockAsyncClientHttpRequest(httpMethod, uri) {
+			return new org.springframework.mock.http.client.MockAsyncClientHttpRequest(method, uri) {
 
 				@Override
 				protected ClientHttpResponse executeInternal() throws IOException {

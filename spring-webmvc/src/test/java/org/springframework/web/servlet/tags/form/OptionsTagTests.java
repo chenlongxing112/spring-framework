@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.tagext.BodyTag;
 import javax.servlet.jsp.tagext.Tag;
@@ -32,19 +31,20 @@ import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
-import org.junit.jupiter.api.Test;
 
-import org.springframework.beans.testfixture.beans.TestBean;
+import org.junit.Test;
+
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockPageContext;
+import org.springframework.tests.sample.beans.TestBean;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
 import org.springframework.web.servlet.support.BindStatus;
 import org.springframework.web.servlet.support.RequestContext;
 import org.springframework.web.servlet.tags.RequestContextAwareTag;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockPageContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Rob Harrop
@@ -98,7 +98,7 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 		this.tag.setCssClass("myClass");
 		this.tag.setOnclick("CLICK");
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 		String output = getOutput();
 		output = "<doc>" + output + "</doc>";
 
@@ -107,13 +107,13 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 		Element rootElement = document.getRootElement();
 
 		List children = rootElement.elements();
-		assertThat(children.size()).as("Incorrect number of children").isEqualTo(4);
+		assertEquals("Incorrect number of children", 4, children.size());
 
 		Element element = (Element) rootElement.selectSingleNode("option[@value = 'UK']");
-		assertThat(element.attribute("selected").getValue()).as("UK node not selected").isEqualTo("selected");
-		assertThat(element.attribute("id").getValue()).isEqualTo("myOption3");
-		assertThat(element.attribute("class").getValue()).isEqualTo("myClass");
-		assertThat(element.attribute("onclick").getValue()).isEqualTo("CLICK");
+		assertEquals("UK node not selected", "selected", element.attribute("selected").getValue());
+		assertEquals("myOption3", element.attribute("id").getValue());
+		assertEquals("myClass", element.attribute("class").getValue());
+		assertEquals("CLICK", element.attribute("onclick").getValue());
 	}
 
 	@Test
@@ -134,7 +134,7 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 		this.tag.setDynamicAttribute(null, dynamicAttribute2, dynamicAttribute2);
 
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 		String output = getOutput();
 		output = "<doc>" + output + "</doc>";
 
@@ -143,15 +143,15 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 		Element rootElement = document.getRootElement();
 
 		List children = rootElement.elements();
-		assertThat(children.size()).as("Incorrect number of children").isEqualTo(4);
+		assertEquals("Incorrect number of children", 4, children.size());
 
 		Element element = (Element) rootElement.selectSingleNode("option[@value = 'UK']");
-		assertThat(element.attribute("selected").getValue()).as("UK node not selected").isEqualTo("selected");
-		assertThat(element.attribute("id").getValue()).isEqualTo("myOption3");
-		assertThat(element.attribute("class").getValue()).isEqualTo("myClass");
-		assertThat(element.attribute("onclick").getValue()).isEqualTo("CLICK");
-		assertThat(element.attribute(dynamicAttribute1).getValue()).isEqualTo(dynamicAttribute1);
-		assertThat(element.attribute(dynamicAttribute2).getValue()).isEqualTo(dynamicAttribute2);
+		assertEquals("UK node not selected", "selected", element.attribute("selected").getValue());
+		assertEquals("myOption3", element.attribute("id").getValue());
+		assertEquals("myClass", element.attribute("class").getValue());
+		assertEquals("CLICK", element.attribute("onclick").getValue());
+		assertEquals(dynamicAttribute1, element.attribute(dynamicAttribute1).getValue());
+		assertEquals(dynamicAttribute2, element.attribute(dynamicAttribute2).getValue());
 	}
 
 	@Test
@@ -178,7 +178,7 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 
 		this.tag.setItems(floats);
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 		String output = getOutput();
 		output = "<doc>" + output + "</doc>";
 
@@ -187,17 +187,17 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 		Element rootElement = document.getRootElement();
 
 		List children = rootElement.elements();
-		assertThat(children.size()).as("Incorrect number of children").isEqualTo(6);
+		assertEquals("Incorrect number of children", 6, children.size());
 
 		Element element = (Element) rootElement.selectSingleNode("option[text() = '12.34f']");
-		assertThat(element).as("Option node should not be null").isNotNull();
-		assertThat(element.attribute("selected").getValue()).as("12.34 node not selected").isEqualTo("selected");
-		assertThat(element.attribute("id")).as("No id rendered").isNull();
+		assertNotNull("Option node should not be null", element);
+		assertEquals("12.34 node not selected", "selected", element.attribute("selected").getValue());
+		assertNull("No id rendered", element.attribute("id"));
 
 		element = (Element) rootElement.selectSingleNode("option[text() = '12.35f']");
-		assertThat(element).as("Option node should not be null").isNotNull();
-		assertThat(element.attribute("selected")).as("12.35 node incorrectly selected").isNull();
-		assertThat(element.attribute("id")).as("No id rendered").isNull();
+		assertNotNull("Option node should not be null", element);
+		assertNull("12.35 node incorrectly selected", element.attribute("selected"));
+		assertNull("No id rendered", element.attribute("id"));
 	}
 
 	@Test
@@ -209,7 +209,7 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 		this.tag.setItemValue("isoCode");
 		this.tag.setItemLabel("name");
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 		String output = getOutput();
 		output = "<doc>" + output + "</doc>";
 
@@ -218,7 +218,7 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 		Element rootElement = document.getRootElement();
 
 		List children = rootElement.elements();
-		assertThat(children.size()).as("Incorrect number of children").isEqualTo(0);
+		assertEquals("Incorrect number of children", 0, children.size());
 	}
 
 	@Test
@@ -229,7 +229,7 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 
 		this.selectTag.doStartTag();
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 		this.tag.doEndTag();
 		this.selectTag.doEndTag();
 
@@ -239,7 +239,7 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 		Element rootElement = document.getRootElement();
 
 		List children = rootElement.elements();
-		assertThat(children.size()).as("Incorrect number of children").isEqualTo(0);
+		assertEquals("Incorrect number of children", 0, children.size());
 	}
 
 	@Test
@@ -252,9 +252,9 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 
 		this.selectTag.doStartTag();
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(BodyTag.SKIP_BODY);
+		assertEquals(BodyTag.SKIP_BODY, result);
 		result = this.tag.doEndTag();
-		assertThat(result).isEqualTo(Tag.EVAL_PAGE);
+		assertEquals(Tag.EVAL_PAGE, result);
 		this.selectTag.doEndTag();
 
 		String output = getWriter().toString();
@@ -262,12 +262,12 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
 
-		assertThat(rootElement.elements().size()).isEqualTo(2);
+		assertEquals(2, rootElement.elements().size());
 		Node value1 = rootElement.selectSingleNode("option[@value = 'VALUE_1']");
 		Node value2 = rootElement.selectSingleNode("option[@value = 'VALUE_2']");
-		assertThat(value1.getText()).isEqualTo("TestEnum: VALUE_1");
-		assertThat(value2.getText()).isEqualTo("TestEnum: VALUE_2");
-		assertThat(rootElement.selectSingleNode("option[@selected]")).isEqualTo(value2);
+		assertEquals("TestEnum: VALUE_1", value1.getText());
+		assertEquals("TestEnum: VALUE_2", value2.getText());
+		assertEquals(value2, rootElement.selectSingleNode("option[@selected]"));
 	}
 
 	@Test
@@ -282,9 +282,9 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 
 		this.selectTag.doStartTag();
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(BodyTag.SKIP_BODY);
+		assertEquals(BodyTag.SKIP_BODY, result);
 		result = this.tag.doEndTag();
-		assertThat(result).isEqualTo(Tag.EVAL_PAGE);
+		assertEquals(Tag.EVAL_PAGE, result);
 		this.selectTag.doEndTag();
 
 		String output = getWriter().toString();
@@ -292,12 +292,12 @@ public class OptionsTagTests extends AbstractHtmlElementTagTests {
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
 
-		assertThat(rootElement.elements().size()).isEqualTo(2);
+		assertEquals(2, rootElement.elements().size());
 		Node value1 = rootElement.selectSingleNode("option[@value = 'Value: VALUE_1']");
 		Node value2 = rootElement.selectSingleNode("option[@value = 'Value: VALUE_2']");
-		assertThat(value1.getText()).isEqualTo("Label: VALUE_1");
-		assertThat(value2.getText()).isEqualTo("Label: VALUE_2");
-		assertThat(rootElement.selectSingleNode("option[@selected]")).isEqualTo(value2);
+		assertEquals("Label: VALUE_1", value1.getText());
+		assertEquals("Label: VALUE_2", value2.getText());
+		assertEquals(value2, rootElement.selectSingleNode("option[@selected]"));
 	}
 
 	@Override

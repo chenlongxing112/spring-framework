@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,8 +18,8 @@ package org.springframework.test.web.client.samples;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -34,8 +34,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.client.RestTemplate;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 import static org.springframework.test.web.client.ExpectedCount.manyTimes;
 import static org.springframework.test.web.client.ExpectedCount.never;
 import static org.springframework.test.web.client.ExpectedCount.once;
@@ -57,7 +56,7 @@ public class SampleTests {
 
 	private RestTemplate restTemplate;
 
-	@BeforeEach
+	@Before
 	public void setup() {
 		this.restTemplate = new RestTemplate();
 		this.mockServer = MockRestServiceServer.bindTo(this.restTemplate).ignoreExpectOrder(true).build();
@@ -118,7 +117,7 @@ public class SampleTests {
 		this.mockServer.verify();
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void expectNeverViolated() {
 
 		String responseBody = "{\"name\" : \"Ludwig van Beethoven\", \"someDouble\" : \"1.6035\"}";
@@ -129,8 +128,7 @@ public class SampleTests {
 				.andRespond(withSuccess(responseBody, MediaType.APPLICATION_JSON));
 
 		this.restTemplate.getForObject("/composers/{id}", Person.class, 42);
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				this.restTemplate.getForObject("/composers/{id}", Person.class, 43));
+		this.restTemplate.getForObject("/composers/{id}", Person.class, 43);
 	}
 
 	@Test
@@ -177,7 +175,7 @@ public class SampleTests {
 			this.mockServer.verify();
 		}
 		catch (AssertionError error) {
-			assertThat(error.getMessage().contains("2 unsatisfied expectation(s)")).as(error.getMessage()).isTrue();
+			assertTrue(error.getMessage(), error.getMessage().contains("2 unsatisfied expectation(s)"));
 		}
 	}
 
@@ -219,7 +217,7 @@ public class SampleTests {
 			ClientHttpResponse response = execution.execute(request, body);
 			byte[] expected = FileCopyUtils.copyToByteArray(this.resource.getInputStream());
 			byte[] actual = FileCopyUtils.copyToByteArray(response.getBody());
-			assertThat(new String(actual)).isEqualTo(new String(expected));
+			assertEquals(new String(expected), new String(actual));
 			return response;
 		}
 	}

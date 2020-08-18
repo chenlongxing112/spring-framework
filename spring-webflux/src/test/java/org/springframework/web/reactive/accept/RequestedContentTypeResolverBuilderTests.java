@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,13 +18,13 @@ package org.springframework.web.reactive.accept;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.http.MediaType;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest;
-import org.springframework.web.testfixture.server.MockServerWebExchange;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpRequest;
+import org.springframework.mock.web.test.server.MockServerWebExchange;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for {@link RequestedContentTypeResolverBuilder}.
@@ -40,7 +40,7 @@ public class RequestedContentTypeResolverBuilderTests {
 				MockServerHttpRequest.get("/flower").accept(MediaType.IMAGE_GIF));
 		List<MediaType> mediaTypes = resolver.resolveMediaTypes(exchange);
 
-		assertThat(mediaTypes).isEqualTo(Collections.singletonList(MediaType.IMAGE_GIF));
+		assertEquals(Collections.singletonList(MediaType.IMAGE_GIF), mediaTypes);
 	}
 
 	@Test
@@ -53,7 +53,7 @@ public class RequestedContentTypeResolverBuilderTests {
 		MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/flower?format=json"));
 		List<MediaType> mediaTypes = resolver.resolveMediaTypes(exchange);
 
-		assertThat(mediaTypes).isEqualTo(Collections.singletonList(MediaType.APPLICATION_JSON));
+		assertEquals(Collections.singletonList(MediaType.APPLICATION_JSON), mediaTypes);
 	}
 
 	@Test
@@ -66,7 +66,7 @@ public class RequestedContentTypeResolverBuilderTests {
 		List<MediaType> mediaTypes = resolver.resolveMediaTypes(
 				MockServerWebExchange.from(MockServerHttpRequest.get("/flower?s=json")));
 
-		assertThat(mediaTypes).isEqualTo(Collections.singletonList(MediaType.APPLICATION_JSON));
+		assertEquals(Collections.singletonList(MediaType.APPLICATION_JSON), mediaTypes);
 	}
 
 	@Test // SPR-10513
@@ -79,7 +79,7 @@ public class RequestedContentTypeResolverBuilderTests {
 		List<MediaType> mediaTypes = resolver.resolveMediaTypes(
 				MockServerWebExchange.from(MockServerHttpRequest.get("/").accept(MediaType.ALL)));
 
-		assertThat(mediaTypes).isEqualTo(Collections.singletonList(MediaType.APPLICATION_JSON));
+		assertEquals(Collections.singletonList(MediaType.APPLICATION_JSON), mediaTypes);
 	}
 
 	@Test // SPR-12286
@@ -91,11 +91,11 @@ public class RequestedContentTypeResolverBuilderTests {
 
 		MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/"));
 		List<MediaType> mediaTypes = resolver.resolveMediaTypes(exchange);
-		assertThat(mediaTypes).isEqualTo(Collections.singletonList(MediaType.APPLICATION_JSON));
+		assertEquals(Collections.singletonList(MediaType.APPLICATION_JSON), mediaTypes);
 
 		exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/").accept(MediaType.ALL));
 		mediaTypes = resolver.resolveMediaTypes(exchange);
-		assertThat(mediaTypes).isEqualTo(Collections.singletonList(MediaType.APPLICATION_JSON));
+		assertEquals(Collections.singletonList(MediaType.APPLICATION_JSON), mediaTypes);
 	}
 
 }

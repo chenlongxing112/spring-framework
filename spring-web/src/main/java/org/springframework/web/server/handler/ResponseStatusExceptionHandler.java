@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.lang.Nullable;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
@@ -63,7 +62,8 @@ public class ResponseStatusExceptionHandler implements WebExceptionHandler {
 
 	@Override
 	public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
-		if (!updateResponse(exchange.getResponse(), ex)) {
+		HttpStatus status = resolveStatus(ex);
+		if (status == null || !exchange.getResponse().setStatusCode(status)) {
 			return Mono.error(ex);
 		}
 
@@ -86,26 +86,16 @@ public class ResponseStatusExceptionHandler implements WebExceptionHandler {
 		return "Resolved [" + reason + "] for HTTP " + request.getMethod() + " " + path;
 	}
 
-	private boolean updateResponse(ServerHttpResponse response, Throwable ex) {
-		boolean result = false;
+	@Nullable
+	private HttpStatus resolveStatus(Throwable ex) {
 		HttpStatus status = determineStatus(ex);
-		if (status != null) {
-			if (response.setStatusCode(status)) {
-				if (ex instanceof ResponseStatusException) {
-					((ResponseStatusException) ex).getResponseHeaders()
-							.forEach((name, values) ->
-									values.forEach(value -> response.getHeaders().add(name, value)));
-				}
-				result = true;
-			}
-		}
-		else {
+		if (status == null) {
 			Throwable cause = ex.getCause();
 			if (cause != null) {
-				result = updateResponse(response, cause);
+				status = resolveStatus(cause);
 			}
 		}
-		return result;
+		return status;
 	}
 
 	/**

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,16 +22,16 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.test.MockHttpServletRequest;
 import org.springframework.util.FileCopyUtils;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Arjen Poutsma
@@ -44,7 +44,7 @@ public class ServletServerHttpRequestTests {
 	private MockHttpServletRequest mockRequest;
 
 
-	@BeforeEach
+	@Before
 	public void create() {
 		mockRequest = new MockHttpServletRequest();
 		request = new ServletServerHttpRequest(mockRequest);
@@ -54,49 +54,43 @@ public class ServletServerHttpRequestTests {
 	@Test
 	public void getMethod() {
 		mockRequest.setMethod("POST");
-		assertThat(request.getMethod()).as("Invalid method").isEqualTo(HttpMethod.POST);
+		assertEquals("Invalid method", HttpMethod.POST, request.getMethod());
 	}
 
 	@Test
 	public void getUriForSimplePath() throws URISyntaxException {
-		URI uri = new URI("https://example.com/path");
-		mockRequest.setScheme(uri.getScheme());
+		URI uri = new URI("http://example.com/path");
 		mockRequest.setServerName(uri.getHost());
 		mockRequest.setServerPort(uri.getPort());
 		mockRequest.setRequestURI(uri.getPath());
 		mockRequest.setQueryString(uri.getQuery());
-		assertThat(request.getURI()).isEqualTo(uri);
+		assertEquals(uri, request.getURI());
 	}
 
 	@Test
 	public void getUriWithQueryString() throws URISyntaxException {
-		URI uri = new URI("https://example.com/path?query");
-		mockRequest.setScheme(uri.getScheme());
+		URI uri = new URI("http://example.com/path?query");
 		mockRequest.setServerName(uri.getHost());
 		mockRequest.setServerPort(uri.getPort());
 		mockRequest.setRequestURI(uri.getPath());
 		mockRequest.setQueryString(uri.getQuery());
-		assertThat(request.getURI()).isEqualTo(uri);
+		assertEquals(uri, request.getURI());
 	}
 
 	@Test  // SPR-16414
 	public void getUriWithQueryParam() throws URISyntaxException {
-		mockRequest.setScheme("https");
-		mockRequest.setServerPort(443);
 		mockRequest.setServerName("example.com");
 		mockRequest.setRequestURI("/path");
 		mockRequest.setQueryString("query=foo");
-		assertThat(request.getURI()).isEqualTo(new URI("https://example.com/path?query=foo"));
+		assertEquals(new URI("http://example.com/path?query=foo"), request.getURI());
 	}
 
 	@Test  // SPR-16414
 	public void getUriWithMalformedQueryParam() throws URISyntaxException {
-		mockRequest.setScheme("https");
-		mockRequest.setServerPort(443);
 		mockRequest.setServerName("example.com");
 		mockRequest.setRequestURI("/path");
 		mockRequest.setQueryString("query=foo%%x");
-		assertThat(request.getURI()).isEqualTo(new URI("https://example.com/path"));
+		assertEquals(new URI("http://example.com/path"), request.getURI());
 	}
 
 	@Test  // SPR-13876
@@ -108,8 +102,8 @@ public class ServletServerHttpRequestTests {
 		mockRequest.setServerPort(uri.getPort());
 		mockRequest.setRequestURI(uri.getRawPath());
 		mockRequest.setQueryString(uri.getRawQuery());
-		assertThat(request.getURI()).isEqualTo(uri);
-	}
+		assertEquals(uri, request.getURI());
+    }
 
 	@Test
 	public void getHeaders() {
@@ -122,13 +116,14 @@ public class ServletServerHttpRequestTests {
 		mockRequest.setCharacterEncoding("UTF-8");
 
 		HttpHeaders headers = request.getHeaders();
-		assertThat(headers).as("No HttpHeaders returned").isNotNull();
-		assertThat(headers.containsKey(headerName)).as("Invalid headers returned").isTrue();
+		assertNotNull("No HttpHeaders returned", headers);
+		assertTrue("Invalid headers returned", headers.containsKey(headerName));
 		List<String> headerValues = headers.get(headerName);
-		assertThat(headerValues.size()).as("Invalid header values returned").isEqualTo(2);
-		assertThat(headerValues.contains(headerValue1)).as("Invalid header values returned").isTrue();
-		assertThat(headerValues.contains(headerValue2)).as("Invalid header values returned").isTrue();
-		assertThat(headers.getContentType()).as("Invalid Content-Type").isEqualTo(new MediaType("text", "plain", StandardCharsets.UTF_8));
+		assertEquals("Invalid header values returned", 2, headerValues.size());
+		assertTrue("Invalid header values returned", headerValues.contains(headerValue1));
+		assertTrue("Invalid header values returned", headerValues.contains(headerValue2));
+		assertEquals("Invalid Content-Type", new MediaType("text", "plain", StandardCharsets.UTF_8),
+				headers.getContentType());
 	}
 
 	@Test
@@ -142,13 +137,13 @@ public class ServletServerHttpRequestTests {
 		mockRequest.setCharacterEncoding("");
 
 		HttpHeaders headers = request.getHeaders();
-		assertThat(headers).as("No HttpHeaders returned").isNotNull();
-		assertThat(headers.containsKey(headerName)).as("Invalid headers returned").isTrue();
+		assertNotNull("No HttpHeaders returned", headers);
+		assertTrue("Invalid headers returned", headers.containsKey(headerName));
 		List<String> headerValues = headers.get(headerName);
-		assertThat(headerValues.size()).as("Invalid header values returned").isEqualTo(2);
-		assertThat(headerValues.contains(headerValue1)).as("Invalid header values returned").isTrue();
-		assertThat(headerValues.contains(headerValue2)).as("Invalid header values returned").isTrue();
-		assertThat(headers.getContentType()).isNull();
+		assertEquals("Invalid header values returned", 2, headerValues.size());
+		assertTrue("Invalid header values returned", headerValues.contains(headerValue1));
+		assertTrue("Invalid header values returned", headerValues.contains(headerValue2));
+		assertNull(headers.getContentType());
 	}
 
 	@Test
@@ -157,7 +152,7 @@ public class ServletServerHttpRequestTests {
 		mockRequest.setContent(content);
 
 		byte[] result = FileCopyUtils.copyToByteArray(request.getBody());
-		assertThat(result).as("Invalid content returned").isEqualTo(content);
+		assertArrayEquals("Invalid content returned", content, result);
 	}
 
 	@Test
@@ -171,7 +166,7 @@ public class ServletServerHttpRequestTests {
 
 		byte[] result = FileCopyUtils.copyToByteArray(request.getBody());
 		byte[] content = "name+1=value+1&name+2=value+2%2B1&name+2=value+2%2B2&name+3".getBytes("UTF-8");
-		assertThat(result).as("Invalid content returned").isEqualTo(content);
+		assertArrayEquals("Invalid content returned", content, result);
 	}
 
 }

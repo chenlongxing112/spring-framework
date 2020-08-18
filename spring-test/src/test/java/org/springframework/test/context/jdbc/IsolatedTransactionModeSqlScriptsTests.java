@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,16 @@
 
 package org.springframework.test.context.jdbc;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.jdbc.SqlConfig.TransactionMode;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.transaction.AfterTransaction;
 import org.springframework.test.context.transaction.BeforeTransaction;
+
+import static org.junit.Assert.*;
 
 /**
  * Transactional integration tests that verify commit semantics for
@@ -31,24 +34,28 @@ import org.springframework.test.context.transaction.BeforeTransaction;
  * @author Sam Brannen
  * @since 4.1
  */
-@SpringJUnitConfig(PopulatedSchemaDatabaseConfig.class)
+@ContextConfiguration(classes = PopulatedSchemaDatabaseConfig.class)
 @DirtiesContext
-class IsolatedTransactionModeSqlScriptsTests extends AbstractTransactionalTests {
+public class IsolatedTransactionModeSqlScriptsTests extends AbstractTransactionalJUnit4SpringContextTests {
 
 	@BeforeTransaction
-	void beforeTransaction() {
+	public void beforeTransaction() {
 		assertNumUsers(0);
 	}
 
 	@Test
 	@SqlGroup(@Sql(scripts = "data-add-dogbert.sql", config = @SqlConfig(transactionMode = TransactionMode.ISOLATED)))
-	void methodLevelScripts() {
+	public void methodLevelScripts() {
 		assertNumUsers(1);
 	}
 
 	@AfterTransaction
-	void afterTransaction() {
+	public void afterTransaction() {
 		assertNumUsers(1);
+	}
+
+	protected void assertNumUsers(int expected) {
+		assertEquals("Number of rows in the 'user' table.", expected, countRowsInTable("user"));
 	}
 
 }

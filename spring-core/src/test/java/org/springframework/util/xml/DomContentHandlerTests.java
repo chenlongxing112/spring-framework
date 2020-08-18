@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,25 +17,23 @@
 package org.springframework.util.xml;
 
 import java.io.StringReader;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
-import org.springframework.core.testfixture.xml.XmlContent;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
+import static org.xmlunit.matchers.CompareMatcher.*;
 
 /**
  * Unit tests for {@link DomContentHandler}.
  */
-class DomContentHandlerTests {
+public class DomContentHandlerTests {
 
 	private static final String XML_1 =
 			"<?xml version='1.0' encoding='UTF-8'?>" + "<?pi content?>" + "<root xmlns='namespace'>" +
@@ -61,9 +59,9 @@ class DomContentHandlerTests {
 	private DocumentBuilder documentBuilder;
 
 
-	@BeforeEach
+	@Before
 	@SuppressWarnings("deprecation")  // on JDK 9
-	void setUp() throws Exception {
+	public void setUp() throws Exception {
 		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		documentBuilderFactory.setNamespaceAware(true);
 		documentBuilder = documentBuilderFactory.newDocumentBuilder();
@@ -73,33 +71,33 @@ class DomContentHandlerTests {
 
 
 	@Test
-	void contentHandlerDocumentNamespacePrefixes() throws Exception {
+	public void contentHandlerDocumentNamespacePrefixes() throws Exception {
 		xmlReader.setFeature("http://xml.org/sax/features/namespace-prefixes", true);
 		handler = new DomContentHandler(result);
 		expected = documentBuilder.parse(new InputSource(new StringReader(XML_1)));
 		xmlReader.setContentHandler(handler);
 		xmlReader.parse(new InputSource(new StringReader(XML_1)));
-		assertThat(XmlContent.of(result)).as("Invalid result").isSimilarTo(expected);
+		assertThat("Invalid result", result, isSimilarTo(expected));
 	}
 
 	@Test
-	void contentHandlerDocumentNoNamespacePrefixes() throws Exception {
+	public void contentHandlerDocumentNoNamespacePrefixes() throws Exception {
 		handler = new DomContentHandler(result);
 		expected = documentBuilder.parse(new InputSource(new StringReader(XML_1)));
 		xmlReader.setContentHandler(handler);
 		xmlReader.parse(new InputSource(new StringReader(XML_1)));
-		assertThat(XmlContent.of(result)).as("Invalid result").isSimilarTo(expected);
+		assertThat("Invalid result", result, isSimilarTo(expected));
 	}
 
 	@Test
-	void contentHandlerElement() throws Exception {
+	public void contentHandlerElement() throws Exception {
 		Element rootElement = result.createElementNS("namespace", "root");
 		result.appendChild(rootElement);
 		handler = new DomContentHandler(rootElement);
 		expected = documentBuilder.parse(new InputSource(new StringReader(XML_2_EXPECTED)));
 		xmlReader.setContentHandler(handler);
 		xmlReader.parse(new InputSource(new StringReader(XML_2_SNIPPET)));
-		assertThat(XmlContent.of(result)).as("Invalid result").isSimilarTo(expected);
+		assertThat("Invalid result", result, isSimilarTo(expected));
 	}
 
 }

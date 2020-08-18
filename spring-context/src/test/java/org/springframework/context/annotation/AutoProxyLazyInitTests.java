@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,7 @@ package org.springframework.context.annotation;
 
 import javax.annotation.PreDestroy;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator;
 import org.springframework.aop.framework.autoproxy.target.LazyInitTargetSourceCreator;
@@ -27,7 +27,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ApplicationContextEvent;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
@@ -42,9 +42,9 @@ public class AutoProxyLazyInitTests {
 		ApplicationContext ctx = new AnnotationConfigApplicationContext(ConfigWithStatic.class);
 		MyBean bean = ctx.getBean("myBean", MyBean.class);
 
-		assertThat(MyBeanImpl.initialized).isFalse();
+		assertFalse(MyBeanImpl.initialized);
 		bean.doIt();
-		assertThat(MyBeanImpl.initialized).isTrue();
+		assertTrue(MyBeanImpl.initialized);
 	}
 
 	@Test
@@ -54,9 +54,9 @@ public class AutoProxyLazyInitTests {
 		ApplicationContext ctx = new AnnotationConfigApplicationContext(ConfigWithStaticAndInterface.class);
 		MyBean bean = ctx.getBean("myBean", MyBean.class);
 
-		assertThat(MyBeanImpl.initialized).isFalse();
+		assertFalse(MyBeanImpl.initialized);
 		bean.doIt();
-		assertThat(MyBeanImpl.initialized).isTrue();
+		assertTrue(MyBeanImpl.initialized);
 	}
 
 	@Test
@@ -66,9 +66,9 @@ public class AutoProxyLazyInitTests {
 		ApplicationContext ctx = new AnnotationConfigApplicationContext(ConfigWithNonStatic.class);
 		MyBean bean = ctx.getBean("myBean", MyBean.class);
 
-		assertThat(MyBeanImpl.initialized).isFalse();
+		assertFalse(MyBeanImpl.initialized);
 		bean.doIt();
-		assertThat(MyBeanImpl.initialized).isTrue();
+		assertTrue(MyBeanImpl.initialized);
 	}
 
 	@Test
@@ -78,9 +78,9 @@ public class AutoProxyLazyInitTests {
 		ApplicationContext ctx = new AnnotationConfigApplicationContext(ConfigWithNonStaticAndInterface.class);
 		MyBean bean = ctx.getBean("myBean", MyBean.class);
 
-		assertThat(MyBeanImpl.initialized).isFalse();
+		assertFalse(MyBeanImpl.initialized);
 		bean.doIt();
-		assertThat(MyBeanImpl.initialized).isTrue();
+		assertTrue(MyBeanImpl.initialized);
 	}
 
 
@@ -214,7 +214,7 @@ public class AutoProxyLazyInitTests {
 		@Override
 		protected AbstractBeanFactoryBasedTargetSource createBeanFactoryBasedTargetSource(Class<?> beanClass, String beanName) {
 			if ("myBean".equals(beanName)) {
-				assertThat(beanClass).isEqualTo(MyBean.class);
+				assertEquals(MyBean.class, beanClass);
 			}
 			return super.createBeanFactoryBasedTargetSource(beanClass, beanName);
 		}

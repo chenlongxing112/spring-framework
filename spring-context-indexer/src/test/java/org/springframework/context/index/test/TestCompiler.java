@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,10 @@ package org.springframework.context.index.test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import javax.annotation.processing.Processor;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
@@ -31,11 +29,12 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
+import org.junit.rules.TemporaryFolder;
+
 /**
  * Wrapper to make the {@link JavaCompiler} easier to use in tests.
  *
  * @author Stephane Nicoll
- * @author Sam Brannen
  */
 public class TestCompiler {
 
@@ -48,14 +47,14 @@ public class TestCompiler {
 	private final File outputLocation;
 
 
-	public TestCompiler(Path tempDir) throws IOException {
-		this(ToolProvider.getSystemJavaCompiler(), tempDir);
+	public TestCompiler(TemporaryFolder temporaryFolder) throws IOException {
+		this(ToolProvider.getSystemJavaCompiler(), temporaryFolder);
 	}
 
-	public TestCompiler(JavaCompiler compiler, Path tempDir) throws IOException {
+	public TestCompiler(JavaCompiler compiler, TemporaryFolder temporaryFolder) throws IOException {
 		this.compiler = compiler;
 		this.fileManager = compiler.getStandardFileManager(null, null, null);
-		this.outputLocation = tempDir.toFile();
+		this.outputLocation = temporaryFolder.newFolder();
 		Iterable<? extends File> temp = Collections.singletonList(this.outputLocation);
 		this.fileManager.setLocation(StandardLocation.CLASS_OUTPUT, temp);
 		this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, temp);

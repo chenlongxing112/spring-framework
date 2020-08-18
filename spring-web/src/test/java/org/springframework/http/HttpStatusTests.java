@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,20 +19,17 @@ package org.springframework.http;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
-/**
- * @author Arjen Poutsma
- */
+/** @author Arjen Poutsma */
 public class HttpStatusTests {
 
 	private Map<Integer, String> statusCodes = new LinkedHashMap<>();
 
-
-	@BeforeEach
+	@Before
 	public void createStatusCodes() {
 		statusCodes.put(100, "CONTINUE");
 		statusCodes.put(101, "SWITCHING_PROTOCOLS");
@@ -84,7 +81,6 @@ public class HttpStatusTests {
 		statusCodes.put(422, "UNPROCESSABLE_ENTITY");
 		statusCodes.put(423, "LOCKED");
 		statusCodes.put(424, "FAILED_DEPENDENCY");
-		statusCodes.put(425, "TOO_EARLY");
 		statusCodes.put(426, "UPGRADE_REQUIRED");
 		statusCodes.put(428, "PRECONDITION_REQUIRED");
 		statusCodes.put(429, "TOO_MANY_REQUESTS");
@@ -105,27 +101,26 @@ public class HttpStatusTests {
 		statusCodes.put(511, "NETWORK_AUTHENTICATION_REQUIRED");
 	}
 
-
 	@Test
 	public void fromMapToEnum() {
 		for (Map.Entry<Integer, String> entry : statusCodes.entrySet()) {
 			int value = entry.getKey();
 			HttpStatus status = HttpStatus.valueOf(value);
-			assertThat(status.value()).as("Invalid value").isEqualTo(value);
-			assertThat(status.name()).as("Invalid name for [" + value + "]").isEqualTo(entry.getValue());
+			assertEquals("Invalid value", value, status.value());
+			assertEquals("Invalid name for [" + value + "]", entry.getValue(), status.name());
 		}
 	}
 
 	@Test
 	public void fromEnumToMap() {
+
 		for (HttpStatus status : HttpStatus.values()) {
 			int value = status.value();
 			if (value == 302 || value == 413 || value == 414) {
 				continue;
 			}
-			assertThat(statusCodes.containsKey(value)).as("Map has no value for [" + value + "]").isTrue();
-			assertThat(status.name()).as("Invalid name for [" + value + "]").isEqualTo(statusCodes.get(value));
+			assertTrue("Map has no value for [" + value + "]", statusCodes.containsKey(value));
+			assertEquals("Invalid name for [" + value + "]", statusCodes.get(value), status.name());
 		}
 	}
-
 }

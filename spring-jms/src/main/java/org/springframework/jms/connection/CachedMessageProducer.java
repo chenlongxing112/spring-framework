@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -89,7 +89,6 @@ class CachedMessageProducer implements MessageProducer, QueueSender, TopicPublis
 		return this.target.getDisableMessageTimestamp();
 	}
 
-	@Override
 	public void setDeliveryDelay(long deliveryDelay) throws JMSException {
 		if (this.originalDeliveryDelay == null) {
 			this.originalDeliveryDelay = this.target.getDeliveryDelay();
@@ -97,7 +96,6 @@ class CachedMessageProducer implements MessageProducer, QueueSender, TopicPublis
 		this.target.setDeliveryDelay(deliveryDelay);
 	}
 
-	@Override
 	public long getDeliveryDelay() throws JMSException {
 		return this.target.getDeliveryDelay();
 	}

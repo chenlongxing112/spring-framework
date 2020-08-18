@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,11 +19,12 @@ package org.springframework.web.method.annotation;
 import java.lang.reflect.Method;
 import java.util.Collections;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.format.support.DefaultFormattingConversionService;
+import org.springframework.mock.web.test.MockHttpServletRequest;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,10 +35,11 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolverComposite;
 import org.springframework.web.method.support.InvocableHandlerMethod;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 
 /**
  * Test fixture with {@link InitBinderDataBinderFactory}.
@@ -60,8 +62,8 @@ public class InitBinderDataBinderFactoryTests {
 		WebDataBinderFactory factory = createFactory("initBinder", WebDataBinder.class);
 		WebDataBinder dataBinder = factory.createBinder(this.webRequest, null, null);
 
-		assertThat(dataBinder.getDisallowedFields()).isNotNull();
-		assertThat(dataBinder.getDisallowedFields()[0]).isEqualTo("id");
+		assertNotNull(dataBinder.getDisallowedFields());
+		assertEquals("id", dataBinder.getDisallowedFields()[0]);
 	}
 
 	@Test
@@ -72,7 +74,7 @@ public class InitBinderDataBinderFactoryTests {
 		WebDataBinderFactory factory = createFactory("initBinder", WebDataBinder.class);
 		WebDataBinder dataBinder = factory.createBinder(this.webRequest, null, null);
 
-		assertThat(dataBinder.getConversionService()).isSameAs(conversionService);
+		assertSame(conversionService, dataBinder.getConversionService());
 	}
 
 	@Test
@@ -80,8 +82,8 @@ public class InitBinderDataBinderFactoryTests {
 		WebDataBinderFactory factory = createFactory("initBinderWithAttributeName", WebDataBinder.class);
 		WebDataBinder dataBinder = factory.createBinder(this.webRequest, null, "foo");
 
-		assertThat(dataBinder.getDisallowedFields()).isNotNull();
-		assertThat(dataBinder.getDisallowedFields()[0]).isEqualTo("id");
+		assertNotNull(dataBinder.getDisallowedFields());
+		assertEquals("id", dataBinder.getDisallowedFields()[0]);
 	}
 
 	@Test
@@ -89,7 +91,7 @@ public class InitBinderDataBinderFactoryTests {
 		WebDataBinderFactory factory = createFactory("initBinderWithAttributeName", WebDataBinder.class);
 		WebDataBinder dataBinder = factory.createBinder(this.webRequest, null, "invalidName");
 
-		assertThat(dataBinder.getDisallowedFields()).isNull();
+		assertNull(dataBinder.getDisallowedFields());
 	}
 
 	@Test
@@ -97,14 +99,13 @@ public class InitBinderDataBinderFactoryTests {
 		WebDataBinderFactory factory = createFactory("initBinderWithAttributeName", WebDataBinder.class);
 		WebDataBinder dataBinder = factory.createBinder(this.webRequest, null, null);
 
-		assertThat(dataBinder.getDisallowedFields()).isNull();
+		assertNull(dataBinder.getDisallowedFields());
 	}
 
-	@Test
+	@Test(expected = IllegalStateException.class)
 	public void returnValueNotExpected() throws Exception {
 		WebDataBinderFactory factory = createFactory("initBinderReturnValue", WebDataBinder.class);
-		assertThatIllegalStateException().isThrownBy(() ->
-				factory.createBinder(this.webRequest, null, "invalidName"));
+		factory.createBinder(this.webRequest, null, "invalidName");
 	}
 
 	@Test
@@ -115,8 +116,8 @@ public class InitBinderDataBinderFactoryTests {
 		WebDataBinderFactory factory = createFactory("initBinderTypeConversion", WebDataBinder.class, int.class);
 		WebDataBinder dataBinder = factory.createBinder(this.webRequest, null, "foo");
 
-		assertThat(dataBinder.getDisallowedFields()).isNotNull();
-		assertThat(dataBinder.getDisallowedFields()[0]).isEqualTo("requestParam-22");
+		assertNotNull(dataBinder.getDisallowedFields());
+		assertEquals("requestParam-22", dataBinder.getDisallowedFields()[0]);
 	}
 
 	private WebDataBinderFactory createFactory(String methodName, Class<?>... parameterTypes)

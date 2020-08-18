@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.security.Principal;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,7 +44,6 @@ import org.springframework.http.codec.multipart.Part;
 import org.springframework.http.server.PathContainer;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyExtractor;
 import org.springframework.web.reactive.function.BodyExtractors;
@@ -88,23 +86,6 @@ class DefaultServerRequest implements ServerRequest {
 		this.headers = new DefaultHeaders();
 	}
 
-	static Mono<ServerResponse> checkNotModified(ServerWebExchange exchange, @Nullable Instant lastModified,
-			@Nullable String etag) {
-
-		if (lastModified == null) {
-			lastModified = Instant.MIN;
-		}
-
-		if (exchange.checkNotModified(etag, lastModified)) {
-			Integer statusCode = exchange.getResponse().getRawStatusCode();
-			return ServerResponse.status(statusCode != null ? statusCode : 200)
-					.headers(headers -> headers.addAll(exchange.getResponse().getHeaders()))
-					.build();
-		}
-		else {
-			return Mono.empty();
-		}
-	}
 
 	@Override
 	public String methodName() {
@@ -139,11 +120,6 @@ class DefaultServerRequest implements ServerRequest {
 	@Override
 	public Optional<InetSocketAddress> remoteAddress() {
 		return Optional.ofNullable(request().getRemoteAddress());
-	}
-
-	@Override
-	public Optional<InetSocketAddress> localAddress() {
-		return Optional.ofNullable(request().getLocalAddress());
 	}
 
 	@Override

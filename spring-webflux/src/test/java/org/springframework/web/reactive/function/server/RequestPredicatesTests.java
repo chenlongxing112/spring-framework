@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,150 +20,103 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.function.Function;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest;
-import org.springframework.web.testfixture.server.MockServerWebExchange;
 import org.springframework.web.util.pattern.PathPatternParser;
 
-import static java.util.Collections.emptyList;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Arjen Poutsma
  */
 public class RequestPredicatesTests {
 
-
 	@Test
 	public void all() {
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.get("https://example.com").build();
-		MockServerWebExchange mockExchange = MockServerWebExchange.from(mockRequest);
 		RequestPredicate predicate = RequestPredicates.all();
-		ServerRequest request = new DefaultServerRequest(mockExchange, Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		MockServerRequest request = MockServerRequest.builder().build();
+		assertTrue(predicate.test(request));
 	}
 
 	@Test
 	public void method() {
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.get("https://example.com").build();
-
 		HttpMethod httpMethod = HttpMethod.GET;
 		RequestPredicate predicate = RequestPredicates.method(httpMethod);
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		MockServerRequest request = MockServerRequest.builder().method(httpMethod).build();
+		assertTrue(predicate.test(request));
 
-		mockRequest = MockServerHttpRequest.post("https://example.com").build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isFalse();
+		request = MockServerRequest.builder().method(HttpMethod.POST).build();
+		assertFalse(predicate.test(request));
 	}
-
-	@Test
-	public void methodCorsPreFlight() {
-		RequestPredicate predicate = RequestPredicates.method(HttpMethod.PUT);
-
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.options("https://example.com")
-				.header("Origin", "https://example.com")
-				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "PUT")
-				.build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-
-		assertThat(predicate.test(request)).isTrue();
-
-		mockRequest = MockServerHttpRequest.options("https://example.com")
-				.header("Origin", "https://example.com")
-				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
-				.build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isFalse();
-	}
-
 
 	@Test
 	public void methods() {
 		RequestPredicate predicate = RequestPredicates.methods(HttpMethod.GET, HttpMethod.HEAD);
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.get("https://example.com").build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		MockServerRequest request = MockServerRequest.builder().method(HttpMethod.GET).build();
+		assertTrue(predicate.test(request));
 
-		mockRequest = MockServerHttpRequest.head("https://example.com").build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		request = MockServerRequest.builder().method(HttpMethod.HEAD).build();
+		assertTrue(predicate.test(request));
 
-		mockRequest = MockServerHttpRequest.post("https://example.com").build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isFalse();
+		request = MockServerRequest.builder().method(HttpMethod.POST).build();
+		assertFalse(predicate.test(request));
 	}
 
 	@Test
 	public void allMethods() {
+		URI uri = URI.create("http://localhost/path");
+
 		RequestPredicate predicate = RequestPredicates.GET("/p*");
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.get("https://example.com/path").build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		MockServerRequest request = MockServerRequest.builder().method(HttpMethod.GET).uri(uri).build();
+		assertTrue(predicate.test(request));
 
 		predicate = RequestPredicates.HEAD("/p*");
-		mockRequest = MockServerHttpRequest.head("https://example.com/path").build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		request = MockServerRequest.builder().method(HttpMethod.HEAD).uri(uri).build();
+		assertTrue(predicate.test(request));
 
 		predicate = RequestPredicates.POST("/p*");
-		mockRequest = MockServerHttpRequest.post("https://example.com/path").build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		request = MockServerRequest.builder().method(HttpMethod.POST).uri(uri).build();
+		assertTrue(predicate.test(request));
 
 		predicate = RequestPredicates.PUT("/p*");
-		mockRequest = MockServerHttpRequest.put("https://example.com/path").build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		request = MockServerRequest.builder().method(HttpMethod.PUT).uri(uri).build();
+		assertTrue(predicate.test(request));
 
 		predicate = RequestPredicates.PATCH("/p*");
-		mockRequest = MockServerHttpRequest.patch("https://example.com/path").build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		request = MockServerRequest.builder().method(HttpMethod.PATCH).uri(uri).build();
+		assertTrue(predicate.test(request));
 
 		predicate = RequestPredicates.DELETE("/p*");
-		mockRequest = MockServerHttpRequest.delete("https://example.com/path").build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		request = MockServerRequest.builder().method(HttpMethod.DELETE).uri(uri).build();
+		assertTrue(predicate.test(request));
 
 		predicate = RequestPredicates.OPTIONS("/p*");
-		mockRequest = MockServerHttpRequest.options("https://example.com/path").build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		request = MockServerRequest.builder().method(HttpMethod.OPTIONS).uri(uri).build();
+		assertTrue(predicate.test(request));
 	}
 
 	@Test
 	public void path() {
-		URI uri = URI.create("https://localhost/path");
+		URI uri = URI.create("http://localhost/path");
 		RequestPredicate predicate = RequestPredicates.path("/p*");
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.get(uri.toString()).build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		MockServerRequest request = MockServerRequest.builder().uri(uri).build();
+		assertTrue(predicate.test(request));
 
-		mockRequest = MockServerHttpRequest.head("https://example.com").build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isFalse();
-	}
-
-	@Test
-	public void pathNoLeadingSlash() {
-		RequestPredicate predicate = RequestPredicates.path("p*");
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.get("https://example.com/path").build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		request = MockServerRequest.builder().build();
+		assertFalse(predicate.test(request));
 	}
 
 	@Test
 	public void pathEncoded() {
-		URI uri = URI.create("https://localhost/foo%20bar");
+		URI uri = URI.create("http://localhost/foo%20bar");
 		RequestPredicate predicate = RequestPredicates.path("/foo bar");
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.method(HttpMethod.GET, uri).build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		MockServerRequest request = MockServerRequest.builder().uri(uri).build();
+		assertTrue(predicate.test(request));
+
+		request = MockServerRequest.builder().build();
+		assertFalse(predicate.test(request));
 	}
 
 	@Test
@@ -172,10 +125,10 @@ public class RequestPredicatesTests {
 		parser.setCaseSensitive(false);
 		Function<String, RequestPredicate> pathPredicates = RequestPredicates.pathPredicates(parser);
 
+		URI uri = URI.create("http://localhost/path");
 		RequestPredicate predicate = pathPredicates.apply("/P*");
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.get("https://example.com/path").build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		MockServerRequest request = MockServerRequest.builder().uri(uri).build();
+		assertTrue(predicate.test(request));
 	}
 
 	@Test
@@ -185,98 +138,63 @@ public class RequestPredicatesTests {
 		RequestPredicate predicate =
 				RequestPredicates.headers(
 						headers -> headers.header(name).equals(Collections.singletonList(value)));
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.get("https://example.com")
-				.header(name, value)
-				.build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		MockServerRequest request = MockServerRequest.builder().header(name, value).build();
+		assertTrue(predicate.test(request));
 
-		mockRequest = MockServerHttpRequest.get("https://example.com")
-				.header(name, "bar")
-				.build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isFalse();
+		request = MockServerRequest.builder().build();
+		assertFalse(predicate.test(request));
 	}
-
-	@Test
-	public void headersCors() {
-		RequestPredicate predicate = RequestPredicates.headers(headers -> false);
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.options("https://example.com")
-				.header("Origin", "https://example.com")
-				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "PUT")
-				.build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
-	}
-
 
 	@Test
 	public void contentType() {
 		MediaType json = MediaType.APPLICATION_JSON;
 		RequestPredicate predicate = RequestPredicates.contentType(json);
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.get("https://example.com")
-				.header(HttpHeaders.CONTENT_TYPE, json.toString())
-				.build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		MockServerRequest request = MockServerRequest.builder().header("Content-Type", json.toString()).build();
+		assertTrue(predicate.test(request));
 
-		mockRequest = MockServerHttpRequest.get("https://example.com")
-				.header(HttpHeaders.CONTENT_TYPE, "foo/bar")
-				.build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isFalse();
+		request = MockServerRequest.builder().build();
+		assertFalse(predicate.test(request));
 	}
 
 	@Test
 	public void accept() {
 		MediaType json = MediaType.APPLICATION_JSON;
 		RequestPredicate predicate = RequestPredicates.accept(json);
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.get("https://example.com")
-				.header(HttpHeaders.ACCEPT, json.toString())
-				.build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		MockServerRequest request = MockServerRequest.builder().header("Accept", json.toString()).build();
+		assertTrue(predicate.test(request));
 
-		mockRequest = MockServerHttpRequest.get("https://example.com")
-				.header(HttpHeaders.ACCEPT, "foo/bar")
-				.build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isFalse();
+		request = MockServerRequest.builder().header("Accept", MediaType.TEXT_XML_VALUE).build();
+		assertFalse(predicate.test(request));
 	}
 
 	@Test
 	public void pathExtension() {
 		RequestPredicate predicate = RequestPredicates.pathExtension("txt");
 
-		URI uri = URI.create("https://localhost/file.txt");
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.method(HttpMethod.GET, uri).build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		URI uri = URI.create("http://localhost/file.txt");
+		MockServerRequest request = MockServerRequest.builder().uri(uri).build();
+		assertTrue(predicate.test(request));
 
-		uri = URI.create("https://localhost/FILE.TXT");
-		mockRequest = MockServerHttpRequest.method(HttpMethod.GET, uri).build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isTrue();
+		uri = URI.create("http://localhost/FILE.TXT");
+		request = MockServerRequest.builder().uri(uri).build();
+		assertTrue(predicate.test(request));
 
 		predicate = RequestPredicates.pathExtension("bar");
-		assertThat(predicate.test(request)).isFalse();
+		assertFalse(predicate.test(request));
 
-		uri = URI.create("https://localhost/file.foo");
-		mockRequest = MockServerHttpRequest.method(HttpMethod.GET, uri).build();
-		request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
-		assertThat(predicate.test(request)).isFalse();
+		uri = URI.create("http://localhost/file.foo");
+		request = MockServerRequest.builder().uri(uri).build();
+		assertFalse(predicate.test(request));
 	}
 
 	@Test
 	public void queryParam() {
-		MockServerHttpRequest mockRequest = MockServerHttpRequest.get("https://example.com")
-				.queryParam("foo", "bar").build();
-		ServerRequest request = new DefaultServerRequest(MockServerWebExchange.from(mockRequest), Collections.emptyList());
+		MockServerRequest request = MockServerRequest.builder().queryParam("foo", "bar").build();
 		RequestPredicate predicate = RequestPredicates.queryParam("foo", s -> s.equals("bar"));
-		assertThat(predicate.test(request)).isTrue();
+		assertTrue(predicate.test(request));
 
 		predicate = RequestPredicates.queryParam("foo", s -> s.equals("baz"));
-		assertThat(predicate.test(request)).isFalse();
+		assertFalse(predicate.test(request));
 	}
 
 }

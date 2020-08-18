@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package org.springframework.format.support;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -27,9 +28,9 @@ import java.util.Properties;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.ConfigurablePropertyAccessor;
@@ -54,8 +55,7 @@ import org.springframework.format.datetime.joda.JodaDateTimeFormatAnnotationForm
 import org.springframework.format.datetime.joda.ReadablePartialPrinter;
 import org.springframework.format.number.NumberStyleFormatter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * @author Keith Donald
@@ -68,30 +68,30 @@ public class FormattingConversionServiceTests {
 	private FormattingConversionService formattingService;
 
 
-	@BeforeEach
+	@Before
 	public void setUp() {
 		formattingService = new FormattingConversionService();
 		DefaultConversionService.addDefaultConverters(formattingService);
 		LocaleContextHolder.setLocale(Locale.US);
 	}
 
-	@AfterEach
+	@After
 	public void tearDown() {
 		LocaleContextHolder.setLocale(null);
 	}
 
 
 	@Test
-	public void formatFieldForTypeWithFormatter() {
+	public void formatFieldForTypeWithFormatter() throws ParseException {
 		formattingService.addFormatterForFieldType(Number.class, new NumberStyleFormatter());
 		String formatted = formattingService.convert(3, String.class);
-		assertThat(formatted).isEqualTo("3");
+		assertEquals("3", formatted);
 		Integer i = formattingService.convert("3", Integer.class);
-		assertThat(i).isEqualTo(3);
+		assertEquals(new Integer(3), i);
 	}
 
 	@Test
-	public void formatFieldForTypeWithPrinterParserWithCoercion() {
+	public void formatFieldForTypeWithPrinterParserWithCoercion() throws ParseException {
 		formattingService.addConverter(new Converter<DateTime, LocalDate>() {
 			@Override
 			public LocalDate convert(DateTime source) {
@@ -101,9 +101,9 @@ public class FormattingConversionServiceTests {
 		formattingService.addFormatterForFieldType(LocalDate.class, new ReadablePartialPrinter(DateTimeFormat
 				.shortDate()), new DateTimeParser(DateTimeFormat.shortDate()));
 		String formatted = formattingService.convert(new LocalDate(2009, 10, 31), String.class);
-		assertThat(formatted).isEqualTo("10/31/09");
+		assertEquals("10/31/09", formatted);
 		LocalDate date = formattingService.convert("10/31/09", LocalDate.class);
-		assertThat(date).isEqualTo(new LocalDate(2009, 10, 31));
+		assertEquals(new LocalDate(2009, 10, 31), date);
 	}
 
 	@Test
@@ -114,7 +114,7 @@ public class FormattingConversionServiceTests {
 		ac.registerBeanDefinition("conversionService", new RootBeanDefinition(FormattingConversionServiceFactoryBean.class));
 		ac.refresh();
 		ValueBean valueBean = ac.getBean(ValueBean.class);
-		assertThat(new LocalDate(valueBean.date)).isEqualTo(new LocalDate(2009, 10, 31));
+		assertEquals(new LocalDate(2009, 10, 31), new LocalDate(valueBean.date));
 	}
 
 	@Test
@@ -131,8 +131,8 @@ public class FormattingConversionServiceTests {
 		System.setProperty("myNumber", "99.99%");
 		try {
 			MetaValueBean valueBean = ac.getBean(MetaValueBean.class);
-			assertThat(new LocalDate(valueBean.date)).isEqualTo(new LocalDate(2009, 10, 31));
-			assertThat(valueBean.number).isEqualTo(Double.valueOf(0.9999));
+			assertEquals(new LocalDate(2009, 10, 31), new LocalDate(valueBean.date));
+			assertEquals(Double.valueOf(0.9999), valueBean.number);
 		}
 		finally {
 			System.clearProperty("myDate");
@@ -201,10 +201,10 @@ public class FormattingConversionServiceTests {
 
 		String formatted = (String) formattingService.convert(new LocalDate(2009, 10, 31).toDateTimeAtCurrentTime()
 				.toDate(), new TypeDescriptor(modelClass.getField("date")), TypeDescriptor.valueOf(String.class));
-		assertThat(formatted).isEqualTo("10/31/09");
+		assertEquals("10/31/09", formatted);
 		LocalDate date = new LocalDate(formattingService.convert("10/31/09", TypeDescriptor.valueOf(String.class),
 				new TypeDescriptor(modelClass.getField("date"))));
-		assertThat(date).isEqualTo(new LocalDate(2009, 10, 31));
+		assertEquals(new LocalDate(2009, 10, 31), date);
 
 		List<Date> dates = new ArrayList<>();
 		dates.add(new LocalDate(2009, 10, 31).toDateTimeAtCurrentTime().toDate());
@@ -212,12 +212,12 @@ public class FormattingConversionServiceTests {
 		dates.add(new LocalDate(2009, 11, 2).toDateTimeAtCurrentTime().toDate());
 		formatted = (String) formattingService.convert(dates,
 				new TypeDescriptor(modelClass.getField("dates")), TypeDescriptor.valueOf(String.class));
-		assertThat(formatted).isEqualTo("10-31-09,11-1-09,11-2-09");
+		assertEquals("10-31-09,11-1-09,11-2-09", formatted);
 		dates = (List<Date>) formattingService.convert("10-31-09,11-1-09,11-2-09",
 				TypeDescriptor.valueOf(String.class), new TypeDescriptor(modelClass.getField("dates")));
-		assertThat(new LocalDate(dates.get(0))).isEqualTo(new LocalDate(2009, 10, 31));
-		assertThat(new LocalDate(dates.get(1))).isEqualTo(new LocalDate(2009, 11, 1));
-		assertThat(new LocalDate(dates.get(2))).isEqualTo(new LocalDate(2009, 11, 2));
+		assertEquals(new LocalDate(2009, 10, 31), new LocalDate(dates.get(0)));
+		assertEquals(new LocalDate(2009, 11, 1), new LocalDate(dates.get(1)));
+		assertEquals(new LocalDate(2009, 11, 2), new LocalDate(dates.get(2)));
 
 		Object model = modelClass.newInstance();
 		ConfigurablePropertyAccessor accessor = directFieldAccess ? PropertyAccessorFactory.forDirectFieldAccess(model) :
@@ -225,74 +225,72 @@ public class FormattingConversionServiceTests {
 		accessor.setConversionService(formattingService);
 		accessor.setPropertyValue("dates", "10-31-09,11-1-09,11-2-09");
 		dates = (List<Date>) accessor.getPropertyValue("dates");
-		assertThat(new LocalDate(dates.get(0))).isEqualTo(new LocalDate(2009, 10, 31));
-		assertThat(new LocalDate(dates.get(1))).isEqualTo(new LocalDate(2009, 11, 1));
-		assertThat(new LocalDate(dates.get(2))).isEqualTo(new LocalDate(2009, 11, 2));
+		assertEquals(new LocalDate(2009, 10, 31), new LocalDate(dates.get(0)));
+		assertEquals(new LocalDate(2009, 11, 1), new LocalDate(dates.get(1)));
+		assertEquals(new LocalDate(2009, 11, 2), new LocalDate(dates.get(2)));
 		if (!directFieldAccess) {
 			accessor.setPropertyValue("dates[0]", "10-30-09");
 			accessor.setPropertyValue("dates[1]", "10-1-09");
 			accessor.setPropertyValue("dates[2]", "10-2-09");
 			dates = (List<Date>) accessor.getPropertyValue("dates");
-			assertThat(new LocalDate(dates.get(0))).isEqualTo(new LocalDate(2009, 10, 30));
-			assertThat(new LocalDate(dates.get(1))).isEqualTo(new LocalDate(2009, 10, 1));
-			assertThat(new LocalDate(dates.get(2))).isEqualTo(new LocalDate(2009, 10, 2));
+			assertEquals(new LocalDate(2009, 10, 30), new LocalDate(dates.get(0)));
+			assertEquals(new LocalDate(2009, 10, 1), new LocalDate(dates.get(1)));
+			assertEquals(new LocalDate(2009, 10, 2), new LocalDate(dates.get(2)));
 		}
 	}
 
 	@Test
-	public void printNull() {
+	public void printNull() throws ParseException {
 		formattingService.addFormatterForFieldType(Number.class, new NumberStyleFormatter());
-		assertThat(formattingService.convert(null, TypeDescriptor.valueOf(Integer.class), TypeDescriptor.valueOf(String.class))).isEqualTo("");
+		assertEquals("", formattingService.convert(null, TypeDescriptor.valueOf(Integer.class), TypeDescriptor.valueOf(String.class)));
 	}
 
 	@Test
-	public void parseNull() {
+	public void parseNull() throws ParseException {
 		formattingService.addFormatterForFieldType(Number.class, new NumberStyleFormatter());
-		assertThat(formattingService
-				.convert(null, TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class))).isNull();
+		assertNull(formattingService
+				.convert(null, TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class)));
 	}
 
 	@Test
-	public void parseEmptyString() {
+	public void parseEmptyString() throws ParseException {
 		formattingService.addFormatterForFieldType(Number.class, new NumberStyleFormatter());
-		assertThat(formattingService.convert("", TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class))).isNull();
+		assertNull(formattingService.convert("", TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class)));
 	}
 
 	@Test
-	public void parseBlankString() {
+	public void parseBlankString() throws ParseException {
 		formattingService.addFormatterForFieldType(Number.class, new NumberStyleFormatter());
-		assertThat(formattingService.convert("     ", TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class))).isNull();
+		assertNull(formattingService.convert("     ", TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class)));
 	}
 
-	@Test
-	public void parseParserReturnsNull() {
+	@Test(expected = ConversionFailedException.class)
+	public void parseParserReturnsNull() throws ParseException {
 		formattingService.addFormatterForFieldType(Integer.class, new NullReturningFormatter());
-		assertThatExceptionOfType(ConversionFailedException.class).isThrownBy(() ->
-				formattingService.convert("1", TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class)));
+		assertNull(formattingService.convert("1", TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class)));
 	}
 
-	@Test
-	public void parseNullPrimitiveProperty() {
+	@Test(expected = ConversionFailedException.class)
+	public void parseNullPrimitiveProperty() throws ParseException {
 		formattingService.addFormatterForFieldType(Integer.class, new NumberStyleFormatter());
-		assertThatExceptionOfType(ConversionFailedException.class).isThrownBy(() ->
-				formattingService.convert(null, TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(int.class)));
+		assertNull(formattingService.convert(null, TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(int.class)));
 	}
 
 	@Test
-	public void printNullDefault() {
-		assertThat(formattingService
-				.convert(null, TypeDescriptor.valueOf(Integer.class), TypeDescriptor.valueOf(String.class))).isEqualTo(null);
+	public void printNullDefault() throws ParseException {
+		assertEquals(null, formattingService
+				.convert(null, TypeDescriptor.valueOf(Integer.class), TypeDescriptor.valueOf(String.class)));
 	}
 
 	@Test
-	public void parseNullDefault() {
-		assertThat(formattingService
-				.convert(null, TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class))).isNull();
+	public void parseNullDefault() throws ParseException {
+		assertNull(formattingService
+				.convert(null, TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class)));
 	}
 
 	@Test
-	public void parseEmptyStringDefault() {
-		assertThat(formattingService.convert("", TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class))).isNull();
+	public void parseEmptyStringDefault() throws ParseException {
+		assertNull(formattingService.convert("", TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class)));
 	}
 
 	@Test
@@ -300,7 +298,7 @@ public class FormattingConversionServiceTests {
 		formattingService.addFormatterForFieldAnnotation(new JodaDateTimeFormatAnnotationFormatterFactory() {
 			@Override
 			public Printer<?> getPrinter(org.springframework.format.annotation.DateTimeFormat annotation, Class<?> fieldType) {
-				assertThat(fieldType).isEqualTo(MyDate.class);
+				assertEquals(MyDate.class, fieldType);
 				return super.getPrinter(annotation, fieldType);
 			}
 		});
@@ -329,7 +327,7 @@ public class FormattingConversionServiceTests {
 	private <T> void registerDefaultValue(Class<T> clazz, final T defaultValue) {
 		formattingService.addFormatterForFieldType(clazz, new Formatter<T>() {
 			@Override
-			public T parse(String text, Locale locale) {
+			public T parse(String text, Locale locale) throws ParseException {
 				return defaultValue;
 			}
 			@Override
@@ -344,59 +342,42 @@ public class FormattingConversionServiceTests {
 	}
 
 	@Test
-	public void introspectedFormatter() {
-		formattingService.addFormatter(new NumberStyleFormatter("#,#00.0#"));
-		assertThat(formattingService.convert(123, String.class)).isEqualTo("123.0");
-		assertThat(formattingService.convert("123.0", Integer.class)).isEqualTo(123);
+	public void introspectedFormatter() throws ParseException {
+		formattingService.addFormatter(new NumberStyleFormatter());
+		assertNull(formattingService.convert(null, TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class)));
 	}
 
 	@Test
-	public void introspectedPrinter() {
-		formattingService.addPrinter(new NumberStyleFormatter("#,#00.0#"));
-		assertThat(formattingService.convert(123, String.class)).isEqualTo("123.0");
-		assertThatExceptionOfType(ConversionFailedException.class).isThrownBy(() ->
-				formattingService.convert("123.0", Integer.class))
-			.withCauseInstanceOf(NumberFormatException.class);
-	}
-
-	@Test
-	public void introspectedParser() {
-		formattingService.addParser(new NumberStyleFormatter("#,#00.0#"));
-		assertThat(formattingService.convert("123.0", Integer.class)).isEqualTo(123);
-		assertThat(formattingService.convert(123, String.class)).isEqualTo("123");
-	}
-
-	@Test
-	public void proxiedFormatter() {
+	public void proxiedFormatter() throws ParseException {
 		Formatter<?> formatter = new NumberStyleFormatter();
 		formattingService.addFormatter((Formatter<?>) new ProxyFactory(formatter).getProxy());
-		assertThat(formattingService.convert(null, TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class))).isNull();
+		assertNull(formattingService.convert(null, TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(Integer.class)));
 	}
 
 	@Test
 	public void introspectedConverter() {
 		formattingService.addConverter(new IntegerConverter());
-		assertThat(formattingService.convert("1", Integer.class)).isEqualTo(Integer.valueOf(1));
+		assertEquals(Integer.valueOf(1), formattingService.convert("1", Integer.class));
 	}
 
 	@Test
 	public void proxiedConverter() {
 		Converter<?, ?> converter = new IntegerConverter();
 		formattingService.addConverter((Converter<?, ?>) new ProxyFactory(converter).getProxy());
-		assertThat(formattingService.convert("1", Integer.class)).isEqualTo(Integer.valueOf(1));
+		assertEquals(Integer.valueOf(1), formattingService.convert("1", Integer.class));
 	}
 
 	@Test
 	public void introspectedConverterFactory() {
 		formattingService.addConverterFactory(new IntegerConverterFactory());
-		assertThat(formattingService.convert("1", Integer.class)).isEqualTo(Integer.valueOf(1));
+		assertEquals(Integer.valueOf(1), formattingService.convert("1", Integer.class));
 	}
 
 	@Test
 	public void proxiedConverterFactory() {
 		ConverterFactory<?, ?> converterFactory = new IntegerConverterFactory();
 		formattingService.addConverterFactory((ConverterFactory<?, ?>) new ProxyFactory(converterFactory).getProxy());
-		assertThat(formattingService.convert("1", Integer.class)).isEqualTo(Integer.valueOf(1));
+		assertEquals(Integer.valueOf(1), formattingService.convert("1", Integer.class));
 	}
 
 
@@ -482,7 +463,7 @@ public class FormattingConversionServiceTests {
 		}
 
 		@Override
-		public Integer parse(String text, Locale locale) {
+		public Integer parse(String text, Locale locale) throws ParseException {
 			return null;
 		}
 	}

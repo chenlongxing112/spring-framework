@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -30,6 +29,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.core.BridgeMethodResolver;
+import org.springframework.core.GenericTypeResolver;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.annotation.AnnotatedElementUtils;
@@ -89,8 +89,6 @@ public class HandlerMethod {
 	@Nullable
 	private volatile List<Annotation[][]> interfaceParameterAnnotations;
 
-	private final String description;
-
 
 	/**
 	 * Create an instance from a bean instance and a method.
@@ -105,7 +103,6 @@ public class HandlerMethod {
 		this.bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 		this.parameters = initMethodParameters();
 		evaluateResponseStatus();
-		this.description = initDescription(this.beanType, this.method);
 	}
 
 	/**
@@ -122,7 +119,6 @@ public class HandlerMethod {
 		this.bridgedMethod = BridgeMethodResolver.findBridgedMethod(this.method);
 		this.parameters = initMethodParameters();
 		evaluateResponseStatus();
-		this.description = initDescription(this.beanType, this.method);
 	}
 
 	/**
@@ -145,7 +141,6 @@ public class HandlerMethod {
 		this.bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 		this.parameters = initMethodParameters();
 		evaluateResponseStatus();
-		this.description = initDescription(this.beanType, this.method);
 	}
 
 	/**
@@ -161,7 +156,6 @@ public class HandlerMethod {
 		this.parameters = handlerMethod.parameters;
 		this.responseStatus = handlerMethod.responseStatus;
 		this.responseStatusReason = handlerMethod.responseStatusReason;
-		this.description = handlerMethod.description;
 		this.resolvedFromHandlerMethod = handlerMethod.resolvedFromHandlerMethod;
 	}
 
@@ -180,14 +174,15 @@ public class HandlerMethod {
 		this.responseStatus = handlerMethod.responseStatus;
 		this.responseStatusReason = handlerMethod.responseStatusReason;
 		this.resolvedFromHandlerMethod = handlerMethod;
-		this.description = handlerMethod.description;
 	}
 
 	private MethodParameter[] initMethodParameters() {
 		int count = this.bridgedMethod.getParameterCount();
 		MethodParameter[] result = new MethodParameter[count];
 		for (int i = 0; i < count; i++) {
-			result[i] = new HandlerMethodParameter(i);
+			HandlerMethodParameter parameter = new HandlerMethodParameter(i);
+			GenericTypeResolver.resolveParameterType(parameter, this.beanType);
+			result[i] = parameter;
 		}
 		return result;
 	}
@@ -201,14 +196,6 @@ public class HandlerMethod {
 			this.responseStatus = annotation.code();
 			this.responseStatusReason = annotation.reason();
 		}
-	}
-
-	private static String initDescription(Class<?> beanType, Method method) {
-		StringJoiner joiner = new StringJoiner(", ", "(", ")");
-		for (Class<?> paramType : method.getParameterTypes()) {
-			joiner.add(paramType.getSimpleName());
-		}
-		return beanType.getName() + "#" + method.getName() + joiner.toString();
 	}
 
 
@@ -352,7 +339,7 @@ public class HandlerMethod {
 		List<Annotation[][]> parameterAnnotations = this.interfaceParameterAnnotations;
 		if (parameterAnnotations == null) {
 			parameterAnnotations = new ArrayList<>();
-			for (Class<?> ifc : ClassUtils.getAllInterfacesForClassAsSet(this.method.getDeclaringClass())) {
+			for (Class<?> ifc : this.method.getDeclaringClass().getInterfaces()) {
 				for (Method candidate : ifc.getMethods()) {
 					if (isOverrideFor(candidate)) {
 						parameterAnnotations.add(candidate.getParameterAnnotations());
@@ -384,7 +371,7 @@ public class HandlerMethod {
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
@@ -402,7 +389,7 @@ public class HandlerMethod {
 
 	@Override
 	public String toString() {
-		return this.description;
+		return this.method.toGenericString();
 	}
 
 

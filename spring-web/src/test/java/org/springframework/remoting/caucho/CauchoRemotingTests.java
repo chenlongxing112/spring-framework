@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,17 +21,17 @@ import java.net.InetSocketAddress;
 
 import com.caucho.hessian.client.HessianProxyFactory;
 import com.sun.net.httpserver.HttpServer;
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.beans.testfixture.beans.ITestBean;
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.remoting.RemoteAccessException;
+import org.springframework.tests.sample.beans.ITestBean;
+import org.springframework.tests.sample.beans.TestBean;
 import org.springframework.util.SocketUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
@@ -40,11 +40,15 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 public class CauchoRemotingTests {
 
+	@Rule
+	public final ExpectedException exception = ExpectedException.none();
+
+
 	@Test
 	public void hessianProxyFactoryBeanWithClassInsteadOfInterface() throws Exception {
 		HessianProxyFactoryBean factory = new HessianProxyFactoryBean();
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				factory.setServiceInterface(TestBean.class));
+		exception.expect(IllegalArgumentException.class);
+		factory.setServiceInterface(TestBean.class);
 	}
 
 	@Test
@@ -54,13 +58,12 @@ public class CauchoRemotingTests {
 		factory.setServiceUrl("http://localhosta/testbean");
 		factory.afterPropertiesSet();
 
-		assertThat(factory.isSingleton()).as("Correct singleton value").isTrue();
-		boolean condition = factory.getObject() instanceof ITestBean;
-		assertThat(condition).isTrue();
+		assertTrue("Correct singleton value", factory.isSingleton());
+		assertTrue(factory.getObject() instanceof ITestBean);
 		ITestBean bean = (ITestBean) factory.getObject();
 
-		assertThatExceptionOfType(RemoteAccessException.class).isThrownBy(() ->
-				bean.setName("test"));
+		exception.expect(RemoteAccessException.class);
+		bean.setName("test");
 	}
 
 	@Test
@@ -73,13 +76,12 @@ public class CauchoRemotingTests {
 		factory.setOverloadEnabled(true);
 		factory.afterPropertiesSet();
 
-		assertThat(factory.isSingleton()).as("Correct singleton value").isTrue();
-		boolean condition = factory.getObject() instanceof ITestBean;
-		assertThat(condition).isTrue();
+		assertTrue("Correct singleton value", factory.isSingleton());
+		assertTrue(factory.getObject() instanceof ITestBean);
 		ITestBean bean = (ITestBean) factory.getObject();
 
-		assertThatExceptionOfType(RemoteAccessException.class).isThrownBy(() ->
-				bean.setName("test"));
+		exception.expect(RemoteAccessException.class);
+		bean.setName("test");
 	}
 
 	@Test
@@ -93,21 +95,19 @@ public class CauchoRemotingTests {
 		factory.setPassword("bean");
 		factory.setOverloadEnabled(true);
 		factory.afterPropertiesSet();
-		assertThat(factory.isSingleton()).as("Correct singleton value").isTrue();
-		boolean condition = factory.getObject() instanceof ITestBean;
-		assertThat(condition).isTrue();
+		assertTrue("Correct singleton value", factory.isSingleton());
+		assertTrue(factory.getObject() instanceof ITestBean);
 		ITestBean bean = (ITestBean) factory.getObject();
 
-		assertThat(proxyFactory.user).isEqualTo("test");
-		assertThat(proxyFactory.password).isEqualTo("bean");
-		assertThat(proxyFactory.overloadEnabled).isTrue();
+		assertEquals("test", proxyFactory.user);
+		assertEquals("bean", proxyFactory.password);
+		assertTrue(proxyFactory.overloadEnabled);
 
-		assertThatExceptionOfType(RemoteAccessException.class).isThrownBy(() ->
-				bean.setName("test"));
+		exception.expect(RemoteAccessException.class);
+		bean.setName("test");
 	}
 
 	@Test
-	@SuppressWarnings("deprecation")
 	public void simpleHessianServiceExporter() throws IOException {
 		final int port = SocketUtils.findAvailableTcpPort();
 
@@ -128,9 +128,9 @@ public class CauchoRemotingTests {
 			//client.setHessian2(true);
 			client.prepare();
 			ITestBean proxy = ProxyFactory.getProxy(ITestBean.class, client);
-			assertThat(proxy.getName()).isEqualTo("tb");
+			assertEquals("tb", proxy.getName());
 			proxy.setName("test");
-			assertThat(proxy.getName()).isEqualTo("test");
+			assertEquals("test", proxy.getName());
 		}
 		finally {
 			server.stop(Integer.MAX_VALUE);

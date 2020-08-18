@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,27 +21,24 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.Mockito;
 
 import org.springframework.cache.Cache;
 import org.springframework.cache.concurrent.ConcurrentMapCache;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.web.reactive.resource.GzipSupport.GzippedFiles;
-import org.springframework.web.testfixture.server.MockServerWebExchange;
+import org.springframework.mock.web.test.server.MockServerWebExchange;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest.get;
+import static org.junit.Assert.*;
+import static org.springframework.mock.http.server.reactive.test.MockServerHttpRequest.*;
 
 /**
  * Unit tests for {@link CachingResourceResolver}.
  *
  * @author Rossen Stoyanchev
  */
-@ExtendWith(GzipSupport.class)
 public class CachingResourceResolverTests {
 
 	private static final Duration TIMEOUT = Duration.ofSeconds(5);
@@ -54,7 +51,7 @@ public class CachingResourceResolverTests {
 	private List<Resource> locations;
 
 
-	@BeforeEach
+	@Before
 	public void setup() {
 
 		this.cache = new ConcurrentMapCache("resourceCache");
@@ -75,8 +72,8 @@ public class CachingResourceResolverTests {
 		MockServerWebExchange exchange = MockServerWebExchange.from(get(""));
 		Resource actual = this.chain.resolveResource(exchange, "bar.css", this.locations).block(TIMEOUT);
 
-		assertThat(actual).isNotSameAs(expected);
-		assertThat(actual).isEqualTo(expected);
+		assertNotSame(expected, actual);
+		assertEquals(expected, actual);
 	}
 
 	@Test
@@ -87,13 +84,13 @@ public class CachingResourceResolverTests {
 		MockServerWebExchange exchange = MockServerWebExchange.from(get(""));
 		Resource actual = this.chain.resolveResource(exchange, "bar.css", this.locations).block(TIMEOUT);
 
-		assertThat(actual).isSameAs(expected);
+		assertSame(expected, actual);
 	}
 
 	@Test
 	public void resolveResourceInternalNoMatch() {
 		MockServerWebExchange exchange = MockServerWebExchange.from(get(""));
-		assertThat(this.chain.resolveResource(exchange, "invalid.css", this.locations).block(TIMEOUT)).isNull();
+		assertNull(this.chain.resolveResource(exchange, "invalid.css", this.locations).block(TIMEOUT));
 	}
 
 	@Test
@@ -101,7 +98,7 @@ public class CachingResourceResolverTests {
 		String expected = "/foo.css";
 		String actual = this.chain.resolveUrlPath(expected, this.locations).block(TIMEOUT);
 
-		assertThat(actual).isEqualTo(expected);
+		assertEquals(expected, actual);
 	}
 
 	@Test
@@ -110,19 +107,19 @@ public class CachingResourceResolverTests {
 		this.cache.put(CachingResourceResolver.RESOLVED_URL_PATH_CACHE_KEY_PREFIX + "imaginary.css", expected);
 		String actual = this.chain.resolveUrlPath("imaginary.css", this.locations).block(TIMEOUT);
 
-		assertThat(actual).isEqualTo(expected);
+		assertEquals(expected, actual);
 	}
 
 	@Test
 	public void resolverUrlPathNoMatch() {
-		assertThat(this.chain.resolveUrlPath("invalid.css", this.locations).block(TIMEOUT)).isNull();
+		assertNull(this.chain.resolveUrlPath("invalid.css", this.locations).block(TIMEOUT));
 	}
 
 	@Test
-	public void resolveResourceAcceptEncodingInCacheKey(GzippedFiles gzippedFiles) throws IOException {
+	public void resolveResourceAcceptEncodingInCacheKey() throws IOException {
 
 		String file = "bar.css";
-		gzippedFiles.create(file);
+		EncodedResourceResolverTests.createGzippedFile(file);
 
 		// 1. Resolve plain resource
 
@@ -130,7 +127,7 @@ public class CachingResourceResolverTests {
 		Resource expected = this.chain.resolveResource(exchange, file, this.locations).block(TIMEOUT);
 
 		String cacheKey = resourceKey(file);
-		assertThat(this.cache.get(cacheKey).get()).isSameAs(expected);
+		assertSame(expected, this.cache.get(cacheKey).get());
 
 
 		// 2. Resolve with Accept-Encoding
@@ -140,7 +137,7 @@ public class CachingResourceResolverTests {
 		expected = this.chain.resolveResource(exchange, file, this.locations).block(TIMEOUT);
 
 		cacheKey = resourceKey(file + "+encoding=br,gzip");
-		assertThat(this.cache.get(cacheKey).get()).isSameAs(expected);
+		assertSame(expected, this.cache.get(cacheKey).get());
 
 		// 3. Resolve with Accept-Encoding but no matching codings
 
@@ -148,7 +145,7 @@ public class CachingResourceResolverTests {
 		expected = this.chain.resolveResource(exchange, file, this.locations).block(TIMEOUT);
 
 		cacheKey = resourceKey(file);
-		assertThat(this.cache.get(cacheKey).get()).isSameAs(expected);
+		assertSame(expected, this.cache.get(cacheKey).get());
 	}
 
 	@Test
@@ -160,7 +157,7 @@ public class CachingResourceResolverTests {
 		String cacheKey = resourceKey(file);
 		Object actual = this.cache.get(cacheKey).get();
 
-		assertThat(actual).isEqualTo(expected);
+		assertEquals(expected, actual);
 	}
 
 	@Test
@@ -172,10 +169,10 @@ public class CachingResourceResolverTests {
 
 		String file = "bar.css";
 		MockServerWebExchange exchange = MockServerWebExchange.from(get(file));
-		assertThat(this.chain.resolveResource(exchange, file, this.locations).block(TIMEOUT)).isSameAs(resource);
+		assertSame(resource, this.chain.resolveResource(exchange, file, this.locations).block(TIMEOUT));
 
 		exchange = MockServerWebExchange.from(get(file).header("Accept-Encoding", "gzip"));
-		assertThat(this.chain.resolveResource(exchange, file, this.locations).block(TIMEOUT)).isSameAs(gzipped);
+		assertSame(gzipped, this.chain.resolveResource(exchange, file, this.locations).block(TIMEOUT));
 	}
 
 	private static String resourceKey(String key) {

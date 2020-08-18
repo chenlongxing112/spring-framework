@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -56,7 +56,7 @@ public class AnnotationBeanWiringInfoResolver implements BeanWiringInfoResolver 
 			// Autowiring by name or by type
 			return new BeanWiringInfo(annotation.autowire().value(), annotation.dependencyCheck());
 		}
-		else if (!annotation.value().isEmpty()) {
+		else if (!"".equals(annotation.value())) {
 			// Explicitly specified bean name for bean definition to take property values from
 			return new BeanWiringInfo(annotation.value(), false);
 		}

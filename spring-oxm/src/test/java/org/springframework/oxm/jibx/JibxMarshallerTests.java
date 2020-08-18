@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,18 +17,16 @@
 package org.springframework.oxm.jibx;
 
 import java.io.StringWriter;
-
 import javax.xml.transform.stream.StreamResult;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnJre;
+import org.junit.Assume;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import org.springframework.core.testfixture.xml.XmlContent;
 import org.springframework.oxm.AbstractMarshallerTests;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.junit.jupiter.api.condition.JRE.JAVA_8;
+import static org.junit.Assert.*;
+import static org.xmlunit.matchers.CompareMatcher.isSimilarTo;
 
 /**
  * NOTE: These tests fail under Eclipse/IDEA because JiBX binding does not occur by
@@ -38,8 +36,14 @@ import static org.junit.jupiter.api.condition.JRE.JAVA_8;
  * @author Sam Brannen
  */
 @Deprecated
-@EnabledOnJre(JAVA_8) // JiBX compiler is currently not compatible with JDK 9
 public class JibxMarshallerTests extends AbstractMarshallerTests<JibxMarshaller> {
+
+	@BeforeClass
+	public static void compilerAssumptions() {
+		// JiBX compiler is currently not compatible with JDK 9
+		Assume.assumeTrue(System.getProperty("java.version").startsWith("1.8."));
+	}
+
 
 	@Override
 	protected JibxMarshaller createMarshaller() throws Exception {
@@ -59,11 +63,10 @@ public class JibxMarshallerTests extends AbstractMarshallerTests<JibxMarshaller>
 	}
 
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void afterPropertiesSetNoContextPath() throws Exception {
 		JibxMarshaller marshaller = new JibxMarshaller();
-		assertThatIllegalArgumentException().isThrownBy(
-				marshaller::afterPropertiesSet);
+		marshaller.afterPropertiesSet();
 	}
 
 	@Test
@@ -74,7 +77,7 @@ public class JibxMarshallerTests extends AbstractMarshallerTests<JibxMarshaller>
 		String expected =
 				"<?xml version=\"1.0\"?>\n" + "<flights xmlns=\"http://samples.springframework.org/flight\">\n" +
 						"    <flight>\n" + "        <number>42</number>\n" + "    </flight>\n" + "</flights>";
-		assertThat(XmlContent.from(writer)).isSimilarToIgnoringWhitespace(expected);
+		assertThat(writer.toString(), isSimilarTo(expected).ignoreWhitespace());
 	}
 
 	@Test
@@ -83,7 +86,8 @@ public class JibxMarshallerTests extends AbstractMarshallerTests<JibxMarshaller>
 		marshaller.setStandalone(Boolean.TRUE);
 		StringWriter writer = new StringWriter();
 		marshaller.marshal(flights, new StreamResult(writer));
-		assertThat(writer.toString().startsWith("<?xml version=\"1.0\" encoding=\"ISO-8859-1\" standalone=\"yes\"?>")).as("Encoding and standalone not set").isTrue();
+		assertTrue("Encoding and standalone not set",
+				writer.toString().startsWith("<?xml version=\"1.0\" encoding=\"ISO-8859-1\" standalone=\"yes\"?>"));
 	}
 
 	@Test
@@ -92,14 +96,15 @@ public class JibxMarshallerTests extends AbstractMarshallerTests<JibxMarshaller>
 		marshaller.setDocTypeSystemId("flights.dtd");
 		StringWriter writer = new StringWriter();
 		marshaller.marshal(flights, new StreamResult(writer));
-		assertThat(writer.toString().contains("<!DOCTYPE flights SYSTEM \"flights.dtd\">")).as("doc type not written").isTrue();
+		assertTrue("doc type not written",
+				writer.toString().contains("<!DOCTYPE flights SYSTEM \"flights.dtd\">"));
 	}
 
 	@Test
 	public void supports() throws Exception {
-		assertThat(marshaller.supports(Flights.class)).as("JibxMarshaller does not support Flights").isTrue();
-		assertThat(marshaller.supports(FlightType.class)).as("JibxMarshaller does not support FlightType").isTrue();
-		assertThat(marshaller.supports(getClass())).as("JibxMarshaller supports illegal type").isFalse();
+		assertTrue("JibxMarshaller does not support Flights", marshaller.supports(Flights.class));
+		assertTrue("JibxMarshaller does not support FlightType", marshaller.supports(FlightType.class));
+		assertFalse("JibxMarshaller supports illegal type", marshaller.supports(getClass()));
 	}
 
 }

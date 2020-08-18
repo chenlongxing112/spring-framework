@@ -56,9 +56,7 @@ public abstract class MethodVisitor {
    */
   protected final int api;
 
-  /**
-   * The method visitor to which this visitor must delegate method calls. May be {@literal null}.
-   */
+  /** The method visitor to which this visitor must delegate method calls. May be null. */
   protected MethodVisitor mv;
 
   /**
@@ -79,16 +77,10 @@ public abstract class MethodVisitor {
    * @param methodVisitor the method visitor to which this visitor must delegate method calls. May
    *     be null.
    */
-  @SuppressWarnings("deprecation")
   public MethodVisitor(final int api, final MethodVisitor methodVisitor) {
-    if (api != Opcodes.ASM7
-        && api != Opcodes.ASM6
-        && api != Opcodes.ASM5
-        && api != Opcodes.ASM4
-        && api != Opcodes.ASM8_EXPERIMENTAL) {
-      throw new IllegalArgumentException("Unsupported api " + api);
+    if (api != Opcodes.ASM6 && api != Opcodes.ASM5 && api != Opcodes.ASM4 && api != Opcodes.ASM7) {
+      throw new IllegalArgumentException();
     }
-    // SPRING PATCH: no preview mode check for ASM 8 experimental
     this.api = api;
     this.mv = methodVisitor;
   }
@@ -100,7 +92,7 @@ public abstract class MethodVisitor {
   /**
    * Visits a parameter of this method.
    *
-   * @param name parameter name or {@literal null} if none is provided.
+   * @param name parameter name or null if none is provided.
    * @param access the parameter's access flags, only {@code ACC_FINAL}, {@code ACC_SYNTHETIC}
    *     or/and {@code ACC_MANDATED} are allowed (see {@link Opcodes}).
    */
@@ -403,8 +395,14 @@ public abstract class MethodVisitor {
   @Deprecated
   public void visitMethodInsn(
       final int opcode, final String owner, final String name, final String descriptor) {
-    int opcodeAndSource = opcode | (api < Opcodes.ASM5 ? Opcodes.SOURCE_DEPRECATED : 0);
-    visitMethodInsn(opcodeAndSource, owner, name, descriptor, opcode == Opcodes.INVOKEINTERFACE);
+    if (api >= Opcodes.ASM5) {
+      boolean isInterface = opcode == Opcodes.INVOKEINTERFACE;
+      visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+      return;
+    }
+    if (mv != null) {
+      mv.visitMethodInsn(opcode, owner, name, descriptor);
+    }
   }
 
   /**
@@ -424,15 +422,15 @@ public abstract class MethodVisitor {
       final String name,
       final String descriptor,
       final boolean isInterface) {
-    if (api < Opcodes.ASM5 && (opcode & Opcodes.SOURCE_DEPRECATED) == 0) {
+    if (api < Opcodes.ASM5) {
       if (isInterface != (opcode == Opcodes.INVOKEINTERFACE)) {
-        throw new UnsupportedOperationException("INVOKESPECIAL/STATIC on interfaces requires ASM5");
+        throw new IllegalArgumentException("INVOKESPECIAL/STATIC on interfaces requires ASM5");
       }
       visitMethodInsn(opcode, owner, name, descriptor);
       return;
     }
     if (mv != null) {
-      mv.visitMethodInsn(opcode & ~Opcodes.SOURCE_MASK, owner, name, descriptor, isInterface);
+      mv.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
     }
   }
 
@@ -540,7 +538,7 @@ public abstract class MethodVisitor {
             || (value instanceof Type && ((Type) value).getSort() == Type.METHOD))) {
       throw new UnsupportedOperationException(REQUIRES_ASM5);
     }
-    if (api < Opcodes.ASM7 && value instanceof ConstantDynamic) {
+    if (api != Opcodes.ASM7 && value instanceof ConstantDynamic) {
       throw new UnsupportedOperationException("This feature requires ASM7");
     }
     if (mv != null) {

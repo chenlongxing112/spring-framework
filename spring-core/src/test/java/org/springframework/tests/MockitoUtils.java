@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,8 @@ import org.mockito.internal.stubbing.InvocationContainerImpl;
 import org.mockito.internal.util.MockUtil;
 import org.mockito.invocation.Invocation;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  * General test utilities for use with {@link Mockito}.
@@ -50,7 +51,7 @@ public abstract class MockitoUtils {
 	private static void verifySameInvocations(List<Invocation> expectedInvocations, List<Invocation> actualInvocations,
 			InvocationArgumentsAdapter... argumentAdapters) {
 
-		assertThat(expectedInvocations.size()).isEqualTo(actualInvocations.size());
+		assertThat(expectedInvocations.size(), is(equalTo(actualInvocations.size())));
 		for (int i = 0; i < expectedInvocations.size(); i++) {
 			verifySameInvocation(expectedInvocations.get(i), actualInvocations.get(i), argumentAdapters);
 		}
@@ -59,10 +60,10 @@ public abstract class MockitoUtils {
 	private static void verifySameInvocation(Invocation expectedInvocation, Invocation actualInvocation,
 			InvocationArgumentsAdapter... argumentAdapters) {
 
-		assertThat(expectedInvocation.getMethod()).isEqualTo(actualInvocation.getMethod());
+		assertThat(expectedInvocation.getMethod(), is(equalTo(actualInvocation.getMethod())));
 		Object[] expectedArguments = getInvocationArguments(expectedInvocation, argumentAdapters);
 		Object[] actualArguments = getInvocationArguments(actualInvocation, argumentAdapters);
-		assertThat(expectedArguments).isEqualTo(actualArguments);
+		assertThat(expectedArguments, is(equalTo(actualArguments)));
 	}
 
 	private static Object[] getInvocationArguments(Invocation invocation, InvocationArgumentsAdapter... argumentAdapters) {

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,15 +19,14 @@ package org.springframework.expression.spel;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * SpelEvaluationException tests (SPR-16544).
@@ -37,20 +36,18 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  */
 public class SpelExceptionTests {
 
-	@Test
+	@Test(expected = SpelEvaluationException.class)
 	public void spelExpressionMapNullVariables() {
 		ExpressionParser parser = new SpelExpressionParser();
 		Expression spelExpression = parser.parseExpression("#aMap.containsKey('one')");
-		assertThatExceptionOfType(SpelEvaluationException.class).isThrownBy(
-				spelExpression::getValue);
+		spelExpression.getValue();
 	}
 
-	@Test
+	@Test(expected = SpelEvaluationException.class)
 	public void spelExpressionMapIndexAccessNullVariables() {
 		ExpressionParser parser = new SpelExpressionParser();
 		Expression spelExpression = parser.parseExpression("#aMap['one'] eq 1");
-		assertThatExceptionOfType(SpelEvaluationException.class).isThrownBy(
-				spelExpression::getValue);
+		spelExpression.getValue();
 	}
 
 	@Test
@@ -72,24 +69,22 @@ public class SpelExceptionTests {
 			}
 		});
 		boolean result = spelExpression.getValue(ctx, Boolean.class);
-		assertThat(result).isTrue();
+		assertTrue(result);
 
 	}
 
-	@Test
+	@Test(expected = SpelEvaluationException.class)
 	public void spelExpressionListNullVariables() {
 		ExpressionParser parser = new SpelExpressionParser();
 		Expression spelExpression = parser.parseExpression("#aList.contains('one')");
-		assertThatExceptionOfType(SpelEvaluationException.class).isThrownBy(
-				spelExpression::getValue);
+		spelExpression.getValue();
 	}
 
-	@Test
+	@Test(expected = SpelEvaluationException.class)
 	public void spelExpressionListIndexAccessNullVariables() {
 		ExpressionParser parser = new SpelExpressionParser();
 		Expression spelExpression = parser.parseExpression("#aList[0] eq 'one'");
-		assertThatExceptionOfType(SpelEvaluationException.class).isThrownBy(
-				spelExpression::getValue);
+		spelExpression.getValue();
 	}
 
 	@Test
@@ -111,7 +106,7 @@ public class SpelExceptionTests {
 			}
 		});
 		boolean result = spelExpression.getValue(ctx, Boolean.class);
-		assertThat(result).isTrue();
+		assertTrue(result);
 	}
 
 	@Test
@@ -133,15 +128,14 @@ public class SpelExceptionTests {
 			}
 		});
 		boolean result = spelExpression.getValue(ctx, Boolean.class);
-		assertThat(result).isTrue();
+		assertTrue(result);
 	}
 
-	@Test
+	@Test(expected = SpelEvaluationException.class)
 	public void spelExpressionArrayIndexAccessNullVariables() {
 		ExpressionParser parser = new SpelExpressionParser();
 		Expression spelExpression = parser.parseExpression("#anArray[0] eq 1");
-		assertThatExceptionOfType(SpelEvaluationException.class).isThrownBy(
-				spelExpression::getValue);
+		spelExpression.getValue();
 	}
 
 	@Test
@@ -156,7 +150,7 @@ public class SpelExceptionTests {
 			}
 		});
 		boolean result = spelExpression.getValue(ctx, Boolean.class);
-		assertThat(result).isTrue();
+		assertTrue(result);
 	}
 
 }

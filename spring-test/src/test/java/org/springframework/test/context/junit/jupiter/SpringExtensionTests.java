@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,7 +36,7 @@ import org.springframework.test.context.junit.jupiter.comics.Cat;
 import org.springframework.test.context.junit.jupiter.comics.Dog;
 import org.springframework.test.context.junit.jupiter.comics.Person;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests which demonstrate that the Spring TestContext Framework can
@@ -75,49 +75,49 @@ class SpringExtensionTests {
 
 	@Test
 	void applicationContextInjectedIntoMethod(ApplicationContext applicationContext) {
-		assertThat(applicationContext).as("ApplicationContext should have been injected by Spring").isNotNull();
-		assertThat(applicationContext.getBean("dilbert", Person.class)).isEqualTo(this.dilbert);
+		assertNotNull(applicationContext, "ApplicationContext should have been injected by Spring");
+		assertEquals(this.dilbert, applicationContext.getBean("dilbert", Person.class));
 	}
 
 	@Test
 	void genericApplicationContextInjectedIntoMethod(GenericApplicationContext applicationContext) {
-		assertThat(applicationContext).as("GenericApplicationContext should have been injected by Spring").isNotNull();
-		assertThat(applicationContext.getBean("dilbert", Person.class)).isEqualTo(this.dilbert);
+		assertNotNull(applicationContext, "GenericApplicationContext should have been injected by Spring");
+		assertEquals(this.dilbert, applicationContext.getBean("dilbert", Person.class));
 	}
 
 	@Test
 	void autowiredFields() {
-		assertThat(this.dilbert).as("Dilbert should have been @Autowired by Spring").isNotNull();
-		assertThat(this.dilbert.getName()).as("Person's name").isEqualTo("Dilbert");
-		assertThat(this.people).as("Number of people in context").hasSize(2);
+		assertNotNull(this.dilbert, "Dilbert should have been @Autowired by Spring");
+		assertEquals("Dilbert", this.dilbert.getName(), "Person's name");
+		assertEquals(2, this.people.size(), "Number of people in context");
 
-		assertThat(this.dog).as("Dogbert should have been @Autowired by Spring").isNotNull();
-		assertThat(this.dog.getName()).as("Dog's name").isEqualTo("Dogbert");
+		assertNotNull(this.dog, "Dogbert should have been @Autowired by Spring");
+		assertEquals("Dogbert", this.dog.getName(), "Dog's name");
 
-		assertThat(this.cat).as("Catbert should have been @Autowired by Spring as the @Primary cat").isNotNull();
-		assertThat(this.cat.getName()).as("Primary cat's name").isEqualTo("Catbert");
-		assertThat(this.cats).as("Number of cats in context").hasSize(2);
+		assertNotNull(this.cat, "Catbert should have been @Autowired by Spring as the @Primary cat");
+		assertEquals("Catbert", this.cat.getName(), "Primary cat's name");
+		assertEquals(2, this.cats.size(), "Number of cats in context");
 
-		assertThat(this.enigma).as("Enigma should have been injected via @Value by Spring").isNotNull();
-		assertThat(this.enigma).as("enigma").isEqualTo(42);
+		assertNotNull(this.enigma, "Enigma should have been injected via @Value by Spring");
+		assertEquals(Integer.valueOf(42), this.enigma, "enigma");
 	}
 
 	@Test
 	void autowiredParameterByTypeForSingleBean(@Autowired Dog dog) {
-		assertThat(dog).as("Dogbert should have been @Autowired by Spring").isNotNull();
-		assertThat(dog.getName()).as("Dog's name").isEqualTo("Dogbert");
+		assertNotNull(dog, "Dogbert should have been @Autowired by Spring");
+		assertEquals("Dogbert", dog.getName(), "Dog's name");
 	}
 
 	@Test
 	void autowiredParameterByTypeForPrimaryBean(@Autowired Cat primaryCat) {
-		assertThat(primaryCat).as("Primary cat should have been @Autowired by Spring").isNotNull();
-		assertThat(primaryCat.getName()).as("Primary cat's name").isEqualTo("Catbert");
+		assertNotNull(primaryCat, "Primary cat should have been @Autowired by Spring");
+		assertEquals("Catbert", primaryCat.getName(), "Primary cat's name");
 	}
 
 	@Test
 	void autowiredParameterWithExplicitQualifier(@Qualifier("wally") Person person) {
-		assertThat(person).as("Wally should have been @Autowired by Spring").isNotNull();
-		assertThat(person.getName()).as("Person's name").isEqualTo("Wally");
+		assertNotNull(person, "Wally should have been @Autowired by Spring");
+		assertEquals("Wally", person.getName(), "Person's name");
 	}
 
 	/**
@@ -127,72 +127,72 @@ class SpringExtensionTests {
 	 */
 	@Test
 	void autowiredParameterWithImplicitQualifierBasedOnParameterName(@Autowired Person wally) {
-		assertThat(wally).as("Wally should have been @Autowired by Spring").isNotNull();
-		assertThat(wally.getName()).as("Person's name").isEqualTo("Wally");
+		assertNotNull(wally, "Wally should have been @Autowired by Spring");
+		assertEquals("Wally", wally.getName(), "Person's name");
 	}
 
 	@Test
 	void autowiredParameterAsJavaUtilOptional(@Autowired Optional<Dog> dog) {
-		assertThat(dog).as("Optional dog should have been @Autowired by Spring").isNotNull();
-		assertThat(dog).as("Value of Optional should be 'present'").isPresent();
-		assertThat(dog.get().getName()).as("Dog's name").isEqualTo("Dogbert");
+		assertNotNull(dog, "Optional dog should have been @Autowired by Spring");
+		assertTrue(dog.isPresent(), "Value of Optional should be 'present'");
+		assertEquals("Dogbert", dog.get().getName(), "Dog's name");
 	}
 
 	@Test
 	void autowiredParameterThatDoesNotExistAsJavaUtilOptional(@Autowired Optional<Number> number) {
-		assertThat(number).as("Optional number should have been @Autowired by Spring").isNotNull();
-		assertThat(number).as("Value of Optional number should not be 'present'").isNotPresent();
+		assertNotNull(number, "Optional number should have been @Autowired by Spring");
+		assertFalse(number.isPresent(), "Value of Optional number should not be 'present'");
 	}
 
 	@Test
 	void autowiredParameterThatDoesNotExistButIsNotRequired(@Autowired(required = false) Number number) {
-		assertThat(number).as("Non-required number should have been @Autowired as 'null' by Spring").isNull();
+		assertNull(number, "Non-required number should have been @Autowired as 'null' by Spring");
 	}
 
 	@Test
 	void autowiredParameterOfList(@Autowired List<Person> peopleParam) {
-		assertThat(peopleParam).as("list of people should have been @Autowired by Spring").isNotNull();
-		assertThat(peopleParam).as("Number of people in context").hasSize(2);
+		assertNotNull(peopleParam, "list of people should have been @Autowired by Spring");
+		assertEquals(2, peopleParam.size(), "Number of people in context");
 	}
 
 	@Test
 	void valueParameterWithPrimitiveType(@Value("99") int num) {
-		assertThat(num).isEqualTo(99);
+		assertEquals(99, num);
 	}
 
 	@Test
 	void valueParameterFromPropertyPlaceholder(@Value("${enigma}") Integer enigmaParam) {
-		assertThat(enigmaParam).as("Enigma should have been injected via @Value by Spring").isNotNull();
-		assertThat(enigmaParam).as("enigma").isEqualTo(42);
+		assertNotNull(enigmaParam, "Enigma should have been injected via @Value by Spring");
+		assertEquals(Integer.valueOf(42), enigmaParam, "enigma");
 	}
 
 	@Test
 	void valueParameterFromDefaultValueForPropertyPlaceholder(@Value("${bogus:false}") Boolean defaultValue) {
-		assertThat(defaultValue).as("Default value should have been injected via @Value by Spring").isNotNull();
-		assertThat(defaultValue).as("default value").isEqualTo(false);
+		assertNotNull(defaultValue, "Default value should have been injected via @Value by Spring");
+		assertEquals(false, defaultValue, "default value");
 	}
 
 	@Test
 	void valueParameterFromSpelExpression(@Value("#{@dilbert.name}") String name) {
-		assertThat(name).as("Dilbert's name should have been injected via SpEL expression in @Value by Spring").isNotNull();
-		assertThat(name).as("name from SpEL expression").isEqualTo("Dilbert");
+		assertNotNull(name, "Dilbert's name should have been injected via SpEL expression in @Value by Spring");
+		assertEquals("Dilbert", name, "name from SpEL expression");
 	}
 
 	@Test
 	void valueParameterFromSpelExpressionWithNestedPropertyPlaceholder(@Value("#{'Hello ' + ${enigma}}") String hello) {
-		assertThat(hello).as("hello should have been injected via SpEL expression in @Value by Spring").isNotNull();
-		assertThat(hello).as("hello from SpEL expression").isEqualTo("Hello 42");
+		assertNotNull(hello, "hello should have been injected via SpEL expression in @Value by Spring");
+		assertEquals("Hello 42", hello, "hello from SpEL expression");
 	}
 
 	@Test
 	void junitAndSpringMethodInjectionCombined(@Autowired Cat kittyCat, TestInfo testInfo, ApplicationContext context,
 			TestReporter testReporter) {
 
-		assertThat(testInfo).as("TestInfo should have been injected by JUnit").isNotNull();
-		assertThat(testReporter).as("TestReporter should have been injected by JUnit").isNotNull();
+		assertNotNull(testInfo, "TestInfo should have been injected by JUnit");
+		assertNotNull(testReporter, "TestReporter should have been injected by JUnit");
 
-		assertThat(context).as("ApplicationContext should have been injected by Spring").isNotNull();
-		assertThat(kittyCat).as("Cat should have been @Autowired by Spring").isNotNull();
+		assertNotNull(context, "ApplicationContext should have been injected by Spring");
+		assertNotNull(kittyCat, "Cat should have been @Autowired by Spring");
 	}
 
 }

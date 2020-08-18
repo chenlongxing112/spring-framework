@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,13 +19,13 @@ package org.springframework.web.jsf;
 import javax.faces.application.NavigationHandler;
 import javax.faces.context.FacesContext;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.lang.Nullable;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Colin Sampaleanu
@@ -53,8 +53,8 @@ public class DelegatingNavigationHandlerTests {
 		beanFactory.addBean("jsfNavigationHandler", targetHandler);
 
 		delNavHandler.handleNavigation(facesContext, "fromAction", "myViewId");
-		assertThat(targetHandler.lastFromAction).isEqualTo("fromAction");
-		assertThat(targetHandler.lastOutcome).isEqualTo("myViewId");
+		assertEquals("fromAction", targetHandler.lastFromAction);
+		assertEquals("myViewId", targetHandler.lastOutcome);
 	}
 
 	@Test
@@ -63,12 +63,12 @@ public class DelegatingNavigationHandlerTests {
 		beanFactory.addBean("jsfNavigationHandler", targetHandler);
 
 		delNavHandler.handleNavigation(facesContext, "fromAction", "myViewId");
-		assertThat(targetHandler.lastFromAction).isEqualTo("fromAction");
-		assertThat(targetHandler.lastOutcome).isEqualTo("myViewId");
+		assertEquals("fromAction", targetHandler.lastFromAction);
+		assertEquals("myViewId", targetHandler.lastOutcome);
 
 		// Original handler must have been invoked as well...
-		assertThat(origNavHandler.lastFromAction).isEqualTo("fromAction");
-		assertThat(origNavHandler.lastOutcome).isEqualTo("myViewId");
+		assertEquals("fromAction", origNavHandler.lastFromAction);
+		assertEquals("myViewId", origNavHandler.lastOutcome);
 	}
 
 

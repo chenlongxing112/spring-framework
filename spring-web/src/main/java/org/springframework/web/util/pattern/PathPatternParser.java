@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,11 +15,6 @@
  */
 
 package org.springframework.web.util.pattern;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import org.springframework.http.server.PathContainer;
 
 /**
  * Parser for URI path patterns producing {@link PathPattern} instances that can
@@ -37,17 +32,13 @@ import org.springframework.http.server.PathContainer;
  */
 public class PathPatternParser {
 
-	private static final Log logger = LogFactory.getLog(PathPatternParser.class);
-
 	private boolean matchOptionalTrailingSeparator = true;
 
 	private boolean caseSensitive = true;
 
-	private PathContainer.Options pathOptions = PathContainer.Options.HTTP_PATH;
-
 
 	/**
-	 * Whether a {@link PathPattern} produced by this parser should
+	 * Whether a {@link PathPattern} produced by this parser should should
 	 * automatically match request paths with a trailing slash.
 	 *
 	 * <p>If set to {@code true} a {@code PathPattern} without a trailing slash
@@ -84,22 +75,14 @@ public class PathPatternParser {
 	}
 
 	/**
-	 * Set options for parsing patterns. These should be the same as the
-	 * options used to parse input paths.
-	 * <p>{@link org.springframework.http.server.PathContainer.Options#HTTP_PATH}
-	 * is used by default.
-	 * @since 5.2
+	 * Accessor used for the separator to use.
+	 * <p>Currently not exposed for configuration with URI path patterns and
+	 * mainly for use in InternalPathPatternParser and PathPattern. If required
+	 * in the future, a similar option would also need to be exposed in
+	 * {@link org.springframework.http.server.PathContainer PathContainer}.
 	 */
-	public void setPathOptions(PathContainer.Options pathOptions) {
-		this.pathOptions = pathOptions;
-	}
-
-	/**
-	 * Return the {@link #setPathOptions configured} pattern parsing options.
-	 * @since 5.2
-	 */
-	public PathContainer.Options getPathOptions() {
-		return this.pathOptions;
+	char getSeparator() {
+		return '/';
 	}
 
 
@@ -109,48 +92,12 @@ public class PathPatternParser {
 	 * stage. Produces a PathPattern object that can be used for fast matching
 	 * against paths. Each invocation of this method delegates to a new instance of
 	 * the {@link InternalPathPatternParser} because that class is not thread-safe.
-	 * @param pathPattern the input path pattern, e.g. /project/{name}
+	 * @param pathPattern the input path pattern, e.g. /foo/{bar}
 	 * @return a PathPattern for quickly matching paths against request paths
 	 * @throws PatternParseException in case of parse errors
 	 */
 	public PathPattern parse(String pathPattern) throws PatternParseException {
-		int wildcardIndex = pathPattern.indexOf("**" + this.pathOptions.separator());
-		if (wildcardIndex != -1 && wildcardIndex != pathPattern.length() - 3) {
-			logger.warn("'**' patterns are not supported in the middle of patterns and will be rejected in the future. " +
-					"Consider using '*' instead for matching a single path segment.");
-		}
 		return new InternalPathPatternParser(this).parse(pathPattern);
 	}
 
-
-	/**
-	 * Shared, read-only instance of {@code PathPatternParser}. Uses default settings:
-	 * <ul>
-	 * <li>{@code matchOptionalTrailingSeparator=true}
-	 * <li>{@code caseSensitivetrue}
-	 * <li>{@code pathOptions=PathContainer.Options.HTTP_PATH}
-	 * </ul>
-	 */
-	public final static PathPatternParser defaultInstance = new PathPatternParser() {
-
-		@Override
-		public void setMatchOptionalTrailingSeparator(boolean matchOptionalTrailingSeparator) {
-			raiseError();
-		}
-
-		@Override
-		public void setCaseSensitive(boolean caseSensitive) {
-			raiseError();
-		}
-
-		@Override
-		public void setPathOptions(PathContainer.Options pathOptions) {
-			raiseError();
-		}
-
-		private void raiseError() {
-			throw new UnsupportedOperationException(
-					"This is a read-only, shared instance that cannot be modified");
-		}
-	};
 }

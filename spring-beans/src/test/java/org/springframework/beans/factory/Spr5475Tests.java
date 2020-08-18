@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,16 @@
 
 package org.springframework.beans.factory;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConstructorArgumentValues;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.springframework.beans.factory.support.BeanDefinitionBuilder.rootBeanDefinition;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
+import static org.springframework.beans.factory.support.BeanDefinitionBuilder.*;
 
 /**
  * SPR-5475 exposed the fact that the error message displayed when incorrectly
@@ -72,9 +73,14 @@ public class Spr5475Tests {
 	private void assertExceptionMessageForMisconfiguredFactoryMethod(BeanDefinition bd, String expectedMessage) {
 		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
 		factory.registerBeanDefinition("foo", bd);
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(
-				factory::preInstantiateSingletons)
-			.withMessageContaining(expectedMessage);
+
+		try {
+			factory.preInstantiateSingletons();
+			fail("should have failed with BeanCreationException due to incorrectly invoked factory method");
+		}
+		catch (BeanCreationException ex) {
+			assertThat(ex.getMessage(), equalTo(expectedMessage));
+		}
 	}
 
 	@Test

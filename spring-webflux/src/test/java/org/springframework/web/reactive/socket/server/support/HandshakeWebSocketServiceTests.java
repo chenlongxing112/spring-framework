@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,20 +20,21 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.junit.jupiter.api.Test;
+import org.hamcrest.Matchers;
+import org.junit.Test;
 import reactor.core.publisher.Mono;
 
 import org.springframework.lang.Nullable;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpRequest;
+import org.springframework.mock.web.test.server.MockServerWebExchange;
+import org.springframework.mock.web.test.server.MockWebSession;
 import org.springframework.web.reactive.socket.HandshakeInfo;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.server.RequestUpgradeStrategy;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest;
-import org.springframework.web.testfixture.server.MockServerWebExchange;
-import org.springframework.web.testfixture.server.MockWebSession;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for {@link HandshakeWebSocketService}.
@@ -61,14 +62,13 @@ public class HandshakeWebSocketServiceTests {
 		service.handleRequest(exchange, mock(WebSocketHandler.class)).block();
 
 		HandshakeInfo info = upgradeStrategy.handshakeInfo;
-		assertThat(info).isNotNull();
+		assertNotNull(info);
 
 		Map<String, Object> attributes = info.getAttributes();
-		assertThat(attributes)
-				.hasSize(3)
-				.containsEntry("a1", "v1")
-				.containsEntry("a3", "v3")
-				.containsEntry("a5", "v5");
+		assertEquals(3, attributes.size());
+		assertThat(attributes, Matchers.hasEntry("a1", "v1"));
+		assertThat(attributes, Matchers.hasEntry("a3", "v3"));
+		assertThat(attributes, Matchers.hasEntry("a5", "v5"));
 	}
 
 	private MockServerHttpRequest initHandshakeRequest() {

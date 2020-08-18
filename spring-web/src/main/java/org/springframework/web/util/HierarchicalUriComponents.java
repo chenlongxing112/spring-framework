@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,8 +24,8 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
@@ -36,7 +36,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -47,14 +46,14 @@ import org.springframework.util.StringUtils;
  * @author Rossen Stoyanchev
  * @author Phillip Webb
  * @since 3.1.3
- * @see <a href="https://tools.ietf.org/html/rfc3986#section-1.2.3">Hierarchical URIs</a>
+ * @see <a href="http://tools.ietf.org/html/rfc3986#section-1.2.3">Hierarchical URIs</a>
  */
 @SuppressWarnings("serial")
 final class HierarchicalUriComponents extends UriComponents {
 
 	private static final char PATH_DELIMITER = '/';
 
-	private static final String PATH_DELIMITER_STRING = String.valueOf(PATH_DELIMITER);
+	private static final String PATH_DELIMITER_STRING = "/";
 
 	private static final MultiValueMap<String, String> EMPTY_QUERY_PARAMS =
 			CollectionUtils.unmodifiableMultiValueMap(new LinkedMultiValueMap<>());
@@ -87,7 +86,7 @@ final class HierarchicalUriComponents extends UriComponents {
 		public void copyToUriComponentsBuilder(UriComponentsBuilder builder) {
 		}
 		@Override
-		public boolean equals(@Nullable Object other) {
+		public boolean equals(Object other) {
 			return (this == other);
 		}
 		@Override
@@ -336,31 +335,25 @@ final class HierarchicalUriComponents extends UriComponents {
 		Assert.notNull(type, "Type must not be null");
 
 		byte[] bytes = source.getBytes(charset);
-		boolean original = true;
+		ByteArrayOutputStream bos = new ByteArrayOutputStream(bytes.length);
+		boolean changed = false;
 		for (byte b : bytes) {
-			if (!type.isAllowed(b)) {
-				original = false;
-				break;
+			if (b < 0) {
+				b += 256;
 			}
-		}
-		if (original) {
-			return source;
-		}
-
-		ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length);
-		for (byte b : bytes) {
 			if (type.isAllowed(b)) {
-				baos.write(b);
+				bos.write(b);
 			}
 			else {
-				baos.write('%');
+				bos.write('%');
 				char hex1 = Character.toUpperCase(Character.forDigit((b >> 4) & 0xF, 16));
 				char hex2 = Character.toUpperCase(Character.forDigit(b & 0xF, 16));
-				baos.write(hex1);
-				baos.write(hex2);
+				bos.write(hex1);
+				bos.write(hex2);
+				changed = true;
 			}
 		}
-		return StreamUtils.copyToString(baos, charset);
+		return (changed ? new String(bos.toByteArray(), charset) : source);
 	}
 
 	private Type getHostType() {
@@ -423,17 +416,17 @@ final class HierarchicalUriComponents extends UriComponents {
 
 	@Override
 	protected HierarchicalUriComponents expandInternal(UriTemplateVariables uriVariables) {
+
 		Assert.state(!this.encodeState.equals(EncodeState.FULLY_ENCODED),
 				"URI components already encoded, and could not possibly contain '{' or '}'.");
 
-		// Array-based vars rely on the order below...
 		String schemeTo = expandUriComponent(getScheme(), uriVariables, this.variableEncoder);
+		String fragmentTo = expandUriComponent(getFragment(), uriVariables, this.variableEncoder);
 		String userInfoTo = expandUriComponent(this.userInfo, uriVariables, this.variableEncoder);
 		String hostTo = expandUriComponent(this.host, uriVariables, this.variableEncoder);
 		String portTo = expandUriComponent(this.port, uriVariables, this.variableEncoder);
 		PathComponent pathTo = this.path.expand(uriVariables, this.variableEncoder);
 		MultiValueMap<String, String> queryParamsTo = expandQueryParams(uriVariables);
-		String fragmentTo = expandUriComponent(getFragment(), uriVariables, this.variableEncoder);
 
 		return new HierarchicalUriComponents(schemeTo, fragmentTo, userInfoTo,
 				hostTo, portTo, pathTo, queryParamsTo, this.encodeState, this.variableEncoder);
@@ -548,7 +541,7 @@ final class HierarchicalUriComponents extends UriComponents {
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
@@ -583,7 +576,7 @@ final class HierarchicalUriComponents extends UriComponents {
 	/**
 	 * Enumeration used to identify the allowed characters per URI component.
 	 * <p>Contains methods to indicate whether a given character is valid in a specific URI component.
-	 * @see <a href="https://tools.ietf.org/html/rfc3986">RFC 3986</a>
+	 * @see <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>
 	 */
 	enum Type {
 
@@ -673,7 +666,7 @@ final class HierarchicalUriComponents extends UriComponents {
 
 		/**
 		 * Indicates whether the given character is in the {@code ALPHA} set.
-		 * @see <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
+		 * @see <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
 		 */
 		protected boolean isAlpha(int c) {
 			return (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z');
@@ -681,7 +674,7 @@ final class HierarchicalUriComponents extends UriComponents {
 
 		/**
 		 * Indicates whether the given character is in the {@code DIGIT} set.
-		 * @see <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
+		 * @see <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
 		 */
 		protected boolean isDigit(int c) {
 			return (c >= '0' && c <= '9');
@@ -689,7 +682,7 @@ final class HierarchicalUriComponents extends UriComponents {
 
 		/**
 		 * Indicates whether the given character is in the {@code gen-delims} set.
-		 * @see <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
+		 * @see <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
 		 */
 		protected boolean isGenericDelimiter(int c) {
 			return (':' == c || '/' == c || '?' == c || '#' == c || '[' == c || ']' == c || '@' == c);
@@ -697,7 +690,7 @@ final class HierarchicalUriComponents extends UriComponents {
 
 		/**
 		 * Indicates whether the given character is in the {@code sub-delims} set.
-		 * @see <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
+		 * @see <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
 		 */
 		protected boolean isSubDelimiter(int c) {
 			return ('!' == c || '$' == c || '&' == c || '\'' == c || '(' == c || ')' == c || '*' == c || '+' == c ||
@@ -706,7 +699,7 @@ final class HierarchicalUriComponents extends UriComponents {
 
 		/**
 		 * Indicates whether the given character is in the {@code reserved} set.
-		 * @see <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
+		 * @see <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
 		 */
 		protected boolean isReserved(int c) {
 			return (isGenericDelimiter(c) || isSubDelimiter(c));
@@ -714,7 +707,7 @@ final class HierarchicalUriComponents extends UriComponents {
 
 		/**
 		 * Indicates whether the given character is in the {@code unreserved} set.
-		 * @see <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
+		 * @see <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
 		 */
 		protected boolean isUnreserved(int c) {
 			return (isAlpha(c) || isDigit(c) || '-' == c || '.' == c || '_' == c || '~' == c);
@@ -722,7 +715,7 @@ final class HierarchicalUriComponents extends UriComponents {
 
 		/**
 		 * Indicates whether the given character is in the {@code pchar} set.
-		 * @see <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
+		 * @see <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986, appendix A</a>
 		 */
 		protected boolean isPchar(int c) {
 			return (isUnreserved(c) || isSubDelimiter(c) || ':' == c || '@' == c);
@@ -895,7 +888,7 @@ final class HierarchicalUriComponents extends UriComponents {
 		}
 
 		@Override
-		public boolean equals(@Nullable Object other) {
+		public boolean equals(Object other) {
 			return (this == other || (other instanceof FullPathComponent &&
 					getPath().equals(((FullPathComponent) other).getPath())));
 		}
@@ -921,10 +914,14 @@ final class HierarchicalUriComponents extends UriComponents {
 
 		@Override
 		public String getPath() {
-			String delimiter = PATH_DELIMITER_STRING;
-			StringJoiner pathBuilder = new StringJoiner(delimiter, delimiter, "");
-			for (String pathSegment : this.pathSegments) {
-				pathBuilder.add(pathSegment);
+			StringBuilder pathBuilder = new StringBuilder();
+			pathBuilder.append(PATH_DELIMITER);
+			for (Iterator<String> iterator = this.pathSegments.iterator(); iterator.hasNext(); ) {
+				String pathSegment = iterator.next();
+				pathBuilder.append(pathSegment);
+				if (iterator.hasNext()) {
+					pathBuilder.append(PATH_DELIMITER);
+				}
 			}
 			return pathBuilder.toString();
 		}
@@ -969,7 +966,7 @@ final class HierarchicalUriComponents extends UriComponents {
 		}
 
 		@Override
-		public boolean equals(@Nullable Object other) {
+		public boolean equals(Object other) {
 			return (this == other || (other instanceof PathSegmentComponent &&
 					getPathSegments().equals(((PathSegmentComponent) other).getPathSegments())));
 		}

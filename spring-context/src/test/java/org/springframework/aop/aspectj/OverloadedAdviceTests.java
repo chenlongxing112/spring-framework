@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,12 @@
 
 package org.springframework.aop.aspectj;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Integration tests for overloaded advice.
@@ -38,9 +38,9 @@ public class OverloadedAdviceTests {
 		}
 		catch (BeanCreationException ex) {
 			Throwable cause = ex.getRootCause();
-			boolean condition = cause instanceof IllegalArgumentException;
-			assertThat(condition).as("Should be IllegalArgumentException").isTrue();
-			assertThat(cause.getMessage().contains("invalidAbsoluteTypeName")).as("invalidAbsoluteTypeName should be detected by AJ").isTrue();
+			assertTrue("Should be IllegalArgumentException", cause instanceof IllegalArgumentException);
+			assertTrue("invalidAbsoluteTypeName should be detected by AJ",
+					cause.getMessage().contains("invalidAbsoluteTypeName"));
 		}
 	}
 
@@ -51,9 +51,9 @@ public class OverloadedAdviceTests {
 		}
 		catch (BeanCreationException ex) {
 			Throwable cause = ex.getRootCause();
-			boolean condition = cause instanceof IllegalArgumentException;
-			assertThat(condition).as("Should be IllegalArgumentException").isTrue();
-			assertThat(cause.getMessage().contains("Cannot resolve method 'myBeforeAdvice' to a unique method")).as("Cannot resolve method 'myBeforeAdvice' to a unique method").isTrue();
+			assertTrue("Should be IllegalArgumentException", cause instanceof IllegalArgumentException);
+			assertTrue("Cannot resolve method 'myBeforeAdvice' to a unique method",
+					cause.getMessage().contains("Cannot resolve method 'myBeforeAdvice' to a unique method"));
 		}
 	}
 

@@ -1,5 +1,5 @@
 /**
- * Provides the types that make up Spring's functional web framework for Reactive environments.
+ * Provides the types that make up Spring's functional web framework.
  */
 @NonNullApi
 @NonNullFields

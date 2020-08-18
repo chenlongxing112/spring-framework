@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -47,12 +47,12 @@ public class CorsRegistration {
 
 	/**
 	 * The list of allowed origins that be specific origins, e.g.
-	 * {@code "https://domain1.com"}, or {@code "*"} for all origins.
+	 * {@code "http://domain1.com"}, or {@code "*"} for all origins.
 	 * <p>A matched origin is listed in the {@code Access-Control-Allow-Origin}
 	 * response header of preflight actual CORS requests.
 	 * <p>By default, all origins are allowed.
 	 * <p><strong>Note:</strong> CORS checks use values from "Forwarded"
-	 * (<a href="https://tools.ietf.org/html/rfc7239">RFC 7239</a>),
+	 * (<a href="http://tools.ietf.org/html/rfc7239">RFC 7239</a>),
 	 * "X-Forwarded-Host", "X-Forwarded-Port", and "X-Forwarded-Proto" headers,
 	 * if present, in order to reflect the client-originated address.
 	 * Consider using the {@code ForwardedHeaderFilter} in order to choose from a
@@ -67,9 +67,9 @@ public class CorsRegistration {
 
 	/**
 	 * Set the HTTP methods to allow, e.g. {@code "GET"}, {@code "POST"}, etc.
-	 * <p>The special value {@code "*"} allows all methods.
-	 * <p>By default "simple" methods {@code GET}, {@code HEAD}, and {@code POST}
-	 * are allowed.
+	 * The special value {@code "*"} allows all methods.
+	 * <p>By default "simple" methods, i.e. {@code GET}, {@code HEAD}, and
+	 * {@code POST} are allowed.
 	 */
 	public CorsRegistration allowedMethods(String... methods) {
 		this.config.setAllowedMethods(Arrays.asList(methods));
@@ -77,9 +77,9 @@ public class CorsRegistration {
 	}
 
 	/**
-	 * Set the list of headers that a pre-flight request can list as allowed
-	 * for use during an actual request.
-	 * <p>The special value {@code "*"} may be used to allow all headers.
+	 * Set the list of headers that a preflight request can list as allowed
+	 * for use during an actual request. The special value {@code "*"} may be
+	 * used to allow all headers.
 	 * <p>A header name is not required to be listed if it is one of:
 	 * {@code Cache-Control}, {@code Content-Language}, {@code Expires},
 	 * {@code Last-Modified}, or {@code Pragma} as per the CORS spec.

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -113,13 +113,11 @@ class LiteralPathElement extends PathElement {
 		return this.len;
 	}
 
-	@Override
 	public char[] getChars() {
 		return this.text;
 	}
 
 
-	@Override
 	public String toString() {
 		return "Literal(" + String.valueOf(this.text) + ")";
 	}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -92,17 +92,12 @@ public abstract class AbstractCacheInvoker {
 	}
 
 	/**
-	 * Execute {@link Cache#evict(Object)}/{@link Cache#evictIfPresent(Object)} on the
-	 * specified {@link Cache} and invoke the error handler if an exception occurs.
+	 * Execute {@link Cache#evict(Object)} on the specified {@link Cache} and
+	 * invoke the error handler if an exception occurs.
 	 */
-	protected void doEvict(Cache cache, Object key, boolean immediate) {
+	protected void doEvict(Cache cache, Object key) {
 		try {
-			if (immediate) {
-				cache.evictIfPresent(key);
-			}
-			else {
-				cache.evict(key);
-			}
+			cache.evict(key);
 		}
 		catch (RuntimeException ex) {
 			getErrorHandler().handleCacheEvictError(ex, cache, key);
@@ -113,14 +108,9 @@ public abstract class AbstractCacheInvoker {
 	 * Execute {@link Cache#clear()} on the specified {@link Cache} and
 	 * invoke the error handler if an exception occurs.
 	 */
-	protected void doClear(Cache cache, boolean immediate) {
+	protected void doClear(Cache cache) {
 		try {
-			if (immediate) {
-				cache.invalidate();
-			}
-			else {
-				cache.clear();
-			}
+			cache.clear();
 		}
 		catch (RuntimeException ex) {
 			getErrorHandler().handleCacheClearError(ex, cache);

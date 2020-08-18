@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,25 +16,25 @@
 
 package org.springframework.util;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
+import static java.util.Arrays.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Stephane Nicoll
  */
-class InstanceFilterTests {
+public class InstanceFilterTests {
 
 	@Test
-	void emptyFilterApplyMatchIfEmpty() {
+	public void emptyFilterApplyMatchIfEmpty() {
 		InstanceFilter<String> filter = new InstanceFilter<>(null, null, true);
 		match(filter, "foo");
 		match(filter, "bar");
 	}
 
 	@Test
-	void includesFilter() {
+	public void includesFilter() {
 		InstanceFilter<String> filter = new InstanceFilter<>(
 				asList("First", "Second"), null, true);
 		match(filter, "Second");
@@ -42,7 +42,7 @@ class InstanceFilterTests {
 	}
 
 	@Test
-	void excludesFilter() {
+	public void excludesFilter() {
 		InstanceFilter<String> filter = new InstanceFilter<>(
 				null, asList("First", "Second"), true);
 		doNotMatch(filter, "Second");
@@ -50,7 +50,7 @@ class InstanceFilterTests {
 	}
 
 	@Test
-	void includesAndExcludesFilters() {
+	public void includesAndExcludesFilters() {
 		InstanceFilter<String> filter = new InstanceFilter<>(
 				asList("foo", "Bar"), asList("First", "Second"), true);
 		doNotMatch(filter, "Second");
@@ -58,18 +58,18 @@ class InstanceFilterTests {
 	}
 
 	@Test
-	void includesAndExcludesFiltersConflict() {
+	public void includesAndExcludesFiltersConflict() {
 		InstanceFilter<String> filter = new InstanceFilter<>(
 				asList("First"), asList("First"), true);
 		doNotMatch(filter, "First");
 	}
 
 	private <T> void match(InstanceFilter<T> filter, T candidate) {
-		assertThat(filter.match(candidate)).as("filter '" + filter + "' should match " + candidate).isTrue();
+		assertTrue("filter '" + filter + "' should match " + candidate, filter.match(candidate));
 	}
 
 	private <T> void doNotMatch(InstanceFilter<T> filter, T candidate) {
-		assertThat(filter.match(candidate)).as("filter '" + filter + "' should not match " + candidate).isFalse();
+		assertFalse("filter '" + filter + "' should not match " + candidate, filter.match(candidate));
 	}
 
 }

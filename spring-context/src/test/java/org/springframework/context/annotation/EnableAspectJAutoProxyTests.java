@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,14 +25,15 @@ import example.scannable.FooServiceImpl;
 import example.scannable.ServiceInvocationCounter;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.aop.framework.AopContext;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
@@ -45,7 +46,7 @@ public class EnableAspectJAutoProxyTests {
 		ApplicationContext ctx = new AnnotationConfigApplicationContext(ConfigWithJdkProxy.class);
 
 		aspectIsApplied(ctx);
-		assertThat(AopUtils.isJdkDynamicProxy(ctx.getBean(FooService.class))).isTrue();
+		assertThat(AopUtils.isJdkDynamicProxy(ctx.getBean(FooService.class)), is(true));
 	}
 
 	@Test
@@ -53,7 +54,7 @@ public class EnableAspectJAutoProxyTests {
 		ApplicationContext ctx = new AnnotationConfigApplicationContext(ConfigWithCglibProxy.class);
 
 		aspectIsApplied(ctx);
-		assertThat(AopUtils.isCglibProxy(ctx.getBean(FooService.class))).isTrue();
+		assertThat(AopUtils.isCglibProxy(ctx.getBean(FooService.class)), is(true));
 	}
 
 	@Test
@@ -61,24 +62,24 @@ public class EnableAspectJAutoProxyTests {
 		ApplicationContext ctx = new AnnotationConfigApplicationContext(ConfigWithExposedProxy.class);
 
 		aspectIsApplied(ctx);
-		assertThat(AopUtils.isJdkDynamicProxy(ctx.getBean(FooService.class))).isTrue();
+		assertThat(AopUtils.isJdkDynamicProxy(ctx.getBean(FooService.class)), is(true));
 	}
 
 	private void aspectIsApplied(ApplicationContext ctx) {
 		FooService fooService = ctx.getBean(FooService.class);
 		ServiceInvocationCounter counter = ctx.getBean(ServiceInvocationCounter.class);
 
-		assertThat(counter.getCount()).isEqualTo(0);
+		assertEquals(0, counter.getCount());
 
-		assertThat(fooService.isInitCalled()).isTrue();
-		assertThat(counter.getCount()).isEqualTo(1);
+		assertTrue(fooService.isInitCalled());
+		assertEquals(1, counter.getCount());
 
 		String value = fooService.foo(1);
-		assertThat(value).isEqualTo("bar");
-		assertThat(counter.getCount()).isEqualTo(2);
+		assertEquals("bar", value);
+		assertEquals(2, counter.getCount());
 
 		fooService.foo(1);
-		assertThat(counter.getCount()).isEqualTo(3);
+		assertEquals(3, counter.getCount());
 	}
 
 	@Test
@@ -127,7 +128,7 @@ public class EnableAspectJAutoProxyTests {
 			return new FooServiceImpl() {
 				@Override
 				public String foo(int id) {
-					assertThat(AopContext.currentProxy()).isNotNull();
+					assertNotNull(AopContext.currentProxy());
 					return super.foo(id);
 				}
 				@Override

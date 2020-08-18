@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ package org.springframework.expression.spel.ast;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.StringJoiner;
 
 import org.springframework.asm.MethodVisitor;
 import org.springframework.expression.EvaluationException;
@@ -92,8 +91,8 @@ public class InlineList extends SpelNodeImpl {
 			return this.constant;
 		}
 		else {
+			List<Object> returnValue = new ArrayList<>();
 			int childCount = getChildCount();
-			List<Object> returnValue = new ArrayList<>(childCount);
 			for (int c = 0; c < childCount; c++) {
 				returnValue.add(getChild(c).getValue(expressionState));
 			}
@@ -103,13 +102,17 @@ public class InlineList extends SpelNodeImpl {
 
 	@Override
 	public String toStringAST() {
-		StringJoiner sj = new StringJoiner(",", "{", "}");
+		StringBuilder sb = new StringBuilder("{");
 		// String ast matches input string, not the 'toString()' of the resultant collection, which would use []
 		int count = getChildCount();
 		for (int c = 0; c < count; c++) {
-			sj.add(getChild(c).toStringAST());
+			if (c > 0) {
+				sb.append(",");
+			}
+			sb.append(getChild(c).toStringAST());
 		}
-		return sj.toString();
+		sb.append("}");
+		return sb.toString();
 	}
 
 	/**

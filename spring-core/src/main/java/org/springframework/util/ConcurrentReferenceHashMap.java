@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -232,24 +232,27 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V> implemen
 	@Override
 	@Nullable
 	public V get(@Nullable Object key) {
-		Reference<K, V> ref = getReference(key, Restructure.WHEN_NECESSARY);
-		Entry<K, V> entry = (ref != null ? ref.get() : null);
+		Entry<K, V> entry = getEntryIfAvailable(key);
 		return (entry != null ? entry.getValue() : null);
 	}
 
 	@Override
 	@Nullable
 	public V getOrDefault(@Nullable Object key, @Nullable V defaultValue) {
-		Reference<K, V> ref = getReference(key, Restructure.WHEN_NECESSARY);
-		Entry<K, V> entry = (ref != null ? ref.get() : null);
+		Entry<K, V> entry = getEntryIfAvailable(key);
 		return (entry != null ? entry.getValue() : defaultValue);
 	}
 
 	@Override
 	public boolean containsKey(@Nullable Object key) {
-		Reference<K, V> ref = getReference(key, Restructure.WHEN_NECESSARY);
-		Entry<K, V> entry = (ref != null ? ref.get() : null);
+		Entry<K, V> entry = getEntryIfAvailable(key);
 		return (entry != null && ObjectUtils.nullSafeEquals(entry.getKey(), key));
+	}
+
+	@Nullable
+	private Entry<K, V> getEntryIfAvailable(@Nullable Object key) {
+		Reference<K, V> ref = getReference(key, Restructure.WHEN_NECESSARY);
+		return (ref != null ? ref.get() : null);
 	}
 
 	/**
@@ -329,7 +332,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V> implemen
 				return false;
 			}
 		});
-		return (Boolean.TRUE.equals(result));
+		return (result == Boolean.TRUE);
 	}
 
 	@Override
@@ -344,7 +347,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V> implemen
 				return false;
 			}
 		});
-		return (Boolean.TRUE.equals(result));
+		return (result == Boolean.TRUE);
 	}
 
 	@Override
@@ -570,70 +573,65 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V> implemen
 		 */
 		protected final void restructureIfNecessary(boolean allowResize) {
 			int currCount = this.count.get();
-			boolean needsResize = allowResize && (currCount > 0 && currCount >= this.resizeThreshold);
+			boolean needsResize = (currCount > 0 && currCount >= this.resizeThreshold);
 			Reference<K, V> ref = this.referenceManager.pollForPurge();
-			if (ref != null || (needsResize)) {
-				restructure(allowResize, ref);
-			}
-		}
-
-		private void restructure(boolean allowResize, @Nullable Reference<K, V> ref) {
-			boolean needsResize;
-			lock();
-			try {
-				int countAfterRestructure = this.count.get();
-				Set<Reference<K, V>> toPurge = Collections.emptySet();
-				if (ref != null) {
-					toPurge = new HashSet<>();
-					while (ref != null) {
-						toPurge.add(ref);
-						ref = this.referenceManager.pollForPurge();
-					}
-				}
-				countAfterRestructure -= toPurge.size();
-
-				// Recalculate taking into account count inside lock and items that
-				// will be purged
-				needsResize = (countAfterRestructure > 0 && countAfterRestructure >= this.resizeThreshold);
-				boolean resizing = false;
-				int restructureSize = this.references.length;
-				if (allowResize && needsResize && restructureSize < MAXIMUM_SEGMENT_SIZE) {
-					restructureSize <<= 1;
-					resizing = true;
-				}
-
-				// Either create a new table or reuse the existing one
-				Reference<K, V>[] restructured =
-						(resizing ? createReferenceArray(restructureSize) : this.references);
-
-				// Restructure
-				for (int i = 0; i < this.references.length; i++) {
-					ref = this.references[i];
-					if (!resizing) {
-						restructured[i] = null;
-					}
-					while (ref != null) {
-						if (!toPurge.contains(ref)) {
-							Entry<K, V> entry = ref.get();
-							if (entry != null) {
-								int index = getIndex(ref.getHash(), restructured);
-								restructured[index] = this.referenceManager.createReference(
-										entry, ref.getHash(), restructured[index]);
-							}
+			if (ref != null || (needsResize && allowResize)) {
+				lock();
+				try {
+					int countAfterRestructure = this.count.get();
+					Set<Reference<K, V>> toPurge = Collections.emptySet();
+					if (ref != null) {
+						toPurge = new HashSet<>();
+						while (ref != null) {
+							toPurge.add(ref);
+							ref = this.referenceManager.pollForPurge();
 						}
-						ref = ref.getNext();
 					}
-				}
+					countAfterRestructure -= toPurge.size();
 
-				// Replace volatile members
-				if (resizing) {
-					this.references = restructured;
-					this.resizeThreshold = (int) (this.references.length * getLoadFactor());
+					// Recalculate taking into account count inside lock and items that
+					// will be purged
+					needsResize = (countAfterRestructure > 0 && countAfterRestructure >= this.resizeThreshold);
+					boolean resizing = false;
+					int restructureSize = this.references.length;
+					if (allowResize && needsResize && restructureSize < MAXIMUM_SEGMENT_SIZE) {
+						restructureSize <<= 1;
+						resizing = true;
+					}
+
+					// Either create a new table or reuse the existing one
+					Reference<K, V>[] restructured =
+							(resizing ? createReferenceArray(restructureSize) : this.references);
+
+					// Restructure
+					for (int i = 0; i < this.references.length; i++) {
+						ref = this.references[i];
+						if (!resizing) {
+							restructured[i] = null;
+						}
+						while (ref != null) {
+							if (!toPurge.contains(ref)) {
+								Entry<K, V> entry = ref.get();
+								if (entry != null) {
+									int index = getIndex(ref.getHash(), restructured);
+									restructured[index] = this.referenceManager.createReference(
+											entry, ref.getHash(), restructured[index]);
+								}
+							}
+							ref = ref.getNext();
+						}
+					}
+
+					// Replace volatile members
+					if (resizing) {
+						this.references = restructured;
+						this.resizeThreshold = (int) (this.references.length * getLoadFactor());
+					}
+					this.count.set(Math.max(countAfterRestructure, 0));
 				}
-				this.count.set(Math.max(countAfterRestructure, 0));
-			}
-			finally {
-				unlock();
+				finally {
+					unlock();
+				}
 			}
 		}
 
@@ -758,7 +756,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V> implemen
 
 		@Override
 		@SuppressWarnings("rawtypes")
-		public final boolean equals(@Nullable Object other) {
+		public final boolean equals(Object other) {
 			if (this == other) {
 				return true;
 			}
@@ -980,8 +978,8 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V> implemen
 
 
 	/**
-	 * Strategy class used to manage {@link Reference References}.
-	 * This class can be overridden if alternative reference types need to be supported.
+	 * Strategy class used to manage {@link Reference References}. This class can be overridden if
+	 * alternative reference types need to be supported.
 	 */
 	protected class ReferenceManager {
 

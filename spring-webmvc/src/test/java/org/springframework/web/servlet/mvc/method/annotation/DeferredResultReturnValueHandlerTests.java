@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,12 @@ package org.springframework.web.servlet.mvc.method.annotation;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.core.MethodParameter;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.SettableListenableFuture;
 import org.springframework.web.context.request.NativeWebRequest;
@@ -31,11 +33,9 @@ import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.context.request.async.StandardServletAsyncWebRequest;
 import org.springframework.web.context.request.async.WebAsyncUtils;
 import org.springframework.web.method.support.ModelAndViewContainer;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.web.testfixture.method.ResolvableMethod.on;
+import static org.junit.Assert.*;
+import static org.springframework.web.method.ResolvableMethod.*;
 
 /**
  * Unit tests for {@link DeferredResultMethodReturnValueHandler}.
@@ -51,7 +51,7 @@ public class DeferredResultReturnValueHandlerTests {
 	private NativeWebRequest webRequest;
 
 
-	@BeforeEach
+	@Before
 	public void setup() throws Exception {
 		this.handler = new DeferredResultMethodReturnValueHandler();
 		this.request = new MockHttpServletRequest();
@@ -66,19 +66,19 @@ public class DeferredResultReturnValueHandlerTests {
 
 	@Test
 	public void supportsReturnType() throws Exception {
-		assertThat(this.handler.supportsReturnType(
-				on(TestController.class).resolveReturnType(DeferredResult.class, String.class))).isTrue();
+		assertTrue(this.handler.supportsReturnType(
+				on(TestController.class).resolveReturnType(DeferredResult.class, String.class)));
 
-		assertThat(this.handler.supportsReturnType(
-				on(TestController.class).resolveReturnType(ListenableFuture.class, String.class))).isTrue();
+		assertTrue(this.handler.supportsReturnType(
+				on(TestController.class).resolveReturnType(ListenableFuture.class, String.class)));
 
-		assertThat(this.handler.supportsReturnType(
-				on(TestController.class).resolveReturnType(CompletableFuture.class, String.class))).isTrue();
+		assertTrue(this.handler.supportsReturnType(
+				on(TestController.class).resolveReturnType(CompletableFuture.class, String.class)));
 	}
 
 	@Test
 	public void doesNotSupportReturnType() throws Exception {
-		assertThat(this.handler.supportsReturnType(on(TestController.class).resolveReturnType(String.class))).isFalse();
+		assertFalse(this.handler.supportsReturnType(on(TestController.class).resolveReturnType(String.class)));
 	}
 
 	@Test
@@ -128,13 +128,13 @@ public class DeferredResultReturnValueHandlerTests {
 		MethodParameter returnType = on(TestController.class).resolveReturnType(asyncType, String.class);
 		this.handler.handleReturnValue(returnValue, returnType, mavContainer, this.webRequest);
 
-		assertThat(this.request.isAsyncStarted()).isTrue();
-		assertThat(WebAsyncUtils.getAsyncManager(this.webRequest).hasConcurrentResult()).isFalse();
+		assertTrue(this.request.isAsyncStarted());
+		assertFalse(WebAsyncUtils.getAsyncManager(this.webRequest).hasConcurrentResult());
 
 		setResultTask.run();
 
-		assertThat(WebAsyncUtils.getAsyncManager(this.webRequest).hasConcurrentResult()).isTrue();
-		assertThat(WebAsyncUtils.getAsyncManager(this.webRequest).getConcurrentResult()).isEqualTo(expectedValue);
+		assertTrue(WebAsyncUtils.getAsyncManager(this.webRequest).hasConcurrentResult());
+		assertEquals(expectedValue, WebAsyncUtils.getAsyncManager(this.webRequest).getConcurrentResult());
 	}
 
 

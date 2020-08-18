@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -48,6 +48,7 @@ public interface TransactionDefinition {
 	 * Analogous to the EJB transaction attribute of the same name.
 	 * <p>This is typically the default setting of a transaction definition,
 	 * and typically defines a transaction synchronization scope.
+	 * 如果存在一个事务，则支持当前事务。如果没有事务则开启一个新的事务。
 	 */
 	int PROPAGATION_REQUIRED = 0;
 
@@ -69,6 +70,8 @@ public interface TransactionDefinition {
 	 * "synchronization on actual transaction").
 	 * @see org.springframework.transaction.support.AbstractPlatformTransactionManager#setTransactionSynchronization
 	 * @see org.springframework.transaction.support.AbstractPlatformTransactionManager#SYNCHRONIZATION_ON_ACTUAL_TRANSACTION
+	 *
+	 * 如果存在一个事务，支持当前事务。如果没有事务，则非事务的执行。
 	 */
 	int PROPAGATION_SUPPORTS = 1;
 
@@ -77,6 +80,7 @@ public interface TransactionDefinition {
 	 * exists. Analogous to the EJB transaction attribute of the same name.
 	 * <p>Note that transaction synchronization within a {@code PROPAGATION_MANDATORY}
 	 * scope will always be driven by the surrounding transaction.
+	 * 如果已经存在一个事务，支持当前事务。如果没有一个活动的事务，则抛出异常。
 	 */
 	int PROPAGATION_MANDATORY = 2;
 
@@ -92,6 +96,7 @@ public interface TransactionDefinition {
 	 * transaction synchronizations. Existing synchronizations will be suspended
 	 * and resumed appropriately.
 	 * @see org.springframework.transaction.jta.JtaTransactionManager#setTransactionManager
+	 * 总是开启一个新的事务。如果一个事务已经存在，则将这个存在的事务挂起。
 	 */
 	int PROPAGATION_REQUIRES_NEW = 3;
 
@@ -107,6 +112,7 @@ public interface TransactionDefinition {
 	 * {@code PROPAGATION_NOT_SUPPORTED} scope. Existing synchronizations
 	 * will be suspended and resumed appropriately.
 	 * @see org.springframework.transaction.jta.JtaTransactionManager#setTransactionManager
+	 * 总是非事务地执行，并挂起任何存在的事务。
 	 */
 	int PROPAGATION_NOT_SUPPORTED = 4;
 
@@ -115,6 +121,7 @@ public interface TransactionDefinition {
 	 * exists. Analogous to the EJB transaction attribute of the same name.
 	 * <p>Note that transaction synchronization is <i>not</i> available within a
 	 * {@code PROPAGATION_NEVER} scope.
+	 * 总是非事务地执行，如果存在一个活动事务，则抛出异常；
 	 */
 	int PROPAGATION_NEVER = 5;
 
@@ -128,6 +135,8 @@ public interface TransactionDefinition {
 	 * when working on a JDBC 3.0 driver. Some JTA providers might support
 	 * nested transactions as well.
 	 * @see org.springframework.jdbc.datasource.DataSourceTransactionManager
+	 *
+	 * 如果一个活动的事务存在，则运行在一个嵌套的事务中. 如果没有活动事务, 则按TransactionDefinition.PROPAGATION_REQUIRED 属性执行。
 	 */
 	int PROPAGATION_NESTED = 6;
 
@@ -135,6 +144,7 @@ public interface TransactionDefinition {
 	/**
 	 * Use the default isolation level of the underlying datastore.
 	 * All other levels correspond to the JDBC isolation levels.
+	 * 这是一个PlatfromTransactionManager默认的隔离级别，使用数据库默认的事务隔离级别.另外四个与JDBC的隔离级别相对应；
 	 * @see java.sql.Connection
 	 */
 	int ISOLATION_DEFAULT = -1;
@@ -146,6 +156,7 @@ public interface TransactionDefinition {
 	 * transaction before any changes in that row have been committed (a "dirty read").
 	 * If any of the changes are rolled back, the second transaction will have
 	 * retrieved an invalid row.
+	 * 这是事务最低的隔离级别，它充许别外一个事务可以看到这个事务未提交的数据。这种隔离级别会产生脏读，不可重复读和幻像读
 	 * @see java.sql.Connection#TRANSACTION_READ_UNCOMMITTED
 	 */
 	int ISOLATION_READ_UNCOMMITTED = 1;  // same as java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
@@ -155,6 +166,8 @@ public interface TransactionDefinition {
 	 * phantom reads can occur.
 	 * <p>This level only prohibits a transaction from reading a row
 	 * with uncommitted changes in it.
+	 * 保证一个事务修改的数据提交后才能被另外一个事务读取。另外一个事务不能读取该事务未提交的数据。
+	 * 这种事务隔离级别可以避免脏读出现，但是可能会出现不可重复读和幻像读。
 	 * @see java.sql.Connection#TRANSACTION_READ_COMMITTED
 	 */
 	int ISOLATION_READ_COMMITTED = 2;  // same as java.sql.Connection.TRANSACTION_READ_COMMITTED;
@@ -166,6 +179,8 @@ public interface TransactionDefinition {
 	 * in it, and it also prohibits the situation where one transaction reads a row,
 	 * a second transaction alters the row, and the first transaction re-reads the row,
 	 * getting different values the second time (a "non-repeatable read").
+	 * 这种事务隔离级别可以防止脏读，不可重复读。但是可能出现幻像读。它除了保证一个事务不能读取
+	 * 另一个事务未提交的数据外，还保证了避免下面的情况产生(不可重复读)。
 	 * @see java.sql.Connection#TRANSACTION_REPEATABLE_READ
 	 */
 	int ISOLATION_REPEATABLE_READ = 4;  // same as java.sql.Connection.TRANSACTION_REPEATABLE_READ;
@@ -179,6 +194,7 @@ public interface TransactionDefinition {
 	 * that satisfies that {@code WHERE} condition, and the first transaction
 	 * re-reads for the same condition, retrieving the additional "phantom" row
 	 * in the second read.
+	 * 这是花费最高代价但是最可靠的事务隔离级别。事务被处理为顺序执行。除了防止脏读，不可重复读外，还避免了幻像读。
 	 * @see java.sql.Connection#TRANSACTION_SERIALIZABLE
 	 */
 	int ISOLATION_SERIALIZABLE = 8;  // same as java.sql.Connection.TRANSACTION_SERIALIZABLE;
@@ -195,14 +211,11 @@ public interface TransactionDefinition {
 	 * Return the propagation behavior.
 	 * <p>Must return one of the {@code PROPAGATION_XXX} constants
 	 * defined on {@link TransactionDefinition this interface}.
-	 * <p>The default is {@link #PROPAGATION_REQUIRED}.
 	 * @return the propagation behavior
 	 * @see #PROPAGATION_REQUIRED
 	 * @see org.springframework.transaction.support.TransactionSynchronizationManager#isActualTransactionActive()
 	 */
-	default int getPropagationBehavior() {
-		return PROPAGATION_REQUIRED;
-	}
+	int getPropagationBehavior(); // 返回事务的传播行为。
 
 	/**
 	 * Return the isolation level.
@@ -215,16 +228,13 @@ public interface TransactionDefinition {
 	 * "true" on your transaction manager if you'd like isolation level declarations
 	 * to get rejected when participating in an existing transaction with a different
 	 * isolation level.
-	 * <p>The default is {@link #ISOLATION_DEFAULT}. Note that a transaction manager
-	 * that does not support custom isolation levels will throw an exception when
-	 * given any other level than {@link #ISOLATION_DEFAULT}.
+	 * <p>Note that a transaction manager that does not support custom isolation levels
+	 * will throw an exception when given any other level than {@link #ISOLATION_DEFAULT}.
 	 * @return the isolation level
 	 * @see #ISOLATION_DEFAULT
 	 * @see org.springframework.transaction.support.AbstractPlatformTransactionManager#setValidateExistingTransaction
 	 */
-	default int getIsolationLevel() {
-		return ISOLATION_DEFAULT;
-	}
+	int getIsolationLevel(); //返回事务的隔离级别，事务管理器根据它来控制另外一个事务可以看到本事务内的哪些数据。
 
 	/**
 	 * Return the transaction timeout.
@@ -234,12 +244,9 @@ public interface TransactionDefinition {
 	 * transactions.
 	 * <p>Note that a transaction manager that does not support timeouts will throw
 	 * an exception when given any other timeout than {@link #TIMEOUT_DEFAULT}.
-	 * <p>The default is {@link #TIMEOUT_DEFAULT}.
 	 * @return the transaction timeout
 	 */
-	default int getTimeout() {
-		return TIMEOUT_DEFAULT;
-	}
+	int getTimeout(); //返回事务必须在多少秒内完成。
 
 	/**
 	 * Return whether to optimize as a read-only transaction.
@@ -254,13 +261,10 @@ public interface TransactionDefinition {
 	 * A transaction manager which cannot interpret the read-only hint will
 	 * <i>not</i> throw an exception when asked for a read-only transaction.
 	 * @return {@code true} if the transaction is to be optimized as read-only
-	 * ({@code false} by default)
 	 * @see org.springframework.transaction.support.TransactionSynchronization#beforeCommit(boolean)
 	 * @see org.springframework.transaction.support.TransactionSynchronizationManager#isCurrentTransactionReadOnly()
 	 */
-	default boolean isReadOnly() {
-		return false;
-	}
+	boolean isReadOnly(); //事务是否只读，事务管理器能够根据这个返回值进行优化，确保事务是只读的。
 
 	/**
 	 * Return the name of this transaction. Can be {@code null}.
@@ -268,27 +272,11 @@ public interface TransactionDefinition {
 	 * transaction monitor, if applicable (for example, WebLogic's).
 	 * <p>In case of Spring's declarative transactions, the exposed name will be
 	 * the {@code fully-qualified class name + "." + method name} (by default).
-	 * @return the name of this transaction ({@code null} by default}
+	 * @return the name of this transaction
 	 * @see org.springframework.transaction.interceptor.TransactionAspectSupport
 	 * @see org.springframework.transaction.support.TransactionSynchronizationManager#getCurrentTransactionName()
 	 */
 	@Nullable
-	default String getName() {
-		return null;
-	}
-
-
-	// Static builder methods
-
-	/**
-	 * Return an unmodifiable {@code TransactionDefinition} with defaults.
-	 * <p>For customization purposes, use the modifiable
-	 * {@link org.springframework.transaction.support.DefaultTransactionDefinition}
-	 * instead.
-	 * @since 5.2
-	 */
-	static TransactionDefinition withDefaults() {
-		return StaticTransactionDefinition.INSTANCE;
-	}
+	String getName();
 
 }

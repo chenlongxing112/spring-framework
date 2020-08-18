@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ package org.springframework.jms.listener.adapter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.JMSException;
@@ -30,8 +29,10 @@ import javax.jms.TextMessage;
 import javax.jms.Topic;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.jms.StubTextMessage;
@@ -46,20 +47,16 @@ import org.springframework.messaging.handler.annotation.support.DefaultMessageHa
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.ReflectionUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Stephane Nicoll
  */
 public class MessagingMessageListenerAdapterTests {
+
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
 
 	private static final Destination sharedReplyDestination = mock(Destination.class);
 
@@ -68,7 +65,7 @@ public class MessagingMessageListenerAdapterTests {
 	private final SampleBean sample = new SampleBean();
 
 
-	@BeforeEach
+	@Before
 	public void setup() {
 		initializeFactory(factory);
 	}
@@ -88,11 +85,11 @@ public class MessagingMessageListenerAdapterTests {
 		javax.jms.Message replyMessage = listener.buildMessage(session, result);
 
 		verify(session).createTextMessage("Response");
-		assertThat(replyMessage).as("reply should never be null").isNotNull();
-		assertThat(((TextMessage) replyMessage).getText()).isEqualTo("Response");
-		assertThat(replyMessage.getStringProperty("foo")).as("custom header not copied").isEqualTo("bar");
-		assertThat(replyMessage.getJMSType()).as("type header not copied").isEqualTo("msg_type");
-		assertThat(replyMessage.getJMSReplyTo()).as("replyTo header not copied").isEqualTo(replyTo);
+		assertNotNull("reply should never be null", replyMessage);
+		assertEquals("Response", ((TextMessage) replyMessage).getText());
+		assertEquals("custom header not copied", "bar", replyMessage.getStringProperty("foo"));
+		assertEquals("type header not copied", "msg_type", replyMessage.getJMSType());
+		assertEquals("replyTo header not copied", replyTo, replyMessage.getJMSReplyTo());
 	}
 
 	@Test
@@ -100,10 +97,18 @@ public class MessagingMessageListenerAdapterTests {
 		javax.jms.Message message = new StubTextMessage("foo");
 		Session session = mock(Session.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("fail", String.class);
-		assertThatExceptionOfType(ListenerExecutionFailedException.class).isThrownBy(() ->
-				listener.onMessage(message, session))
-			.withCauseExactlyInstanceOf(IllegalArgumentException.class)
-			.satisfies(ex -> assertThat(ex.getCause().getMessage()).isEqualTo("Expected test exception"));
+
+		try {
+			listener.onMessage(message, session);
+			fail("Should have thrown an exception");
+		}
+		catch (JMSException ex) {
+			fail("Should not have thrown a JMS exception");
+		}
+		catch (ListenerExecutionFailedException ex) {
+			assertEquals(IllegalArgumentException.class, ex.getCause().getClass());
+			assertEquals("Expected test exception", ex.getCause().getMessage());
+		}
 	}
 
 	@Test
@@ -112,9 +117,16 @@ public class MessagingMessageListenerAdapterTests {
 		Session session = mock(Session.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("wrongParam", Integer.class);
 
-		assertThatExceptionOfType(ListenerExecutionFailedException.class).isThrownBy(() ->
-				listener.onMessage(message, session))
-			.withCauseExactlyInstanceOf(MessageConversionException.class);
+		try {
+			listener.onMessage(message, session);
+			fail("Should have thrown an exception");
+		}
+		catch (JMSException ex) {
+			fail("Should not have thrown a JMS exception");
+		}
+		catch (ListenerExecutionFailedException ex) {
+			assertEquals(MessageConversionException.class, ex.getCause().getClass());
+		}
 	}
 
 	@Test
@@ -126,21 +138,20 @@ public class MessagingMessageListenerAdapterTests {
 		listener.setMessageConverter(messageConverter);
 		Message<?> message = listener.toMessagingMessage(jmsMessage);
 		verify(messageConverter, never()).fromMessage(jmsMessage);
-		assertThat(message.getPayload()).isEqualTo("FooBar");
+		assertEquals("FooBar", message.getPayload());
 		verify(messageConverter, times(1)).fromMessage(jmsMessage);
 	}
 
 	@Test
 	public void headerConversionLazilyInvoked() throws JMSException {
 		javax.jms.Message jmsMessage = mock(javax.jms.Message.class);
-		given(jmsMessage.getPropertyNames()).willThrow(new IllegalArgumentException("Header failure"));
+		when(jmsMessage.getPropertyNames()).thenThrow(new IllegalArgumentException("Header failure"));
 		MessagingMessageListenerAdapter listener = getSimpleInstance("simple", Message.class);
 		Message<?> message = listener.toMessagingMessage(jmsMessage);
 
-		// Triggers headers resolution
-		assertThatIllegalArgumentException().isThrownBy(
-				message::getHeaders)
-			.withMessageContaining("Header failure");
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage("Header failure");
+		message.getHeaders(); // Triggers headers resolution
 	}
 
 	@Test
@@ -153,8 +164,8 @@ public class MessagingMessageListenerAdapterTests {
 		listener.setMessageConverter(messageConverter);
 		listener.onMessage(jmsMessage, session);
 		verify(messageConverter, times(1)).fromMessage(jmsMessage);
-		assertThat(sample.simples.size()).isEqualTo(1);
-		assertThat(sample.simples.get(0).getPayload()).isEqualTo("FooBar");
+		assertEquals(1, sample.simples.size());
+		assertEquals("FooBar", sample.simples.get(0).getPayload());
 	}
 
 	@Test
@@ -169,8 +180,8 @@ public class MessagingMessageListenerAdapterTests {
 		javax.jms.Message replyMessage = listener.buildMessage(session, result);
 
 		verify(messageConverter, times(1)).toMessage("Response", session);
-		assertThat(replyMessage).as("reply should never be null").isNotNull();
-		assertThat(((TextMessage) replyMessage).getText()).isEqualTo("Response");
+		assertNotNull("reply should never be null", replyMessage);
+		assertEquals("Response", ((TextMessage) replyMessage).getText());
 	}
 
 	@Test

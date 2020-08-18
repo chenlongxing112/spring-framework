@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,15 +19,15 @@ package org.springframework.test.context.junit4.statements;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runners.model.Statement;
 import org.mockito.stubbing.Answer;
 
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mock;
+import org.springframework.test.context.junit4.statements.SpringFailOnTimeout;
+
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for {@link SpringFailOnTimeout}.
@@ -40,41 +40,47 @@ public class SpringFailOnTimeoutTests {
 
 	private Statement statement = mock(Statement.class);
 
+	@Rule
+	public final ExpectedException exception = ExpectedException.none();
+
 
 	@Test
 	public void nullNextStatement() throws Throwable {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new SpringFailOnTimeout(null, 1));
+		exception.expect(IllegalArgumentException.class);
+		new SpringFailOnTimeout(null, 1);
 	}
 
 	@Test
 	public void negativeTimeout() throws Throwable {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new SpringFailOnTimeout(statement, -1));
+		exception.expect(IllegalArgumentException.class);
+		new SpringFailOnTimeout(statement, -1);
 	}
 
 	@Test
 	public void userExceptionPropagates() throws Throwable {
-		willThrow(new Boom()).given(statement).evaluate();
+		doThrow(new Boom()).when(statement).evaluate();
 
-		assertThatExceptionOfType(Boom.class).isThrownBy(() ->
-				new SpringFailOnTimeout(statement, 1).evaluate());
+		exception.expect(Boom.class);
+		new SpringFailOnTimeout(statement, 1).evaluate();
 	}
 
 	@Test
 	public void timeoutExceptionThrownIfNoUserException() throws Throwable {
-		willAnswer((Answer<Void>) invocation -> {
+		doAnswer((Answer<Void>) invocation -> {
 			TimeUnit.MILLISECONDS.sleep(50);
 			return null;
-		}).given(statement).evaluate();
+		}).when(statement).evaluate();
 
-		assertThatExceptionOfType(TimeoutException.class).isThrownBy(() ->
-		new SpringFailOnTimeout(statement, 1).evaluate());
+		exception.expect(TimeoutException.class);
+		new SpringFailOnTimeout(statement, 1).evaluate();
 	}
 
 	@Test
 	public void noExceptionThrownIfNoUserExceptionAndTimeoutDoesNotOccur() throws Throwable {
-		willAnswer((Answer<Void>) invocation -> null).given(statement).evaluate();
+		doAnswer((Answer<Void>) invocation -> {
+			return null;
+		}).when(statement).evaluate();
+
 		new SpringFailOnTimeout(statement, 100).evaluate();
 	}
 

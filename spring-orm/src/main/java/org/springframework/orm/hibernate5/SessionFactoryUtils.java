@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.orm.hibernate5;
 
 import java.lang.reflect.Method;
 import java.util.Map;
-
 import javax.persistence.PersistenceException;
 import javax.sql.DataSource;
 
@@ -170,8 +169,11 @@ public abstract class SessionFactoryUtils {
 			try {
 				session.close();
 			}
+			catch (HibernateException ex) {
+				logger.debug("Could not close Hibernate Session", ex);
+			}
 			catch (Throwable ex) {
-				logger.error("Failed to release Hibernate Session", ex);
+				logger.debug("Unexpected exception on closing Hibernate Session", ex);
 			}
 		}
 	}

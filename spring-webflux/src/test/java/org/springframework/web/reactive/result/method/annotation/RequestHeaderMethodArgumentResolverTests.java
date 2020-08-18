@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,8 +22,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Map;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -32,17 +32,20 @@ import org.springframework.core.MethodParameter;
 import org.springframework.core.ReactiveAdapterRegistry;
 import org.springframework.core.annotation.SynthesizingMethodParameter;
 import org.springframework.format.support.DefaultFormattingConversionService;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpRequest;
+import org.springframework.mock.web.test.server.MockServerWebExchange;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.support.ConfigurableWebBindingInitializer;
 import org.springframework.web.reactive.BindingContext;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.ServerWebInputException;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest;
-import org.springframework.web.testfixture.server.MockServerWebExchange;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Unit tests for {@link RequestHeaderMethodArgumentResolver}.
@@ -66,7 +69,7 @@ public class RequestHeaderMethodArgumentResolverTests {
 	private MethodParameter paramMono;
 
 
-	@BeforeEach
+	@Before
 	@SuppressWarnings("resource")
 	public void setup() throws Exception {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
@@ -93,16 +96,22 @@ public class RequestHeaderMethodArgumentResolverTests {
 
 	@Test
 	public void supportsParameter() {
-		assertThat(resolver.supportsParameter(paramNamedDefaultValueStringHeader)).as("String parameter not supported").isTrue();
-		assertThat(resolver.supportsParameter(paramNamedValueStringArray)).as("String array parameter not supported").isTrue();
-		assertThat(resolver.supportsParameter(paramNamedValueMap)).as("non-@RequestParam parameter supported").isFalse();
-		assertThatIllegalStateException().isThrownBy(() ->
-				this.resolver.supportsParameter(this.paramMono))
-			.withMessageStartingWith("RequestHeaderMethodArgumentResolver does not support reactive type wrapper");
+		assertTrue("String parameter not supported", resolver.supportsParameter(paramNamedDefaultValueStringHeader));
+		assertTrue("String array parameter not supported", resolver.supportsParameter(paramNamedValueStringArray));
+		assertFalse("non-@RequestParam parameter supported", resolver.supportsParameter(paramNamedValueMap));
+		try {
+			this.resolver.supportsParameter(this.paramMono);
+			fail();
+		}
+		catch (IllegalStateException ex) {
+			assertTrue("Unexpected error message:\n" + ex.getMessage(),
+					ex.getMessage().startsWith(
+							"RequestHeaderMethodArgumentResolver doesn't support reactive type wrapper"));
+		}
 	}
 
 	@Test
-	public void resolveStringArgument() {
+	public void resolveStringArgument() throws Exception {
 		String expected = "foo";
 		ServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/").header("name", expected));
 
@@ -110,13 +119,12 @@ public class RequestHeaderMethodArgumentResolverTests {
 				this.paramNamedDefaultValueStringHeader, this.bindingContext, exchange);
 
 		Object result = mono.block();
-		boolean condition = result instanceof String;
-		assertThat(condition).isTrue();
-		assertThat(result).isEqualTo(expected);
+		assertTrue(result instanceof String);
+		assertEquals(expected, result);
 	}
 
 	@Test
-	public void resolveStringArrayArgument() {
+	public void resolveStringArrayArgument() throws Exception {
 		MockServerHttpRequest request = MockServerHttpRequest.get("/").header("name", "foo", "bar").build();
 		ServerWebExchange exchange = MockServerWebExchange.from(request);
 
@@ -124,25 +132,23 @@ public class RequestHeaderMethodArgumentResolverTests {
 				this.paramNamedValueStringArray, this.bindingContext, exchange);
 
 		Object result = mono.block();
-		boolean condition = result instanceof String[];
-		assertThat(condition).isTrue();
-		assertThat((String[]) result).isEqualTo(new String[] {"foo", "bar"});
+		assertTrue(result instanceof String[]);
+		assertArrayEquals(new String[] {"foo", "bar"}, (String[]) result);
 	}
 
 	@Test
-	public void resolveDefaultValue() {
+	public void resolveDefaultValue() throws Exception {
 		MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/"));
 		Mono<Object> mono = this.resolver.resolveArgument(
 				this.paramNamedDefaultValueStringHeader, this.bindingContext, exchange);
 
 		Object result = mono.block();
-		boolean condition = result instanceof String;
-		assertThat(condition).isTrue();
-		assertThat(result).isEqualTo("bar");
+		assertTrue(result instanceof String);
+		assertEquals("bar", result);
 	}
 
 	@Test
-	public void resolveDefaultValueFromSystemProperty() {
+	public void resolveDefaultValueFromSystemProperty() throws Exception {
 		System.setProperty("systemProperty", "bar");
 		try {
 			Mono<Object> mono = this.resolver.resolveArgument(
@@ -150,9 +156,8 @@ public class RequestHeaderMethodArgumentResolverTests {
 					MockServerWebExchange.from(MockServerHttpRequest.get("/")));
 
 			Object result = mono.block();
-			boolean condition = result instanceof String;
-			assertThat(condition).isTrue();
-			assertThat(result).isEqualTo("bar");
+			assertTrue(result instanceof String);
+			assertEquals("bar", result);
 		}
 		finally {
 			System.clearProperty("systemProperty");
@@ -160,7 +165,7 @@ public class RequestHeaderMethodArgumentResolverTests {
 	}
 
 	@Test
-	public void resolveNameFromSystemPropertyThroughExpression() {
+	public void resolveNameFromSystemPropertyThroughExpression() throws Exception {
 		String expected = "foo";
 		MockServerHttpRequest request = MockServerHttpRequest.get("/").header("bar", expected).build();
 		ServerWebExchange exchange = MockServerWebExchange.from(request);
@@ -171,9 +176,8 @@ public class RequestHeaderMethodArgumentResolverTests {
 					this.paramResolvedNameWithExpression, this.bindingContext, exchange);
 
 			Object result = mono.block();
-			boolean condition = result instanceof String;
-			assertThat(condition).isTrue();
-			assertThat(result).isEqualTo(expected);
+			assertTrue(result instanceof String);
+			assertEquals(expected, result);
 		}
 		finally {
 			System.clearProperty("systemProperty");
@@ -181,7 +185,7 @@ public class RequestHeaderMethodArgumentResolverTests {
 	}
 
 	@Test
-	public void resolveNameFromSystemPropertyThroughPlaceholder() {
+	public void resolveNameFromSystemPropertyThroughPlaceholder() throws Exception {
 		String expected = "foo";
 		MockServerHttpRequest request = MockServerHttpRequest.get("/").header("bar", expected).build();
 		ServerWebExchange exchange = MockServerWebExchange.from(request);
@@ -192,9 +196,8 @@ public class RequestHeaderMethodArgumentResolverTests {
 					this.paramResolvedNameWithPlaceholder, this.bindingContext, exchange);
 
 			Object result = mono.block();
-			boolean condition = result instanceof String;
-			assertThat(condition).isTrue();
-			assertThat(result).isEqualTo(expected);
+			assertTrue(result instanceof String);
+			assertEquals(expected, result);
 		}
 		finally {
 			System.clearProperty("systemProperty");
@@ -202,7 +205,7 @@ public class RequestHeaderMethodArgumentResolverTests {
 	}
 
 	@Test
-	public void notFound() {
+	public void notFound() throws Exception {
 		Mono<Object> mono = resolver.resolveArgument(
 				this.paramNamedValueStringArray, this.bindingContext,
 				MockServerWebExchange.from(MockServerHttpRequest.get("/")));
@@ -215,7 +218,7 @@ public class RequestHeaderMethodArgumentResolverTests {
 
 	@Test
 	@SuppressWarnings("deprecation")
-	public void dateConversion() {
+	public void dateConversion() throws Exception {
 		String rfc1123val = "Thu, 21 Apr 2016 17:11:08 +0100";
 		MockServerHttpRequest request = MockServerHttpRequest.get("/").header("name", rfc1123val).build();
 		ServerWebExchange exchange = MockServerWebExchange.from(request);
@@ -223,13 +226,12 @@ public class RequestHeaderMethodArgumentResolverTests {
 		Mono<Object> mono = this.resolver.resolveArgument(this.paramDate, this.bindingContext, exchange);
 		Object result = mono.block();
 
-		boolean condition = result instanceof Date;
-		assertThat(condition).isTrue();
-		assertThat(result).isEqualTo(new Date(rfc1123val));
+		assertTrue(result instanceof Date);
+		assertEquals(new Date(rfc1123val), result);
 	}
 
 	@Test
-	public void instantConversion() {
+	public void instantConversion() throws Exception {
 		String rfc1123val = "Thu, 21 Apr 2016 17:11:08 +0100";
 		MockServerHttpRequest request = MockServerHttpRequest.get("/").header("name", rfc1123val).build();
 		ServerWebExchange exchange = MockServerWebExchange.from(request);
@@ -237,9 +239,8 @@ public class RequestHeaderMethodArgumentResolverTests {
 		Mono<Object> mono = this.resolver.resolveArgument(this.paramInstant, this.bindingContext, exchange);
 		Object result = mono.block();
 
-		boolean condition = result instanceof Instant;
-		assertThat(condition).isTrue();
-		assertThat(result).isEqualTo(Instant.from(DateTimeFormatter.RFC_1123_DATE_TIME.parse(rfc1123val)));
+		assertTrue(result instanceof Instant);
+		assertEquals(Instant.from(DateTimeFormatter.RFC_1123_DATE_TIME.parse(rfc1123val)), result);
 	}
 
 

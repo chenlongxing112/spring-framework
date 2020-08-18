@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,16 +22,13 @@ import javax.ejb.EJBLocalObject;
 import javax.naming.Context;
 import javax.naming.NamingException;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.jndi.JndiTemplate;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Rod Johnson
@@ -62,7 +59,7 @@ public class LocalSlsbInvokerInterceptorTests {
 		JndiTemplate jt = new JndiTemplate() {
 			@Override
 			public Object lookup(String name) throws NamingException {
-				assertThat(jndiName.equals(name)).isTrue();
+				assertTrue(jndiName.equals(name));
 				throw nex;
 			}
 		};
@@ -72,9 +69,13 @@ public class LocalSlsbInvokerInterceptorTests {
 		// default resourceRef=false should cause this to fail, as java:/comp/env will not
 		// automatically be added
 		si.setJndiTemplate(jt);
-		assertThatExceptionOfType(NamingException.class).isThrownBy(
-				si::afterPropertiesSet)
-			.satisfies(ex -> assertThat(ex).isSameAs(nex));
+		try {
+			si.afterPropertiesSet();
+			fail("Should have failed with naming exception");
+		}
+		catch (NamingException ex) {
+			assertTrue(ex == nex);
+		}
 	}
 
 	@Test
@@ -92,7 +93,7 @@ public class LocalSlsbInvokerInterceptorTests {
 		pf.addAdvice(si);
 		BusinessMethods target = (BusinessMethods) pf.getProxy();
 
-		assertThat(target.targetMethod() == retVal).isTrue();
+		assertTrue(target.targetMethod() == retVal);
 
 		verify(mockContext).close();
 		verify(ejb).remove();
@@ -113,7 +114,7 @@ public class LocalSlsbInvokerInterceptorTests {
 		pf.addAdvice(si);
 		BusinessMethods target = (BusinessMethods) pf.getProxy();
 
-		assertThat(target.targetMethod() == retVal).isTrue();
+		assertTrue(target.targetMethod() == retVal);
 
 		verify(mockContext).close();
 		verify(ejb).remove();
@@ -132,9 +133,13 @@ public class LocalSlsbInvokerInterceptorTests {
 		pf.addAdvice(si);
 		LocalInterfaceWithBusinessMethods target = (LocalInterfaceWithBusinessMethods) pf.getProxy();
 
-		assertThatExceptionOfType(Exception.class).isThrownBy(
-				target::targetMethod)
-			.satisfies(ex -> assertThat(ex).isSameAs(expected));
+		try {
+			target.targetMethod();
+			fail("Should have thrown exception");
+		}
+		catch (Exception thrown) {
+			assertTrue(thrown == expected);
+		}
 
 		verify(mockContext).close();
 	}

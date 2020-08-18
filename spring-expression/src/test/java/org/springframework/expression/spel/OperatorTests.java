@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,12 +19,12 @@ package org.springframework.expression.spel;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.expression.spel.ast.Operator;
 import org.springframework.expression.spel.standard.SpelExpression;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Tests the evaluation of expressions using relational operators.
@@ -401,9 +401,9 @@ public class OperatorTests extends AbstractExpressionTests {
 
 		// AST:
 		SpelExpression expr = (SpelExpression)parser.parseExpression("+3");
-		assertThat(expr.toStringAST()).isEqualTo("+3");
+		assertEquals("+3",expr.toStringAST());
 		expr = (SpelExpression)parser.parseExpression("2+3");
-		assertThat(expr.toStringAST()).isEqualTo("(2 + 3)");
+		assertEquals("(2 + 3)",expr.toStringAST());
 
 		// use as a unary operator
 		evaluate("+5d",5d,Double.class);
@@ -425,9 +425,9 @@ public class OperatorTests extends AbstractExpressionTests {
 		evaluateAndCheckError("'ab' - 2", SpelMessage.OPERATOR_NOT_SUPPORTED_BETWEEN_TYPES);
 		evaluateAndCheckError("2-'ab'", SpelMessage.OPERATOR_NOT_SUPPORTED_BETWEEN_TYPES);
 		SpelExpression expr = (SpelExpression)parser.parseExpression("-3");
-		assertThat(expr.toStringAST()).isEqualTo("-3");
+		assertEquals("-3", expr.toStringAST());
 		expr = (SpelExpression)parser.parseExpression("2-3");
-		assertThat(expr.toStringAST()).isEqualTo("(2 - 3)");
+		assertEquals("(2 - 3)", expr.toStringAST());
 
 		evaluate("-5d",-5d,Double.class);
 		evaluate("-5L",-5L,Long.class);
@@ -497,40 +497,40 @@ public class OperatorTests extends AbstractExpressionTests {
 	@Test
 	public void testOperatorNames() throws Exception {
 		Operator node = getOperatorNode((SpelExpression)parser.parseExpression("1==3"));
-		assertThat(node.getOperatorName()).isEqualTo("==");
+		assertEquals("==",node.getOperatorName());
 
 		node = getOperatorNode((SpelExpression)parser.parseExpression("1!=3"));
-		assertThat(node.getOperatorName()).isEqualTo("!=");
+		assertEquals("!=",node.getOperatorName());
 
 		node = getOperatorNode((SpelExpression)parser.parseExpression("3/3"));
-		assertThat(node.getOperatorName()).isEqualTo("/");
+		assertEquals("/",node.getOperatorName());
 
 		node = getOperatorNode((SpelExpression)parser.parseExpression("3+3"));
-		assertThat(node.getOperatorName()).isEqualTo("+");
+		assertEquals("+",node.getOperatorName());
 
 		node = getOperatorNode((SpelExpression)parser.parseExpression("3-3"));
-		assertThat(node.getOperatorName()).isEqualTo("-");
+		assertEquals("-",node.getOperatorName());
 
 		node = getOperatorNode((SpelExpression)parser.parseExpression("3<4"));
-		assertThat(node.getOperatorName()).isEqualTo("<");
+		assertEquals("<",node.getOperatorName());
 
 		node = getOperatorNode((SpelExpression)parser.parseExpression("3<=4"));
-		assertThat(node.getOperatorName()).isEqualTo("<=");
+		assertEquals("<=",node.getOperatorName());
 
 		node = getOperatorNode((SpelExpression)parser.parseExpression("3*4"));
-		assertThat(node.getOperatorName()).isEqualTo("*");
+		assertEquals("*",node.getOperatorName());
 
 		node = getOperatorNode((SpelExpression)parser.parseExpression("3%4"));
-		assertThat(node.getOperatorName()).isEqualTo("%");
+		assertEquals("%",node.getOperatorName());
 
 		node = getOperatorNode((SpelExpression)parser.parseExpression("3>=4"));
-		assertThat(node.getOperatorName()).isEqualTo(">=");
+		assertEquals(">=",node.getOperatorName());
 
 		node = getOperatorNode((SpelExpression)parser.parseExpression("3 between 4"));
-		assertThat(node.getOperatorName()).isEqualTo("between");
+		assertEquals("between",node.getOperatorName());
 
 		node = getOperatorNode((SpelExpression)parser.parseExpression("3 ^ 4"));
-		assertThat(node.getOperatorName()).isEqualTo("^");
+		assertEquals("^",node.getOperatorName());
 	}
 
 	@Test

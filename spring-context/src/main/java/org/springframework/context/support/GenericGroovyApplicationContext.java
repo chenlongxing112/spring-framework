@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -225,22 +225,18 @@ public class GenericGroovyApplicationContext extends GenericApplicationContext i
 
 	// Implementation of the GroovyObject interface
 
-	@Override
 	public void setMetaClass(MetaClass metaClass) {
 		this.metaClass = metaClass;
 	}
 
-	@Override
 	public MetaClass getMetaClass() {
 		return this.metaClass;
 	}
 
-	@Override
 	public Object invokeMethod(String name, Object args) {
 		return this.metaClass.invokeMethod(this, name, args);
 	}
 
-	@Override
 	public void setProperty(String property, Object newValue) {
 		if (newValue instanceof BeanDefinition) {
 			registerBeanDefinition(property, (BeanDefinition) newValue);
@@ -250,7 +246,6 @@ public class GenericGroovyApplicationContext extends GenericApplicationContext i
 		}
 	}
 
-	@Override
 	@Nullable
 	public Object getProperty(String property) {
 		if (containsBean(property)) {

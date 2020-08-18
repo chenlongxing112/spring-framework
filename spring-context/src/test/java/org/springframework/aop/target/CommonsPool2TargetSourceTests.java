@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,22 +18,23 @@ package org.springframework.aop.target;
 
 import java.util.NoSuchElementException;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.aop.framework.Advised;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.beans.testfixture.beans.Person;
-import org.springframework.beans.testfixture.beans.SerializablePerson;
-import org.springframework.beans.testfixture.beans.SideEffectBean;
 import org.springframework.context.support.StaticApplicationContext;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.testfixture.io.SerializationTestUtils;
+import org.springframework.tests.sample.beans.Person;
+import org.springframework.tests.sample.beans.SerializablePerson;
+import org.springframework.tests.sample.beans.SideEffectBean;
+import org.springframework.util.SerializationTestUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * Tests for pooling invoker interceptor.
@@ -47,6 +48,9 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  */
 public class CommonsPool2TargetSourceTests {
 
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
+
 	/**
 	 * Initial count value set in bean factory XML
 	 */
@@ -54,7 +58,7 @@ public class CommonsPool2TargetSourceTests {
 
 	private DefaultListableBeanFactory beanFactory;
 
-	@BeforeEach
+	@Before
 	public void setUp() throws Exception {
 		this.beanFactory = new DefaultListableBeanFactory();
 		new XmlBeanDefinitionReader(this.beanFactory).loadBeanDefinitions(
@@ -64,7 +68,7 @@ public class CommonsPool2TargetSourceTests {
 	/**
 	 * We must simulate container shutdown, which should clear threads.
 	 */
-	@AfterEach
+	@After
 	public void tearDown() {
 		// Will call pool.close()
 		this.beanFactory.destroySingletons();
@@ -72,9 +76,9 @@ public class CommonsPool2TargetSourceTests {
 
 	private void testFunctionality(String name) {
 		SideEffectBean pooled = (SideEffectBean) beanFactory.getBean(name);
-		assertThat(pooled.getCount()).isEqualTo(INITIAL_COUNT);
+		assertEquals(INITIAL_COUNT, pooled.getCount());
 		pooled.doWork();
-		assertThat(pooled.getCount()).isEqualTo((INITIAL_COUNT + 1));
+		assertEquals(INITIAL_COUNT + 1, pooled.getCount());
 
 		pooled = (SideEffectBean) beanFactory.getBean(name);
 		// Just check that it works--we can't make assumptions
@@ -96,16 +100,16 @@ public class CommonsPool2TargetSourceTests {
 	@Test
 	public void testConfigMixin() {
 		SideEffectBean pooled = (SideEffectBean) beanFactory.getBean("pooledWithMixin");
-		assertThat(pooled.getCount()).isEqualTo(INITIAL_COUNT);
+		assertEquals(INITIAL_COUNT, pooled.getCount());
 		PoolingConfig conf = (PoolingConfig) beanFactory.getBean("pooledWithMixin");
 		// TODO one invocation from setup
 		//assertEquals(1, conf.getInvocations());
 		pooled.doWork();
 		//	assertEquals("No objects active", 0, conf.getActive());
-		assertThat(conf.getMaxSize()).as("Correct target source").isEqualTo(25);
+		assertEquals("Correct target source", 25, conf.getMaxSize());
 		//	assertTrue("Some free", conf.getFree() > 0);
 		//assertEquals(2, conf.getInvocations());
-		assertThat(conf.getMaxSize()).isEqualTo(25);
+		assertEquals(25, conf.getMaxSize());
 	}
 
 	@Test
@@ -113,8 +117,7 @@ public class CommonsPool2TargetSourceTests {
 		CommonsPool2TargetSource cpts = (CommonsPool2TargetSource) beanFactory.getBean("personPoolTargetSource");
 
 		SingletonTargetSource serialized = (SingletonTargetSource) SerializationTestUtils.serializeAndDeserialize(cpts);
-		boolean condition = serialized.getTarget() instanceof Person;
-		assertThat(condition).isTrue();
+		assertTrue(serialized.getTarget() instanceof Person);
 	}
 
 
@@ -123,15 +126,13 @@ public class CommonsPool2TargetSourceTests {
 		Person pooled = (Person) beanFactory.getBean("pooledPerson");
 
 		//System.out.println(((Advised) pooled).toProxyConfigString());
-		boolean condition1 = ((Advised) pooled).getTargetSource() instanceof CommonsPool2TargetSource;
-		assertThat(condition1).isTrue();
+		assertTrue(((Advised) pooled).getTargetSource() instanceof CommonsPool2TargetSource);
 
 		//((Advised) pooled).setTargetSource(new SingletonTargetSource(new SerializablePerson()));
 		Person serialized = (Person) SerializationTestUtils.serializeAndDeserialize(pooled);
-		boolean condition = ((Advised) serialized).getTargetSource() instanceof SingletonTargetSource;
-		assertThat(condition).isTrue();
+		assertTrue(((Advised) serialized).getTargetSource() instanceof SingletonTargetSource);
 		serialized.setAge(25);
-		assertThat(serialized.getAge()).isEqualTo(25);
+		assertEquals(25, serialized.getAge());
 	}
 
 	@Test
@@ -147,13 +148,18 @@ public class CommonsPool2TargetSourceTests {
 
 		for (int x = 0; x < maxSize; x++) {
 			Object instance = targetSource.getTarget();
-			assertThat(instance).isNotNull();
+			assertNotNull(instance);
 			pooledInstances[x] = instance;
 		}
 
 		// should be at maximum now
-		assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(
-				targetSource::getTarget);
+		try {
+			targetSource.getTarget();
+			fail("Should throw NoSuchElementException");
+		}
+		catch (NoSuchElementException ex) {
+			// desired
+		}
 
 		// lets now release an object and try to acquire a new one
 		targetSource.releaseTarget(pooledInstances[9]);
@@ -175,13 +181,18 @@ public class CommonsPool2TargetSourceTests {
 
 		for (int x = 0; x < maxSize; x++) {
 			Object instance = targetSource.getTarget();
-			assertThat(instance).isNotNull();
+			assertNotNull(instance);
 			pooledInstances[x] = instance;
 		}
 
 		// should be at maximum now
-		assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(
-				targetSource::getTarget);
+		try {
+			targetSource.getTarget();
+			fail("Should throw NoSuchElementException");
+		}
+		catch (NoSuchElementException ex) {
+			// desired
+		}
 
 		// lets now release an object and try to acquire a new one
 		targetSource.releaseTarget(pooledInstances[9]);
@@ -198,7 +209,7 @@ public class CommonsPool2TargetSourceTests {
 	public void testSetWhenExhaustedAction() {
 		CommonsPool2TargetSource targetSource = new CommonsPool2TargetSource();
 		targetSource.setBlockWhenExhausted(true);
-		assertThat(targetSource.isBlockWhenExhausted()).isEqualTo(true);
+		assertEquals(true, targetSource.isBlockWhenExhausted());
 	}
 
 	@Test
@@ -209,11 +220,9 @@ public class CommonsPool2TargetSourceTests {
 
 		Object first = targetSource.getTarget();
 		Object second = targetSource.getTarget();
-		boolean condition1 = first instanceof SerializablePerson;
-		assertThat(condition1).isTrue();
-		boolean condition = second instanceof SerializablePerson;
-		assertThat(condition).isTrue();
-		assertThat(second).isEqualTo(first);
+		assertTrue(first instanceof SerializablePerson);
+		assertTrue(second instanceof SerializablePerson);
+		assertEquals(first, second);
 
 		targetSource.releaseTarget(first);
 		targetSource.releaseTarget(second);

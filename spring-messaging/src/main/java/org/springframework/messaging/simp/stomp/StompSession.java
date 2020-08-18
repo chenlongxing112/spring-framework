@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -115,13 +115,6 @@ public interface StompSession {
 	 * Disconnect the session by sending a DISCONNECT frame.
 	 */
 	void disconnect();
-
-	/**
-	 * Variant of {@link #disconnect()} with headers.
-	 * @param headers the headers for the disconnect message frame
-	 * @since 5.2.2
-	 */
-	void disconnect(StompHeaders headers);
 
 
 	/**

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -158,12 +158,6 @@ class DefaultEntityResponseBuilder<T> implements EntityResponse.Builder<T> {
 	}
 
 	@Override
-	public EntityResponse.Builder<T> hints(Consumer<Map<String, Object>> hintsConsumer) {
-		hintsConsumer.accept(this.hints);
-		return this;
-	}
-
-	@Override
 	public EntityResponse.Builder<T> lastModified(ZonedDateTime lastModified) {
 		this.headers.setLastModified(lastModified);
 		return this;
@@ -208,14 +202,16 @@ class DefaultEntityResponseBuilder<T> implements EntityResponse.Builder<T> {
 
 		private final BodyInserter<T, ? super ServerHttpResponse> inserter;
 
+		private final Map<String, Object> hints;
 
 		public DefaultEntityResponse(int statusCode, HttpHeaders headers,
 				MultiValueMap<String, ResponseCookie> cookies, T entity,
 				BodyInserter<T, ? super ServerHttpResponse> inserter, Map<String, Object> hints) {
 
-			super(statusCode, headers, cookies, hints);
+			super(statusCode, headers, cookies);
 			this.entity = entity;
 			this.inserter = inserter;
+			this.hints = hints;
 		}
 
 		@Override

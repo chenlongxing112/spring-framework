@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,11 @@
 
 package org.springframework.beans;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.beans.testfixture.beans.TestBean;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Specific {@link DirectFieldAccessor} tests.
@@ -41,14 +41,15 @@ public class DirectFieldAccessorTests extends AbstractPropertyAccessorTests {
 	public void withShadowedField() {
 		final StringBuilder sb = new StringBuilder();
 
+		@SuppressWarnings("serial")
 		TestBean target = new TestBean() {
 			@SuppressWarnings("unused")
 			StringBuilder name = sb;
 		};
 
 		DirectFieldAccessor dfa = createAccessor(target);
-		assertThat(dfa.getPropertyType("name")).isEqualTo(StringBuilder.class);
-		assertThat(dfa.getPropertyValue("name")).isEqualTo(sb);
+		assertEquals(StringBuilder.class, dfa.getPropertyType("name"));
+		assertEquals(sb, dfa.getPropertyValue("name"));
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,26 +18,26 @@ package org.springframework.http.client;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import org.springframework.http.HttpMethod;
 
 /**
  * @author Arjen Poutsma
  */
-public class Netty4AsyncClientHttpRequestFactoryTests extends AbstractAsyncHttpRequestFactoryTests {
+public class Netty4AsyncClientHttpRequestFactoryTests extends AbstractAsyncHttpRequestFactoryTestCase {
 
 	private static EventLoopGroup eventLoopGroup;
 
 
-	@BeforeAll
+	@BeforeClass
 	public static void createEventLoopGroup() {
 		eventLoopGroup = new NioEventLoopGroup();
 	}
 
-	@AfterAll
+	@AfterClass
 	public static void shutdownEventLoopGroup() throws InterruptedException {
 		eventLoopGroup.shutdownGracefully().sync();
 	}

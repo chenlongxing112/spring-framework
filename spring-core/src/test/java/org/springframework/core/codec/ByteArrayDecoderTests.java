@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,39 +19,38 @@ package org.springframework.core.codec;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import reactor.core.publisher.Flux;
 
 import org.springframework.core.ResolvableType;
 import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.testfixture.codec.AbstractDecoderTests;
 import org.springframework.util.MimeTypeUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Arjen Poutsma
  */
-class ByteArrayDecoderTests extends AbstractDecoderTests<ByteArrayDecoder> {
+public class ByteArrayDecoderTests extends AbstractDecoderTestCase<ByteArrayDecoder> {
 
 	private final byte[] fooBytes = "foo".getBytes(StandardCharsets.UTF_8);
 
 	private final byte[] barBytes = "bar".getBytes(StandardCharsets.UTF_8);
 
 
-	ByteArrayDecoderTests() {
+	public ByteArrayDecoderTests() {
 		super(new ByteArrayDecoder());
 	}
 
 	@Override
 	@Test
 	public void canDecode() {
-		assertThat(this.decoder.canDecode(ResolvableType.forClass(byte[].class),
-				MimeTypeUtils.TEXT_PLAIN)).isTrue();
-		assertThat(this.decoder.canDecode(ResolvableType.forClass(Integer.class),
-				MimeTypeUtils.TEXT_PLAIN)).isFalse();
-		assertThat(this.decoder.canDecode(ResolvableType.forClass(byte[].class),
-				MimeTypeUtils.APPLICATION_JSON)).isTrue();
+		assertTrue(this.decoder.canDecode(ResolvableType.forClass(byte[].class),
+				MimeTypeUtils.TEXT_PLAIN));
+		assertFalse(this.decoder.canDecode(ResolvableType.forClass(Integer.class),
+				MimeTypeUtils.TEXT_PLAIN));
+		assertTrue(this.decoder.canDecode(ResolvableType.forClass(byte[].class),
+				MimeTypeUtils.APPLICATION_JSON));
 	}
 
 	@Override
@@ -85,7 +84,7 @@ class ByteArrayDecoderTests extends AbstractDecoderTests<ByteArrayDecoder> {
 	}
 
 	private Consumer<byte[]> expectBytes(byte[] expected) {
-		return bytes -> assertThat(bytes).isEqualTo(expected);
+		return bytes -> assertArrayEquals(expected, bytes);
 	}
 
 }

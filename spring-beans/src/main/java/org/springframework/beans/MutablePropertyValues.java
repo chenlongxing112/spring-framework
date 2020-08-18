@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -367,7 +367,7 @@ public class MutablePropertyValues implements PropertyValues, Serializable {
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		return (this == other || (other instanceof MutablePropertyValues &&
 				this.propertyValueList.equals(((MutablePropertyValues) other).propertyValueList)));
 	}
@@ -380,10 +380,11 @@ public class MutablePropertyValues implements PropertyValues, Serializable {
 	@Override
 	public String toString() {
 		PropertyValue[] pvs = getPropertyValues();
+		StringBuilder sb = new StringBuilder("PropertyValues: length=").append(pvs.length);
 		if (pvs.length > 0) {
-			return "PropertyValues: length=" + pvs.length + "; " + StringUtils.arrayToDelimitedString(pvs, "; ");
+			sb.append("; ").append(StringUtils.arrayToDelimitedString(pvs, "; "));
 		}
-		return "PropertyValues: length=0";
+		return sb.toString();
 	}
 
 }

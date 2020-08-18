@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,8 +20,10 @@ import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
 import org.springframework.aop.interceptor.SimpleTraceInterceptor;
@@ -31,6 +33,8 @@ import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.Nullable;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.WebDataBinder;
@@ -45,10 +49,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.context.support.GenericWebApplicationContext;
 import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Test various scenarios for detecting method-level and method parameter annotations depending
@@ -58,9 +60,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Rossen Stoyanchev
  * @author Sam Brannen
  */
-class HandlerMethodAnnotationDetectionTests {
+@RunWith(Parameterized.class)
+public class HandlerMethodAnnotationDetectionTests {
 
-	static Object[][] handlerTypes() {
+	@Parameters(name = "controller [{0}], auto-proxy [{1}]")
+	public static Object[][] handlerTypes() {
 		return new Object[][] {
 				{ SimpleController.class, true }, // CGLIB proxy
 				{ SimpleController.class, false },
@@ -88,14 +92,14 @@ class HandlerMethodAnnotationDetectionTests {
 		};
 	}
 
-	private RequestMappingHandlerMapping handlerMapping;
+	private RequestMappingHandlerMapping handlerMapping = new RequestMappingHandlerMapping();
 
-	private RequestMappingHandlerAdapter handlerAdapter;
+	private RequestMappingHandlerAdapter handlerAdapter = new RequestMappingHandlerAdapter();
 
-	private ExceptionHandlerExceptionResolver exceptionResolver;
+	private ExceptionHandlerExceptionResolver exceptionResolver = new ExceptionHandlerExceptionResolver();
 
 
-	private void setUp(Class<?> controllerType, boolean useAutoProxy) {
+	public HandlerMethodAnnotationDetectionTests(Class<?> controllerType, boolean useAutoProxy) {
 		GenericWebApplicationContext context = new GenericWebApplicationContext();
 		context.registerBeanDefinition("controller", new RootBeanDefinition(controllerType));
 		context.registerBeanDefinition("handlerMapping", new RootBeanDefinition(RequestMappingHandlerMapping.class));
@@ -116,11 +120,8 @@ class HandlerMethodAnnotationDetectionTests {
 	}
 
 
-	@ParameterizedTest(name = "[{index}] controller [{0}], auto-proxy [{1}]")
-	@MethodSource("handlerTypes")
-	void testRequestMappingMethod(Class<?> controllerType, boolean useAutoProxy) throws Exception {
-		setUp(controllerType, useAutoProxy);
-
+	@Test
+	public void testRequestMappingMethod() throws Exception {
 		String datePattern = "MM:dd:yyyy";
 		SimpleDateFormat dateFormat = new SimpleDateFormat(datePattern);
 		String dateA = "11:01:2011";
@@ -132,17 +133,17 @@ class HandlerMethodAnnotationDetectionTests {
 		request.addHeader("header2", dateB);
 
 		HandlerExecutionChain chain = handlerMapping.getHandler(request);
-		assertThat(chain).isNotNull();
+		assertNotNull(chain);
 
 		ModelAndView mav = handlerAdapter.handle(request, new MockHttpServletResponse(), chain.getHandler());
 
-		assertThat(mav.getModel().get("attr1")).as("model attr1:").isEqualTo(dateFormat.parse(dateA));
-		assertThat(mav.getModel().get("attr2")).as("model attr2:").isEqualTo(dateFormat.parse(dateB));
+		assertEquals("model attr1:", dateFormat.parse(dateA), mav.getModel().get("attr1"));
+		assertEquals("model attr2:", dateFormat.parse(dateB), mav.getModel().get("attr2"));
 
 		MockHttpServletResponse response = new MockHttpServletResponse();
 		exceptionResolver.resolveException(request, response, chain.getHandler(), new Exception("failure"));
-		assertThat(response.getHeader("Content-Type")).isEqualTo("text/plain;charset=ISO-8859-1");
-		assertThat(response.getContentAsString()).isEqualTo("failure");
+		assertEquals("text/plain;charset=ISO-8859-1", response.getHeader("Content-Type"));
+		assertEquals("failure", response.getContentAsString());
 	}
 
 

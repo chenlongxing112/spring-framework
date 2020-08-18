@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.intercept.MethodInterceptor;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
@@ -42,8 +42,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.concurrent.ListenableFuture;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * @author Mark Fisher
@@ -57,7 +56,7 @@ public class AsyncAnnotationBeanPostProcessorTests {
 		ConfigurableApplicationContext context = initContext(
 				new RootBeanDefinition(AsyncAnnotationBeanPostProcessor.class));
 		Object target = context.getBean("target");
-		assertThat(AopUtils.isAopProxy(target)).isTrue();
+		assertTrue(AopUtils.isAopProxy(target));
 		context.close();
 	}
 
@@ -71,7 +70,7 @@ public class AsyncAnnotationBeanPostProcessorTests {
 		Thread mainThread = Thread.currentThread();
 		testBean.await(3000);
 		Thread asyncThread = testBean.getThread();
-		assertThat(asyncThread).isNotSameAs(mainThread);
+		assertNotSame(mainThread, asyncThread);
 		context.close();
 	}
 
@@ -90,7 +89,7 @@ public class AsyncAnnotationBeanPostProcessorTests {
 		Thread mainThread = Thread.currentThread();
 		testBean.await(3000);
 		Thread asyncThread = testBean.getThread();
-		assertThat(asyncThread).isNotSameAs(mainThread);
+		assertNotSame(mainThread, asyncThread);
 		context.close();
 	}
 
@@ -107,7 +106,7 @@ public class AsyncAnnotationBeanPostProcessorTests {
 		testBean.test();
 		testBean.await(3000);
 		Thread asyncThread = testBean.getThread();
-		assertThat(asyncThread.getName().startsWith("testExecutor")).isTrue();
+		assertTrue(asyncThread.getName().startsWith("testExecutor"));
 		context.close();
 	}
 
@@ -132,7 +131,7 @@ public class AsyncAnnotationBeanPostProcessorTests {
 		testBean.test();
 		testBean.await(3000);
 		Thread asyncThread = testBean.getThread();
-		assertThat(asyncThread.getName().startsWith("testExecutor")).isTrue();
+		assertTrue(asyncThread.getName().startsWith("testExecutor"));
 		context.close();
 	}
 
@@ -161,7 +160,7 @@ public class AsyncAnnotationBeanPostProcessorTests {
 		testBean.test();
 		testBean.await(3000);
 		Thread asyncThread = testBean.getThread();
-		assertThat(asyncThread.getName().startsWith("testExecutor2")).isTrue();
+		assertTrue(asyncThread.getName().startsWith("testExecutor2"));
 		context.close();
 	}
 
@@ -174,11 +173,11 @@ public class AsyncAnnotationBeanPostProcessorTests {
 		testBean.test();
 		testBean.await(3000);
 		Thread asyncThread = testBean.getThread();
-		assertThat(asyncThread.getName().startsWith("testExecutor")).isTrue();
+		assertTrue(asyncThread.getName().startsWith("testExecutor"));
 
 		TestableAsyncUncaughtExceptionHandler exceptionHandler =
 				context.getBean("exceptionHandler", TestableAsyncUncaughtExceptionHandler.class);
-		assertThat(exceptionHandler.isCalled()).as("handler should not have been called yet").isFalse();
+		assertFalse("handler should not have been called yet", exceptionHandler.isCalled());
 
 		testBean.failWithVoid();
 		exceptionHandler.await(3000);
@@ -188,7 +187,6 @@ public class AsyncAnnotationBeanPostProcessorTests {
 	}
 
 	@Test
-	@SuppressWarnings("resource")
 	public void handleExceptionWithFuture() {
 		ConfigurableApplicationContext context =
 				new AnnotationConfigApplicationContext(ConfigWithExceptionHandler.class);
@@ -196,13 +194,12 @@ public class AsyncAnnotationBeanPostProcessorTests {
 
 		TestableAsyncUncaughtExceptionHandler exceptionHandler =
 				context.getBean("exceptionHandler", TestableAsyncUncaughtExceptionHandler.class);
-		assertThat(exceptionHandler.isCalled()).as("handler should not have been called yet").isFalse();
+		assertFalse("handler should not have been called yet", exceptionHandler.isCalled());
 		Future<Object> result = testBean.failWithFuture();
 		assertFutureWithException(result, exceptionHandler);
 	}
 
 	@Test
-	@SuppressWarnings("resource")
 	public void handleExceptionWithListenableFuture() {
 		ConfigurableApplicationContext context =
 				new AnnotationConfigApplicationContext(ConfigWithExceptionHandler.class);
@@ -210,17 +207,25 @@ public class AsyncAnnotationBeanPostProcessorTests {
 
 		TestableAsyncUncaughtExceptionHandler exceptionHandler =
 				context.getBean("exceptionHandler", TestableAsyncUncaughtExceptionHandler.class);
-		assertThat(exceptionHandler.isCalled()).as("handler should not have been called yet").isFalse();
+		assertFalse("handler should not have been called yet", exceptionHandler.isCalled());
 		Future<Object> result = testBean.failWithListenableFuture();
 		assertFutureWithException(result, exceptionHandler);
 	}
 
 	private void assertFutureWithException(Future<Object> result,
 			TestableAsyncUncaughtExceptionHandler exceptionHandler) {
-		assertThatExceptionOfType(ExecutionException.class).isThrownBy(
-				result::get)
-			.withCauseExactlyInstanceOf(UnsupportedOperationException.class);
-		assertThat(exceptionHandler.isCalled()).as("handler should never be called with Future return type").isFalse();
+
+		try {
+			result.get();
+		}
+		catch (InterruptedException ex) {
+			fail("Should not have failed with InterruptedException: " + ex);
+		}
+		catch (ExecutionException ex) {
+			// expected
+			assertEquals("Wrong exception cause", UnsupportedOperationException.class, ex.getCause().getClass());
+		}
+		assertFalse("handler should never be called with Future return type", exceptionHandler.isCalled());
 	}
 
 	@Test
@@ -234,7 +239,7 @@ public class AsyncAnnotationBeanPostProcessorTests {
 		ConfigurableApplicationContext context = initContext(processorDefinition);
 		ITestBean testBean = context.getBean("target", ITestBean.class);
 
-		assertThat(exceptionHandler.isCalled()).as("Handler should not have been called").isFalse();
+		assertFalse("Handler should not have been called", exceptionHandler.isCalled());
 		testBean.failWithVoid();
 		exceptionHandler.await(3000);
 		exceptionHandler.assertCalledWith(m, UnsupportedOperationException.class);
@@ -252,9 +257,14 @@ public class AsyncAnnotationBeanPostProcessorTests {
 		ConfigurableApplicationContext context = initContext(processorDefinition);
 		ITestBean testBean = context.getBean("target", ITestBean.class);
 
-		assertThat(exceptionHandler.isCalled()).as("Handler should not have been called").isFalse();
-		testBean.failWithVoid();
-		exceptionHandler.assertCalledWith(m, UnsupportedOperationException.class);
+		assertFalse("Handler should not have been called", exceptionHandler.isCalled());
+		try {
+			testBean.failWithVoid();
+			exceptionHandler.assertCalledWith(m, UnsupportedOperationException.class);
+		}
+		catch (Exception e) {
+			fail("No unexpected exception should have been received");
+		}
 	}
 
 	private ConfigurableApplicationContext initContext(BeanDefinition asyncAnnotationBeanPostProcessorDefinition) {

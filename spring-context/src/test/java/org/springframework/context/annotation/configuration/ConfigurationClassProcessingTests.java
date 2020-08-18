@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,11 +21,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-
 import javax.annotation.Resource;
 import javax.inject.Provider;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.beans.factory.BeanFactory;
@@ -46,9 +47,6 @@ import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.beans.factory.parsing.BeanDefinitionParsingException;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.RootBeanDefinition;
-import org.springframework.beans.testfixture.beans.ITestBean;
-import org.springframework.beans.testfixture.beans.NestedTestBean;
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigUtils;
@@ -56,12 +54,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ConfigurationClassPostProcessor;
 import org.springframework.context.annotation.Scope;
-import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.tests.sample.beans.ITestBean;
+import org.springframework.tests.sample.beans.NestedTestBean;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * Miscellaneous system tests covering {@link Bean} naming, aliases, scoping and
@@ -72,6 +71,10 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Sam Brannen
  */
 public class ConfigurationClassProcessingTests {
+
+	@Rule
+	public final ExpectedException exception = ExpectedException.none();
+
 
 	@Test
 	public void customBeanNameIsRespectedWhenConfiguredViaNameAttribute() {
@@ -91,11 +94,11 @@ public class ConfigurationClassProcessingTests {
 		ac.registerBeanDefinition("config", new RootBeanDefinition(testClass));
 		ac.refresh();
 
-		assertThat(ac.getBean(beanName)).isSameAs(testBeanSupplier.get());
+		assertSame(testBeanSupplier.get(), ac.getBean(beanName));
 
 		// method name should not be registered
-		assertThatExceptionOfType(NoSuchBeanDefinitionException.class).isThrownBy(() ->
-				ac.getBean("methodName"));
+		exception.expect(NoSuchBeanDefinitionException.class);
+		ac.getBean("methodName");
 	}
 
 	@Test
@@ -114,12 +117,12 @@ public class ConfigurationClassProcessingTests {
 		TestBean testBean = testBeanSupplier.get();
 		BeanFactory factory = initBeanFactory(testClass);
 
-		assertThat(factory.getBean(beanName)).isSameAs(testBean);
-		Arrays.stream(factory.getAliases(beanName)).map(factory::getBean).forEach(alias -> assertThat(alias).isSameAs(testBean));
+		assertSame(testBean, factory.getBean(beanName));
+		Arrays.stream(factory.getAliases(beanName)).map(factory::getBean).forEach(alias -> assertSame(testBean, alias));
 
 		// method name should not be registered
-		assertThatExceptionOfType(NoSuchBeanDefinitionException.class).isThrownBy(() ->
-				factory.getBean("methodName"));
+		exception.expect(NoSuchBeanDefinitionException.class);
+		factory.getBean("methodName");
 	}
 
 	@Test  // SPR-11830
@@ -128,7 +131,7 @@ public class ConfigurationClassProcessingTests {
 		AnnotationConfigUtils.registerAnnotationConfigProcessors(ac);
 		ac.registerBeanDefinition("config", new RootBeanDefinition(ConfigWithBeanWithProviderImplementation.class));
 		ac.refresh();
-		assertThat(ConfigWithBeanWithProviderImplementation.testBean).isSameAs(ac.getBean("customName"));
+		assertSame(ac.getBean("customName"), ConfigWithBeanWithProviderImplementation.testBean);
 	}
 
 	@Test  // SPR-11830
@@ -137,57 +140,56 @@ public class ConfigurationClassProcessingTests {
 		AnnotationConfigUtils.registerAnnotationConfigProcessors(ac);
 		ac.registerBeanDefinition("config", new RootBeanDefinition(ConfigWithSetWithProviderImplementation.class));
 		ac.refresh();
-		assertThat(ConfigWithSetWithProviderImplementation.set).isSameAs(ac.getBean("customName"));
+		assertSame(ac.getBean("customName"), ConfigWithSetWithProviderImplementation.set);
 	}
 
 	@Test
 	public void testFinalBeanMethod() {
-		assertThatExceptionOfType(BeanDefinitionParsingException.class).isThrownBy(() ->
-				initBeanFactory(ConfigWithFinalBean.class));
+		exception.expect(BeanDefinitionParsingException.class);
+		initBeanFactory(ConfigWithFinalBean.class);
 	}
 
 	@Test
 	public void simplestPossibleConfig() {
 		BeanFactory factory = initBeanFactory(SimplestPossibleConfig.class);
 		String stringBean = factory.getBean("stringBean", String.class);
-		assertThat(stringBean).isEqualTo("foo");
+		assertEquals("foo", stringBean);
 	}
 
 	@Test
 	public void configWithObjectReturnType() {
 		BeanFactory factory = initBeanFactory(ConfigWithNonSpecificReturnTypes.class);
-		assertThat(factory.getType("stringBean")).isEqualTo(Object.class);
-		assertThat(factory.isTypeMatch("stringBean", String.class)).isFalse();
+		assertEquals(Object.class, factory.getType("stringBean"));
+		assertFalse(factory.isTypeMatch("stringBean", String.class));
 		String stringBean = factory.getBean("stringBean", String.class);
-		assertThat(stringBean).isEqualTo("foo");
+		assertEquals("foo", stringBean);
 	}
 
 	@Test
 	public void configWithFactoryBeanReturnType() {
 		ListableBeanFactory factory = initBeanFactory(ConfigWithNonSpecificReturnTypes.class);
-		assertThat(factory.getType("factoryBean")).isEqualTo(List.class);
-		assertThat(factory.isTypeMatch("factoryBean", List.class)).isTrue();
-		assertThat(factory.getType("&factoryBean")).isEqualTo(FactoryBean.class);
-		assertThat(factory.isTypeMatch("&factoryBean", FactoryBean.class)).isTrue();
-		assertThat(factory.isTypeMatch("&factoryBean", BeanClassLoaderAware.class)).isFalse();
-		assertThat(factory.isTypeMatch("&factoryBean", ListFactoryBean.class)).isFalse();
-		boolean condition = factory.getBean("factoryBean") instanceof List;
-		assertThat(condition).isTrue();
+		assertEquals(List.class, factory.getType("factoryBean"));
+		assertTrue(factory.isTypeMatch("factoryBean", List.class));
+		assertEquals(FactoryBean.class, factory.getType("&factoryBean"));
+		assertTrue(factory.isTypeMatch("&factoryBean", FactoryBean.class));
+		assertFalse(factory.isTypeMatch("&factoryBean", BeanClassLoaderAware.class));
+		assertFalse(factory.isTypeMatch("&factoryBean", ListFactoryBean.class));
+		assertTrue(factory.getBean("factoryBean") instanceof List);
 
 		String[] beanNames = factory.getBeanNamesForType(FactoryBean.class);
-		assertThat(beanNames.length).isEqualTo(1);
-		assertThat(beanNames[0]).isEqualTo("&factoryBean");
+		assertEquals(1, beanNames.length);
+		assertEquals("&factoryBean", beanNames[0]);
 
 		beanNames = factory.getBeanNamesForType(BeanClassLoaderAware.class);
-		assertThat(beanNames.length).isEqualTo(1);
-		assertThat(beanNames[0]).isEqualTo("&factoryBean");
+		assertEquals(1, beanNames.length);
+		assertEquals("&factoryBean", beanNames[0]);
 
 		beanNames = factory.getBeanNamesForType(ListFactoryBean.class);
-		assertThat(beanNames.length).isEqualTo(1);
-		assertThat(beanNames[0]).isEqualTo("&factoryBean");
+		assertEquals(1, beanNames.length);
+		assertEquals("&factoryBean", beanNames[0]);
 
 		beanNames = factory.getBeanNamesForType(List.class);
-		assertThat(beanNames[0]).isEqualTo("factoryBean");
+		assertEquals("factoryBean", beanNames[0]);
 	}
 
 	@Test
@@ -198,8 +200,8 @@ public class ConfigurationClassProcessingTests {
 		ITestBean bar = factory.getBean("bar", ITestBean.class);
 		ITestBean baz = factory.getBean("baz", ITestBean.class);
 
-		assertThat(bar).isSameAs(foo.getSpouse());
-		assertThat(baz).isNotSameAs(bar.getSpouse());
+		assertSame(foo.getSpouse(), bar);
+		assertNotSame(bar.getSpouse(), baz);
 	}
 
 	@Test
@@ -207,8 +209,8 @@ public class ConfigurationClassProcessingTests {
 		BeanFactory factory = initBeanFactory(ConfigWithNullReference.class);
 
 		TestBean foo = factory.getBean("foo", TestBean.class);
-		assertThat(factory.getBean("bar").equals(null)).isTrue();
-		assertThat(foo.getSpouse()).isNull();
+		assertTrue(factory.getBean("bar").equals(null));
+		assertNull(foo.getSpouse());
 	}
 
 	@Test
@@ -218,12 +220,12 @@ public class ConfigurationClassProcessingTests {
 		ctx.refresh();
 
 		AdaptiveInjectionPoints adaptive = ctx.getBean(AdaptiveInjectionPoints.class);
-		assertThat(adaptive.adaptiveInjectionPoint1.getName()).isEqualTo("adaptiveInjectionPoint1");
-		assertThat(adaptive.adaptiveInjectionPoint2.getName()).isEqualTo("setAdaptiveInjectionPoint2");
+		assertEquals("adaptiveInjectionPoint1", adaptive.adaptiveInjectionPoint1.getName());
+		assertEquals("setAdaptiveInjectionPoint2", adaptive.adaptiveInjectionPoint2.getName());
 
 		adaptive = ctx.getBean(AdaptiveInjectionPoints.class);
-		assertThat(adaptive.adaptiveInjectionPoint1.getName()).isEqualTo("adaptiveInjectionPoint1");
-		assertThat(adaptive.adaptiveInjectionPoint2.getName()).isEqualTo("setAdaptiveInjectionPoint2");
+		assertEquals("adaptiveInjectionPoint1", adaptive.adaptiveInjectionPoint1.getName());
+		assertEquals("setAdaptiveInjectionPoint2", adaptive.adaptiveInjectionPoint2.getName());
 		ctx.close();
 	}
 
@@ -234,12 +236,12 @@ public class ConfigurationClassProcessingTests {
 		ctx.refresh();
 
 		AdaptiveResourceInjectionPoints adaptive = ctx.getBean(AdaptiveResourceInjectionPoints.class);
-		assertThat(adaptive.adaptiveInjectionPoint1.getName()).isEqualTo("adaptiveInjectionPoint1");
-		assertThat(adaptive.adaptiveInjectionPoint2.getName()).isEqualTo("setAdaptiveInjectionPoint2");
+		assertEquals("adaptiveInjectionPoint1", adaptive.adaptiveInjectionPoint1.getName());
+		assertEquals("setAdaptiveInjectionPoint2", adaptive.adaptiveInjectionPoint2.getName());
 
 		adaptive = ctx.getBean(AdaptiveResourceInjectionPoints.class);
-		assertThat(adaptive.adaptiveInjectionPoint1.getName()).isEqualTo("adaptiveInjectionPoint1");
-		assertThat(adaptive.adaptiveInjectionPoint2.getName()).isEqualTo("setAdaptiveInjectionPoint2");
+		assertEquals("adaptiveInjectionPoint1", adaptive.adaptiveInjectionPoint1.getName());
+		assertEquals("setAdaptiveInjectionPoint2", adaptive.adaptiveInjectionPoint2.getName());
 		ctx.close();
 	}
 
@@ -256,12 +258,12 @@ public class ConfigurationClassProcessingTests {
 		ITestBean bar = ctx.getBean("bar", ITestBean.class);
 		ITestBean baz = ctx.getBean("baz", ITestBean.class);
 
-		assertThat(foo.getName()).isEqualTo("foo-processed-myValue");
-		assertThat(bar.getName()).isEqualTo("bar-processed-myValue");
-		assertThat(baz.getName()).isEqualTo("baz-processed-myValue");
+		assertEquals("foo-processed-myValue", foo.getName());
+		assertEquals("bar-processed-myValue", bar.getName());
+		assertEquals("baz-processed-myValue", baz.getName());
 
 		SpousyTestBean listener = ctx.getBean("listenerTestBean", SpousyTestBean.class);
-		assertThat(listener.refreshed).isTrue();
+		assertTrue(listener.refreshed);
 		ctx.close();
 	}
 
@@ -271,21 +273,9 @@ public class ConfigurationClassProcessingTests {
 		ctx.register(ConfigWithFunctionalRegistration.class);
 		ctx.refresh();
 
-		assertThat(ctx.getBean(TestBean.class).getSpouse()).isSameAs(ctx.getBean("spouse"));
-		assertThat(ctx.getBean(NestedTestBean.class).getCompany()).isEqualTo("functional");
+		assertSame(ctx.getBean("spouse"), ctx.getBean(TestBean.class).getSpouse());
+		assertEquals("functional", ctx.getBean(NestedTestBean.class).getCompany());
 	}
-
-	@Test
-	public void configurationWithApplicationListener() {
-		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
-		ctx.register(ConfigWithApplicationListener.class);
-		ctx.refresh();
-		ConfigWithApplicationListener config = ctx.getBean(ConfigWithApplicationListener.class);
-		assertThat(config.closed).isFalse();
-		ctx.close();
-		assertThat(config.closed).isTrue();
-	}
-
 
 
 	/**
@@ -362,7 +352,6 @@ public class ConfigurationClassProcessingTests {
 
 		static TestBean testBean = new TestBean(ConfigWithBeanWithProviderImplementation.class.getSimpleName());
 
-		@Override
 		@Bean(name = "customName")
 		public TestBean get() {
 			return testBean;
@@ -375,7 +364,6 @@ public class ConfigurationClassProcessingTests {
 
 		static Set<String> set = Collections.singleton("value");
 
-		@Override
 		@Bean(name = "customName")
 		public Set<String> get() {
 			return set;
@@ -580,18 +568,6 @@ public class ConfigurationClassProcessingTests {
 		@Bean
 		public NestedTestBean nestedTestBean(TestBean testBean) {
 			return new NestedTestBean(testBean.getSpouse().getName());
-		}
-	}
-
-
-	@Configuration
-	static class ConfigWithApplicationListener {
-
-		boolean closed = false;
-
-		@Bean
-		public ApplicationListener<ContextClosedEvent> listener() {
-			return (event -> this.closed = true);
 		}
 	}
 

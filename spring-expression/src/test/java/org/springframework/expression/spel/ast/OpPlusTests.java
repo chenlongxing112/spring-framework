@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.expression.TypedValue;
@@ -30,9 +30,7 @@ import org.springframework.expression.spel.SpelEvaluationException;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.support.StandardTypeConverter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for SpEL's plus operator.
@@ -44,21 +42,19 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 public class OpPlusTests {
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void test_emptyOperands() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new OpPlus(-1, -1));
+		new OpPlus(-1, -1);
 	}
 
-	@Test
+	@Test(expected = SpelEvaluationException.class)
 	public void test_unaryPlusWithStringLiteral() {
 		ExpressionState expressionState = new ExpressionState(new StandardEvaluationContext());
 
 		StringLiteral str = new StringLiteral("word", -1, -1, "word");
 
 		OpPlus o = new OpPlus(-1, -1, str);
-		assertThatExceptionOfType(SpelEvaluationException.class).isThrownBy(() ->
-				o.getValueInternal(expressionState));
+		o.getValueInternal(expressionState);
 	}
 
 	@Test
@@ -70,9 +66,9 @@ public class OpPlusTests {
 			OpPlus o = new OpPlus(-1, -1, realLiteral);
 			TypedValue value = o.getValueInternal(expressionState);
 
-			assertThat(value.getTypeDescriptor().getObjectType()).isEqualTo(Double.class);
-			assertThat(value.getTypeDescriptor().getType()).isEqualTo(Double.class);
-			assertThat(value.getValue()).isEqualTo(realLiteral.getLiteralValue().getValue());
+			assertEquals(Double.class, value.getTypeDescriptor().getObjectType());
+			assertEquals(Double.class, value.getTypeDescriptor().getType());
+			assertEquals(realLiteral.getLiteralValue().getValue(), value.getValue());
 		}
 
 		{
@@ -80,9 +76,9 @@ public class OpPlusTests {
 			OpPlus o = new OpPlus(-1, -1, intLiteral);
 			TypedValue value = o.getValueInternal(expressionState);
 
-			assertThat(value.getTypeDescriptor().getObjectType()).isEqualTo(Integer.class);
-			assertThat(value.getTypeDescriptor().getType()).isEqualTo(Integer.class);
-			assertThat(value.getValue()).isEqualTo(intLiteral.getLiteralValue().getValue());
+			assertEquals(Integer.class, value.getTypeDescriptor().getObjectType());
+			assertEquals(Integer.class, value.getTypeDescriptor().getType());
+			assertEquals(intLiteral.getLiteralValue().getValue(), value.getValue());
 		}
 
 		{
@@ -90,9 +86,9 @@ public class OpPlusTests {
 			OpPlus o = new OpPlus(-1, -1, longLiteral);
 			TypedValue value = o.getValueInternal(expressionState);
 
-			assertThat(value.getTypeDescriptor().getObjectType()).isEqualTo(Long.class);
-			assertThat(value.getTypeDescriptor().getType()).isEqualTo(Long.class);
-			assertThat(value.getValue()).isEqualTo(longLiteral.getLiteralValue().getValue());
+			assertEquals(Long.class, value.getTypeDescriptor().getObjectType());
+			assertEquals(Long.class, value.getTypeDescriptor().getType());
+			assertEquals(longLiteral.getLiteralValue().getValue(), value.getValue());
 		}
 	}
 
@@ -106,9 +102,9 @@ public class OpPlusTests {
 			OpPlus o = new OpPlus(-1, -1, n1, n2);
 			TypedValue value = o.getValueInternal(expressionState);
 
-			assertThat(value.getTypeDescriptor().getObjectType()).isEqualTo(Double.class);
-			assertThat(value.getTypeDescriptor().getType()).isEqualTo(Double.class);
-			assertThat(value.getValue()).isEqualTo(Double.valueOf(123.0 + 456.0));
+			assertEquals(Double.class, value.getTypeDescriptor().getObjectType());
+			assertEquals(Double.class, value.getTypeDescriptor().getType());
+			assertEquals(Double.valueOf(123.0 + 456.0), value.getValue());
 		}
 
 		{
@@ -117,9 +113,9 @@ public class OpPlusTests {
 			OpPlus o = new OpPlus(-1, -1, n1, n2);
 			TypedValue value = o.getValueInternal(expressionState);
 
-			assertThat(value.getTypeDescriptor().getObjectType()).isEqualTo(Long.class);
-			assertThat(value.getTypeDescriptor().getType()).isEqualTo(Long.class);
-			assertThat(value.getValue()).isEqualTo(Long.valueOf(123L + 456L));
+			assertEquals(Long.class, value.getTypeDescriptor().getObjectType());
+			assertEquals(Long.class, value.getTypeDescriptor().getType());
+			assertEquals(Long.valueOf(123L + 456L), value.getValue());
 		}
 
 		{
@@ -128,9 +124,9 @@ public class OpPlusTests {
 			OpPlus o = new OpPlus(-1, -1, n1, n2);
 			TypedValue value = o.getValueInternal(expressionState);
 
-			assertThat(value.getTypeDescriptor().getObjectType()).isEqualTo(Integer.class);
-			assertThat(value.getTypeDescriptor().getType()).isEqualTo(Integer.class);
-			assertThat(value.getValue()).isEqualTo(Integer.valueOf(123 + 456));
+			assertEquals(Integer.class, value.getTypeDescriptor().getObjectType());
+			assertEquals(Integer.class, value.getTypeDescriptor().getType());
+			assertEquals(Integer.valueOf(123 + 456), value.getValue());
 		}
 	}
 
@@ -143,9 +139,9 @@ public class OpPlusTests {
 		OpPlus o = new OpPlus(-1, -1, n1, n2);
 		TypedValue value = o.getValueInternal(expressionState);
 
-		assertThat(value.getTypeDescriptor().getObjectType()).isEqualTo(String.class);
-		assertThat(value.getTypeDescriptor().getType()).isEqualTo(String.class);
-		assertThat(value.getValue()).isEqualTo("foobar");
+		assertEquals(String.class, value.getTypeDescriptor().getObjectType());
+		assertEquals(String.class, value.getTypeDescriptor().getType());
+		assertEquals("foobar", value.getValue());
 	}
 
 	@Test
@@ -157,9 +153,9 @@ public class OpPlusTests {
 		OpPlus o = new OpPlus(-1, -1, n1, n2);
 		TypedValue value = o.getValueInternal(expressionState);
 
-		assertThat(value.getTypeDescriptor().getObjectType()).isEqualTo(String.class);
-		assertThat(value.getTypeDescriptor().getType()).isEqualTo(String.class);
-		assertThat(value.getValue()).isEqualTo("number is 123");
+		assertEquals(String.class, value.getTypeDescriptor().getObjectType());
+		assertEquals(String.class, value.getTypeDescriptor().getType());
+		assertEquals("number is 123", value.getValue());
 	}
 
 	@Test
@@ -171,9 +167,9 @@ public class OpPlusTests {
 		OpPlus o = new OpPlus(-1, -1, n1, n2);
 		TypedValue value = o.getValueInternal(expressionState);
 
-		assertThat(value.getTypeDescriptor().getObjectType()).isEqualTo(String.class);
-		assertThat(value.getTypeDescriptor().getType()).isEqualTo(String.class);
-		assertThat(value.getValue()).isEqualTo("123 is a number");
+		assertEquals(String.class, value.getTypeDescriptor().getObjectType());
+		assertEquals(String.class, value.getTypeDescriptor().getType());
+		assertEquals("123 is a number", value.getValue());
 	}
 
 	@Test
@@ -188,9 +184,9 @@ public class OpPlusTests {
 		OpPlus o = new OpPlus(-1, -1, var, n2);
 		TypedValue value = o.getValueInternal(expressionState);
 
-		assertThat(value.getTypeDescriptor().getObjectType()).isEqualTo(String.class);
-		assertThat(value.getTypeDescriptor().getType()).isEqualTo(String.class);
-		assertThat(value.getValue()).isEqualTo((time + " is now"));
+		assertEquals(String.class, value.getTypeDescriptor().getObjectType());
+		assertEquals(String.class, value.getTypeDescriptor().getType());
+		assertEquals(time + " is now", value.getValue());
 	}
 
 	@Test
@@ -213,9 +209,9 @@ public class OpPlusTests {
 		OpPlus o = new OpPlus(-1, -1, var, n2);
 		TypedValue value = o.getValueInternal(expressionState);
 
-		assertThat(value.getTypeDescriptor().getObjectType()).isEqualTo(String.class);
-		assertThat(value.getTypeDescriptor().getType()).isEqualTo(String.class);
-		assertThat(value.getValue()).isEqualTo((format.format(time) + " is now"));
+		assertEquals(String.class, value.getTypeDescriptor().getObjectType());
+		assertEquals(String.class, value.getTypeDescriptor().getType());
+		assertEquals(format.format(time) + " is now", value.getValue());
 	}
 
 }

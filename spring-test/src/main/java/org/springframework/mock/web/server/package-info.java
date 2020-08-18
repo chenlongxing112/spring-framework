@@ -1,5 +1,5 @@
 /**
- * Mock implementations of Spring's reactive server web API abstractions.
+ * Mock implementations of Spring's reactive server web API abtsractions.
  */
 @NonNullApi
 @NonNullFields

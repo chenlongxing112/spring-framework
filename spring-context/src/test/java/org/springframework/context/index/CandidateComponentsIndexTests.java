@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,9 +21,10 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link CandidateComponentsIndex}.
@@ -37,8 +38,8 @@ public class CandidateComponentsIndexTests {
 		CandidateComponentsIndex index = new CandidateComponentsIndex(
 				Collections.singletonList(createSampleProperties()));
 		Set<String> actual = index.getCandidateTypes("com.example.service", "service");
-		assertThat(actual).contains("com.example.service.One",
-				"com.example.service.sub.Two", "com.example.service.Three");
+		assertThat(actual, containsInAnyOrder("com.example.service.One",
+				"com.example.service.sub.Two", "com.example.service.Three"));
 	}
 
 	@Test
@@ -46,7 +47,7 @@ public class CandidateComponentsIndexTests {
 		CandidateComponentsIndex index = new CandidateComponentsIndex(
 				Collections.singletonList(createSampleProperties()));
 		Set<String> actual = index.getCandidateTypes("com.example.service.sub", "service");
-		assertThat(actual).contains("com.example.service.sub.Two");
+		assertThat(actual, containsInAnyOrder("com.example.service.sub.Two"));
 	}
 
 	@Test
@@ -54,7 +55,7 @@ public class CandidateComponentsIndexTests {
 		CandidateComponentsIndex index = new CandidateComponentsIndex(
 				Collections.singletonList(createSampleProperties()));
 		Set<String> actual = index.getCandidateTypes("com.example.service.none", "service");
-		assertThat(actual).isEmpty();
+		assertThat(actual, hasSize(0));
 	}
 
 	@Test
@@ -62,7 +63,7 @@ public class CandidateComponentsIndexTests {
 		CandidateComponentsIndex index = new CandidateComponentsIndex(
 				Collections.singletonList(createSampleProperties()));
 		Set<String> actual = index.getCandidateTypes("com.example.service", "entity");
-		assertThat(actual).isEmpty();
+		assertThat(actual, hasSize(0));
 	}
 
 	@Test
@@ -70,10 +71,10 @@ public class CandidateComponentsIndexTests {
 		CandidateComponentsIndex index = new CandidateComponentsIndex(Arrays.asList(
 				createProperties("com.example.Foo", "service"),
 				createProperties("com.example.Foo", "entity")));
-		assertThat(index.getCandidateTypes("com.example", "service"))
-				.contains("com.example.Foo");
-		assertThat(index.getCandidateTypes("com.example", "entity"))
-				.contains("com.example.Foo");
+		assertThat(index.getCandidateTypes("com.example", "service"),
+				contains("com.example.Foo"));
+		assertThat(index.getCandidateTypes("com.example", "entity"),
+				contains("com.example.Foo"));
 	}
 
 	private static Properties createProperties(String key, String stereotypes) {

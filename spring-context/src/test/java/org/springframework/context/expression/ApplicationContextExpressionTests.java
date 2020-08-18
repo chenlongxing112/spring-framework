@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,20 +30,19 @@ import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.beans.factory.config.Scope;
 import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.AutowireCandidateQualifier;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.beans.factory.support.RootBeanDefinition;
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigUtils;
 import org.springframework.context.support.GenericApplicationContext;
@@ -52,28 +51,27 @@ import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.EncodedResource;
-import org.springframework.core.testfixture.Assume;
-import org.springframework.core.testfixture.EnabledForTestGroups;
-import org.springframework.core.testfixture.io.SerializationTestUtils;
+import org.springframework.tests.Assume;
+import org.springframework.tests.TestGroup;
+import org.springframework.tests.sample.beans.TestBean;
 import org.springframework.util.FileCopyUtils;
+import org.springframework.util.SerializationTestUtils;
 import org.springframework.util.StopWatch;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.core.testfixture.TestGroup.PERFORMANCE;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 3.0
  */
-class ApplicationContextExpressionTests {
+public class ApplicationContextExpressionTests {
 
 	private static final Log factoryLog = LogFactory.getLog(DefaultListableBeanFactory.class);
 
 
 	@Test
-	@SuppressWarnings("deprecation")
-	void genericApplicationContext() throws Exception {
+	public void genericApplicationContext() throws Exception {
 		GenericApplicationContext ac = new GenericApplicationContext();
 		AnnotationConfigUtils.registerAnnotationConfigProcessors(ac);
 
@@ -106,8 +104,7 @@ class ApplicationContextExpressionTests {
 
 		ac.getBeanFactory().setConversionService(new DefaultConversionService());
 
-		org.springframework.beans.factory.config.PropertyPlaceholderConfigurer ppc =
-				new org.springframework.beans.factory.config.PropertyPlaceholderConfigurer();
+		PropertyPlaceholderConfigurer ppc = new PropertyPlaceholderConfigurer();
 		Properties placeholders = new Properties();
 		placeholders.setProperty("code", "123");
 		ppc.setProperties(placeholders);
@@ -161,51 +158,51 @@ class ApplicationContextExpressionTests {
 			TestBean tb0 = ac.getBean("tb0", TestBean.class);
 
 			TestBean tb1 = ac.getBean("tb1", TestBean.class);
-			assertThat(tb1.getName()).isEqualTo("XXXmyNameYYY42ZZZ");
-			assertThat(tb1.getAge()).isEqualTo(42);
+			assertEquals("XXXmyNameYYY42ZZZ", tb1.getName());
+			assertEquals(42, tb1.getAge());
 
 			TestBean tb2 = ac.getBean("tb2", TestBean.class);
-			assertThat(tb2.getName()).isEqualTo("{ XXXmyNameYYY42ZZZ }");
-			assertThat(tb2.getAge()).isEqualTo(42);
-			assertThat(tb2.getCountry()).isEqualTo("123 UK");
+			assertEquals("{ XXXmyNameYYY42ZZZ }", tb2.getName());
+			assertEquals(42, tb2.getAge());
+			assertEquals("123 UK", tb2.getCountry());
 
 			ValueTestBean tb3 = ac.getBean("tb3", ValueTestBean.class);
-			assertThat(tb3.name).isEqualTo("XXXmyNameYYY42ZZZ");
-			assertThat(tb3.age).isEqualTo(42);
-			assertThat(tb3.ageFactory.getObject().intValue()).isEqualTo(42);
-			assertThat(tb3.country).isEqualTo("123 UK");
-			assertThat(tb3.countryFactory.getObject()).isEqualTo("123 UK");
+			assertEquals("XXXmyNameYYY42ZZZ", tb3.name);
+			assertEquals(42, tb3.age);
+			assertEquals(42, tb3.ageFactory.getObject().intValue());
+			assertEquals("123 UK", tb3.country);
+			assertEquals("123 UK", tb3.countryFactory.getObject());
 			System.getProperties().put("country", "US");
-			assertThat(tb3.country).isEqualTo("123 UK");
-			assertThat(tb3.countryFactory.getObject()).isEqualTo("123 US");
+			assertEquals("123 UK", tb3.country);
+			assertEquals("123 US", tb3.countryFactory.getObject());
 			System.getProperties().put("country", "UK");
-			assertThat(tb3.country).isEqualTo("123 UK");
-			assertThat(tb3.countryFactory.getObject()).isEqualTo("123 UK");
-			assertThat(tb3.optionalValue1.get()).isEqualTo("123");
-			assertThat(tb3.optionalValue2.get()).isEqualTo("123");
-			assertThat(tb3.optionalValue3.isPresent()).isFalse();
-			assertThat(tb3.tb).isSameAs(tb0);
+			assertEquals("123 UK", tb3.country);
+			assertEquals("123 UK", tb3.countryFactory.getObject());
+			assertEquals("123", tb3.optionalValue1.get());
+			assertEquals("123", tb3.optionalValue2.get());
+			assertFalse(tb3.optionalValue3.isPresent());
+			assertSame(tb0, tb3.tb);
 
 			tb3 = (ValueTestBean) SerializationTestUtils.serializeAndDeserialize(tb3);
-			assertThat(tb3.countryFactory.getObject()).isEqualTo("123 UK");
+			assertEquals("123 UK", tb3.countryFactory.getObject());
 
 			ConstructorValueTestBean tb4 = ac.getBean("tb4", ConstructorValueTestBean.class);
-			assertThat(tb4.name).isEqualTo("XXXmyNameYYY42ZZZ");
-			assertThat(tb4.age).isEqualTo(42);
-			assertThat(tb4.country).isEqualTo("123 UK");
-			assertThat(tb4.tb).isSameAs(tb0);
+			assertEquals("XXXmyNameYYY42ZZZ", tb4.name);
+			assertEquals(42, tb4.age);
+			assertEquals("123 UK", tb4.country);
+			assertSame(tb0, tb4.tb);
 
 			MethodValueTestBean tb5 = ac.getBean("tb5", MethodValueTestBean.class);
-			assertThat(tb5.name).isEqualTo("XXXmyNameYYY42ZZZ");
-			assertThat(tb5.age).isEqualTo(42);
-			assertThat(tb5.country).isEqualTo("123 UK");
-			assertThat(tb5.tb).isSameAs(tb0);
+			assertEquals("XXXmyNameYYY42ZZZ", tb5.name);
+			assertEquals(42, tb5.age);
+			assertEquals("123 UK", tb5.country);
+			assertSame(tb0, tb5.tb);
 
 			PropertyValueTestBean tb6 = ac.getBean("tb6", PropertyValueTestBean.class);
-			assertThat(tb6.name).isEqualTo("XXXmyNameYYY42ZZZ");
-			assertThat(tb6.age).isEqualTo(42);
-			assertThat(tb6.country).isEqualTo("123 UK");
-			assertThat(tb6.tb).isSameAs(tb0);
+			assertEquals("XXXmyNameYYY42ZZZ", tb6.name);
+			assertEquals(42, tb6.age);
+			assertEquals("123 UK", tb6.country);
+			assertSame(tb0, tb6.tb);
 		}
 		finally {
 			System.getProperties().remove("country");
@@ -213,14 +210,14 @@ class ApplicationContextExpressionTests {
 	}
 
 	@Test
-	void prototypeCreationReevaluatesExpressions() {
+	public void prototypeCreationReevaluatesExpressions() {
 		GenericApplicationContext ac = new GenericApplicationContext();
 		AnnotationConfigUtils.registerAnnotationConfigProcessors(ac);
 		GenericConversionService cs = new GenericConversionService();
 		cs.addConverter(String.class, String.class, String::trim);
 		ac.getBeanFactory().registerSingleton(GenericApplicationContext.CONVERSION_SERVICE_BEAN_NAME, cs);
 		RootBeanDefinition rbd = new RootBeanDefinition(PrototypeTestBean.class);
-		rbd.setScope(BeanDefinition.SCOPE_PROTOTYPE);
+		rbd.setScope(RootBeanDefinition.SCOPE_PROTOTYPE);
 		rbd.getPropertyValues().add("country", "#{systemProperties.country}");
 		rbd.getPropertyValues().add("country2", new TypedStringValue("-#{systemProperties.country}-"));
 		ac.registerBeanDefinition("test", rbd);
@@ -230,16 +227,16 @@ class ApplicationContextExpressionTests {
 			System.getProperties().put("name", "juergen1");
 			System.getProperties().put("country", " UK1 ");
 			PrototypeTestBean tb = (PrototypeTestBean) ac.getBean("test");
-			assertThat(tb.getName()).isEqualTo("juergen1");
-			assertThat(tb.getCountry()).isEqualTo("UK1");
-			assertThat(tb.getCountry2()).isEqualTo("-UK1-");
+			assertEquals("juergen1", tb.getName());
+			assertEquals("UK1", tb.getCountry());
+			assertEquals("-UK1-", tb.getCountry2());
 
 			System.getProperties().put("name", "juergen2");
 			System.getProperties().put("country", "  UK2  ");
 			tb = (PrototypeTestBean) ac.getBean("test");
-			assertThat(tb.getName()).isEqualTo("juergen2");
-			assertThat(tb.getCountry()).isEqualTo("UK2");
-			assertThat(tb.getCountry2()).isEqualTo("-UK2-");
+			assertEquals("juergen2", tb.getName());
+			assertEquals("UK2", tb.getCountry());
+			assertEquals("-UK2-", tb.getCountry2());
 		}
 		finally {
 			System.getProperties().remove("name");
@@ -248,12 +245,12 @@ class ApplicationContextExpressionTests {
 	}
 
 	@Test
-	@EnabledForTestGroups(PERFORMANCE)
-	void prototypeCreationIsFastEnough() {
+	public void prototypeCreationIsFastEnough() {
+		Assume.group(TestGroup.PERFORMANCE);
 		Assume.notLogging(factoryLog);
 		GenericApplicationContext ac = new GenericApplicationContext();
 		RootBeanDefinition rbd = new RootBeanDefinition(TestBean.class);
-		rbd.setScope(BeanDefinition.SCOPE_PROTOTYPE);
+		rbd.setScope(RootBeanDefinition.SCOPE_PROTOTYPE);
 		rbd.getConstructorArgumentValues().addGenericArgumentValue("#{systemProperties.name}");
 		rbd.getPropertyValues().add("country", "#{systemProperties.country}");
 		ac.registerBeanDefinition("test", rbd);
@@ -265,8 +262,8 @@ class ApplicationContextExpressionTests {
 		try {
 			for (int i = 0; i < 100000; i++) {
 				TestBean tb = (TestBean) ac.getBean("test");
-				assertThat(tb.getName()).isEqualTo("juergen");
-				assertThat(tb.getCountry()).isEqualTo("UK");
+				assertEquals("juergen", tb.getName());
+				assertEquals("UK", tb.getCountry());
 			}
 			sw.stop();
 		}
@@ -274,12 +271,11 @@ class ApplicationContextExpressionTests {
 			System.getProperties().remove("country");
 			System.getProperties().remove("name");
 		}
-		assertThat(sw.getTotalTimeMillis() < 6000).as("Prototype creation took too long: " + sw.getTotalTimeMillis()).isTrue();
-		ac.close();
+		assertTrue("Prototype creation took too long: " + sw.getTotalTimeMillis(), sw.getTotalTimeMillis() < 6000);
 	}
 
 	@Test
-	void systemPropertiesSecurityManager() {
+	public void systemPropertiesSecurityManager() {
 		AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext();
 
 		GenericBeanDefinition bd = new GenericBeanDefinition();
@@ -305,18 +301,17 @@ class ApplicationContextExpressionTests {
 			ac.refresh();
 
 			TestBean tb = ac.getBean("tb", TestBean.class);
-			assertThat(tb.getCountry()).isEqualTo("NL");
+			assertEquals("NL", tb.getCountry());
 
 		}
 		finally {
 			System.setSecurityManager(oldSecurityManager);
 			System.getProperties().remove("country");
 		}
-		ac.close();
 	}
 
 	@Test
-	void stringConcatenationWithDebugLogging() {
+	public void stringConcatenationWithDebugLogging() {
 		AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext();
 
 		GenericBeanDefinition bd = new GenericBeanDefinition();
@@ -326,22 +321,23 @@ class ApplicationContextExpressionTests {
 		ac.refresh();
 
 		String str = ac.getBean("str", String.class);
-		assertThat(str.startsWith("test-")).isTrue();
-		ac.close();
+		assertTrue(str.startsWith("test-"));
 	}
 
 	@Test
-	void resourceInjection() throws IOException {
+	public void resourceInjection() throws IOException {
 		System.setProperty("logfile", "do_not_delete_me.txt");
 		try (AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(ResourceInjectionBean.class)) {
 			ResourceInjectionBean resourceInjectionBean = ac.getBean(ResourceInjectionBean.class);
 			Resource resource = new ClassPathResource("do_not_delete_me.txt");
-			assertThat(resourceInjectionBean.resource).isEqualTo(resource);
-			assertThat(resourceInjectionBean.url).isEqualTo(resource.getURL());
-			assertThat(resourceInjectionBean.uri).isEqualTo(resource.getURI());
-			assertThat(resourceInjectionBean.file).isEqualTo(resource.getFile());
-			assertThat(FileCopyUtils.copyToByteArray(resourceInjectionBean.inputStream)).isEqualTo(FileCopyUtils.copyToByteArray(resource.getInputStream()));
-			assertThat(FileCopyUtils.copyToString(resourceInjectionBean.reader)).isEqualTo(FileCopyUtils.copyToString(new EncodedResource(resource).getReader()));
+			assertEquals(resource, resourceInjectionBean.resource);
+			assertEquals(resource.getURL(), resourceInjectionBean.url);
+			assertEquals(resource.getURI(), resourceInjectionBean.uri);
+			assertEquals(resource.getFile(), resourceInjectionBean.file);
+			assertArrayEquals(FileCopyUtils.copyToByteArray(resource.getInputStream()),
+					FileCopyUtils.copyToByteArray(resourceInjectionBean.inputStream));
+			assertEquals(FileCopyUtils.copyToString(new EncodedResource(resource).getReader()),
+					FileCopyUtils.copyToString(resourceInjectionBean.reader));
 		}
 		finally {
 			System.getProperties().remove("logfile");

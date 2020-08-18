@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@ package org.springframework.web.reactive.function.client;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -27,16 +27,14 @@ import reactor.test.StepVerifier;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.core.io.buffer.support.DataBufferTestUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.BodyExtractors;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for {@link ExchangeFilterFunctions}.
@@ -45,7 +43,7 @@ import static org.mockito.Mockito.mock;
  */
 public class ExchangeFilterFunctionsTests {
 
-	private static final URI DEFAULT_URL = URI.create("https://example.com");
+	private static final URI DEFAULT_URL = URI.create("http://example.com");
 
 
 	@Test
@@ -56,15 +54,15 @@ public class ExchangeFilterFunctionsTests {
 
 		boolean[] filtersInvoked = new boolean[2];
 		ExchangeFilterFunction filter1 = (r, n) -> {
-			assertThat(filtersInvoked[0]).isFalse();
-			assertThat(filtersInvoked[1]).isFalse();
+			assertFalse(filtersInvoked[0]);
+			assertFalse(filtersInvoked[1]);
 			filtersInvoked[0] = true;
-			assertThat(filtersInvoked[1]).isFalse();
+			assertFalse(filtersInvoked[1]);
 			return n.exchange(r);
 		};
 		ExchangeFilterFunction filter2 = (r, n) -> {
-			assertThat(filtersInvoked[0]).isTrue();
-			assertThat(filtersInvoked[1]).isFalse();
+			assertTrue(filtersInvoked[0]);
+			assertFalse(filtersInvoked[1]);
 			filtersInvoked[1] = true;
 			return n.exchange(r);
 		};
@@ -72,10 +70,10 @@ public class ExchangeFilterFunctionsTests {
 
 
 		ClientResponse result = filter.filter(request, exchange).block();
-		assertThat(result).isEqualTo(response);
+		assertEquals(response, result);
 
-		assertThat(filtersInvoked[0]).isTrue();
-		assertThat(filtersInvoked[1]).isTrue();
+		assertTrue(filtersInvoked[0]);
+		assertTrue(filtersInvoked[1]);
 	}
 
 	@Test
@@ -86,15 +84,15 @@ public class ExchangeFilterFunctionsTests {
 
 		boolean[] filterInvoked = new boolean[1];
 		ExchangeFilterFunction filter = (r, n) -> {
-			assertThat(filterInvoked[0]).isFalse();
+			assertFalse(filterInvoked[0]);
 			filterInvoked[0] = true;
 			return n.exchange(r);
 		};
 
 		ExchangeFunction filteredExchange = filter.apply(exchange);
 		ClientResponse result = filteredExchange.exchange(request).block();
-		assertThat(result).isEqualTo(response);
-		assertThat(filterInvoked[0]).isTrue();
+		assertEquals(response, result);
+		assertTrue(filterInvoked[0]);
 	}
 
 	@Test
@@ -103,24 +101,23 @@ public class ExchangeFilterFunctionsTests {
 		ClientResponse response = mock(ClientResponse.class);
 
 		ExchangeFunction exchange = r -> {
-			assertThat(r.headers().containsKey(HttpHeaders.AUTHORIZATION)).isTrue();
-			assertThat(r.headers().getFirst(HttpHeaders.AUTHORIZATION).startsWith("Basic ")).isTrue();
+			assertTrue(r.headers().containsKey(HttpHeaders.AUTHORIZATION));
+			assertTrue(r.headers().getFirst(HttpHeaders.AUTHORIZATION).startsWith("Basic "));
 			return Mono.just(response);
 		};
 
 		ExchangeFilterFunction auth = ExchangeFilterFunctions.basicAuthentication("foo", "bar");
-		assertThat(request.headers().containsKey(HttpHeaders.AUTHORIZATION)).isFalse();
+		assertFalse(request.headers().containsKey(HttpHeaders.AUTHORIZATION));
 		ClientResponse result = auth.filter(request, exchange).block();
-		assertThat(result).isEqualTo(response);
+		assertEquals(response, result);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void basicAuthenticationInvalidCharacters() {
 		ClientRequest request = ClientRequest.create(HttpMethod.GET, DEFAULT_URL).build();
 		ExchangeFunction exchange = r -> Mono.just(mock(ClientResponse.class));
 
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				ExchangeFilterFunctions.basicAuthentication("foo", "\ud83d\udca9").filter(request, exchange));
+		ExchangeFilterFunctions.basicAuthentication("foo", "\ud83d\udca9").filter(request, exchange);
 	}
 
 	@Test
@@ -133,15 +130,15 @@ public class ExchangeFilterFunctionsTests {
 		ClientResponse response = mock(ClientResponse.class);
 
 		ExchangeFunction exchange = r -> {
-			assertThat(r.headers().containsKey(HttpHeaders.AUTHORIZATION)).isTrue();
-			assertThat(r.headers().getFirst(HttpHeaders.AUTHORIZATION).startsWith("Basic ")).isTrue();
+			assertTrue(r.headers().containsKey(HttpHeaders.AUTHORIZATION));
+			assertTrue(r.headers().getFirst(HttpHeaders.AUTHORIZATION).startsWith("Basic "));
 			return Mono.just(response);
 		};
 
 		ExchangeFilterFunction auth = ExchangeFilterFunctions.basicAuthentication();
-		assertThat(request.headers().containsKey(HttpHeaders.AUTHORIZATION)).isFalse();
+		assertFalse(request.headers().containsKey(HttpHeaders.AUTHORIZATION));
 		ClientResponse result = auth.filter(request, exchange).block();
-		assertThat(result).isEqualTo(response);
+		assertEquals(response, result);
 	}
 
 	@Test
@@ -151,21 +148,21 @@ public class ExchangeFilterFunctionsTests {
 		ClientResponse response = mock(ClientResponse.class);
 
 		ExchangeFunction exchange = r -> {
-			assertThat(r.headers().containsKey(HttpHeaders.AUTHORIZATION)).isFalse();
+			assertFalse(r.headers().containsKey(HttpHeaders.AUTHORIZATION));
 			return Mono.just(response);
 		};
 
 		ExchangeFilterFunction auth = ExchangeFilterFunctions.basicAuthentication();
-		assertThat(request.headers().containsKey(HttpHeaders.AUTHORIZATION)).isFalse();
+		assertFalse(request.headers().containsKey(HttpHeaders.AUTHORIZATION));
 		ClientResponse result = auth.filter(request, exchange).block();
-		assertThat(result).isEqualTo(response);
+		assertEquals(response, result);
 	}
 
 	@Test
 	public void statusHandlerMatch() {
 		ClientRequest request = ClientRequest.create(HttpMethod.GET, DEFAULT_URL).build();
 		ClientResponse response = mock(ClientResponse.class);
-		given(response.statusCode()).willReturn(HttpStatus.NOT_FOUND);
+		when(response.statusCode()).thenReturn(HttpStatus.NOT_FOUND);
 
 		ExchangeFunction exchange = r -> Mono.just(response);
 
@@ -183,7 +180,7 @@ public class ExchangeFilterFunctionsTests {
 	public void statusHandlerNoMatch() {
 		ClientRequest request = ClientRequest.create(HttpMethod.GET, DEFAULT_URL).build();
 		ClientResponse response = mock(ClientResponse.class);
-		given(response.statusCode()).willReturn(HttpStatus.NOT_FOUND);
+		when(response.statusCode()).thenReturn(HttpStatus.NOT_FOUND);
 
 		Mono<ClientResponse> result = ExchangeFilterFunctions
 				.statusError(HttpStatus::is5xxServerError, req -> new MyException())
@@ -209,15 +206,15 @@ public class ExchangeFilterFunctionsTests {
 				.filter(request, req -> Mono.just(response));
 
 		StepVerifier.create(result.flatMapMany(res -> res.body(BodyExtractors.toDataBuffers())))
-				.consumeNextWith(buffer -> assertThat(string(buffer)).isEqualTo("foo"))
-				.consumeNextWith(buffer -> assertThat(string(buffer)).isEqualTo("ba"))
+				.consumeNextWith(buffer -> assertEquals("foo", string(buffer)))
+				.consumeNextWith(buffer -> assertEquals("ba", string(buffer)))
 				.expectComplete()
 				.verify();
 
 	}
 
 	private String string(DataBuffer buffer) {
-		String value = buffer.toString(UTF_8);
+		String value = DataBufferTestUtils.dumpString(buffer, StandardCharsets.UTF_8);
 		DataBufferUtils.release(buffer);
 		return value;
 	}

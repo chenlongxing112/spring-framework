@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +24,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.core.io.Resource;
@@ -142,12 +141,6 @@ class RouterFunctionBuilder implements RouterFunctions.Builder {
 	}
 
 	@Override
-	public RouterFunctions.Builder route(RequestPredicate predicate,
-			HandlerFunction<ServerResponse> handlerFunction) {
-		return add(RouterFunctions.route(predicate, handlerFunction));
-	}
-
-	@Override
 	public RouterFunctions.Builder resources(String pattern, Resource location) {
 		return add(RouterFunctions.resources(pattern, location));
 	}
@@ -242,10 +235,9 @@ class RouterFunctionBuilder implements RouterFunctions.Builder {
 
 	@Override
 	public RouterFunction<ServerResponse> build() {
-		if (this.routerFunctions.isEmpty()) {
-			throw new IllegalStateException("No routes registered. Register a route with GET(), POST(), etc.");
-		}
-		RouterFunction<ServerResponse> result = new BuiltRouterFunction(this.routerFunctions);
+		RouterFunction<ServerResponse> result = this.routerFunctions.stream()
+				.reduce(RouterFunction::and)
+				.orElseThrow(IllegalStateException::new);
 
 		if (this.filterFunctions.isEmpty()) {
 			return result;
@@ -257,32 +249,6 @@ class RouterFunctionBuilder implements RouterFunctions.Builder {
 							.orElseThrow(IllegalStateException::new);
 
 			return result.filter(filter);
-		}
-	}
-
-
-	/**
-	 * Router function returned by {@link #build()} that simply iterates over the registered routes.
-	 */
-	private static class BuiltRouterFunction extends RouterFunctions.AbstractRouterFunction<ServerResponse> {
-
-		private List<RouterFunction<ServerResponse>> routerFunctions;
-
-		public BuiltRouterFunction(List<RouterFunction<ServerResponse>> routerFunctions) {
-			Assert.notEmpty(routerFunctions, "RouterFunctions must not be empty");
-			this.routerFunctions = routerFunctions;
-		}
-
-		@Override
-		public Mono<HandlerFunction<ServerResponse>> route(ServerRequest request) {
-			return Flux.fromIterable(this.routerFunctions)
-					.concatMap(routerFunction -> routerFunction.route(request))
-					.next();
-		}
-
-		@Override
-		public void accept(RouterFunctions.Visitor visitor) {
-			this.routerFunctions.forEach(routerFunction -> routerFunction.accept(visitor));
 		}
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,9 @@ package org.springframework.web.reactive.result.method.annotation;
 
 import java.time.Duration;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -32,47 +35,45 @@ import org.springframework.web.reactive.config.EnableWebFlux;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.protobuf.Msg;
 import org.springframework.web.reactive.protobuf.SecondMsg;
-import org.springframework.web.testfixture.http.server.reactive.bootstrap.HttpServer;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for Protobuf support.
  *
  * @author Sebastien Deleuze
- * @author Sam Brannen
  */
-class ProtobufIntegrationTests extends AbstractRequestMappingIntegrationTests {
+public class ProtobufIntegrationTests extends AbstractRequestMappingIntegrationTests {
 
-	static final Msg TEST_MSG =
+	public static final Msg TEST_MSG =
 			Msg.newBuilder().setFoo("Foo").setBlah(SecondMsg.newBuilder().setBlah(123).build()).build();
 
 	private WebClient webClient;
 
 
 	@Override
-	protected void startServer(HttpServer httpServer) throws Exception {
-		super.startServer(httpServer);
+	@Before
+	public void setup() throws Exception {
+		super.setup();
 		this.webClient = WebClient.create("http://localhost:" + this.port);
 	}
 
 	@Override
 	protected ApplicationContext initApplicationContext() {
-		return new AnnotationConfigApplicationContext(TestConfiguration.class);
+		AnnotationConfigApplicationContext wac = new AnnotationConfigApplicationContext();
+		wac.register(TestConfiguration .class);
+		wac.refresh();
+		return wac;
 	}
 
 
-	@ParameterizedHttpServerTest
-	void value(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void value() {
 		Mono<Msg> result = this.webClient.get()
 				.uri("/message")
 				.exchange()
 				.doOnNext(response -> {
-					assertThat(response.headers().contentType().get().getParameters().containsKey("delimited")).isFalse();
-					assertThat(response.headers().header("X-Protobuf-Schema").get(0)).isEqualTo("sample.proto");
-					assertThat(response.headers().header("X-Protobuf-Message").get(0)).isEqualTo("Msg");
+					Assert.assertFalse(response.headers().contentType().get().getParameters().containsKey("delimited"));
+					Assert.assertEquals("sample.proto", response.headers().header("X-Protobuf-Schema").get(0));
+					Assert.assertEquals("Msg", response.headers().header("X-Protobuf-Message").get(0));
 				})
 				.flatMap(response -> response.bodyToMono(Msg.class));
 
@@ -81,17 +82,15 @@ class ProtobufIntegrationTests extends AbstractRequestMappingIntegrationTests {
 				.verifyComplete();
 	}
 
-	@ParameterizedHttpServerTest
-	void values(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void values() {
 		Flux<Msg> result = this.webClient.get()
 				.uri("/messages")
 				.exchange()
 				.doOnNext(response -> {
-					assertThat(response.headers().contentType().get().getParameters().get("delimited")).isEqualTo("true");
-					assertThat(response.headers().header("X-Protobuf-Schema").get(0)).isEqualTo("sample.proto");
-					assertThat(response.headers().header("X-Protobuf-Message").get(0)).isEqualTo("Msg");
+					Assert.assertEquals("true", response.headers().contentType().get().getParameters().get("delimited"));
+					Assert.assertEquals("sample.proto", response.headers().header("X-Protobuf-Schema").get(0));
+					Assert.assertEquals("Msg", response.headers().header("X-Protobuf-Message").get(0));
 				})
 				.flatMapMany(response -> response.bodyToFlux(Msg.class));
 
@@ -102,17 +101,15 @@ class ProtobufIntegrationTests extends AbstractRequestMappingIntegrationTests {
 				.verifyComplete();
 	}
 
-	@ParameterizedHttpServerTest
-	void streaming(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void streaming() {
 		Flux<Msg> result = this.webClient.get()
 				.uri("/message-stream")
 				.exchange()
 				.doOnNext(response -> {
-					assertThat(response.headers().contentType().get().getParameters().get("delimited")).isEqualTo("true");
-					assertThat(response.headers().header("X-Protobuf-Schema").get(0)).isEqualTo("sample.proto");
-					assertThat(response.headers().header("X-Protobuf-Message").get(0)).isEqualTo("Msg");
+					Assert.assertEquals("true", response.headers().contentType().get().getParameters().get("delimited"));
+					Assert.assertEquals("sample.proto", response.headers().header("X-Protobuf-Schema").get(0));
+					Assert.assertEquals("Msg", response.headers().header("X-Protobuf-Message").get(0));
 				})
 				.flatMapMany(response -> response.bodyToFlux(Msg.class));
 
@@ -123,10 +120,8 @@ class ProtobufIntegrationTests extends AbstractRequestMappingIntegrationTests {
 				.verify();
 	}
 
-	@ParameterizedHttpServerTest
-	void empty(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void empty() {
 		Mono<Msg> result = this.webClient.get()
 				.uri("/empty")
 				.retrieve()
@@ -136,10 +131,8 @@ class ProtobufIntegrationTests extends AbstractRequestMappingIntegrationTests {
 				.verifyComplete();
 	}
 
-	@ParameterizedHttpServerTest
-	void defaultInstance(HttpServer httpServer) throws Exception {
-		startServer(httpServer);
-
+	@Test
+	public void defaultInstance() {
 		Mono<Msg> result = this.webClient.get()
 				.uri("/default-instance")
 				.retrieve()

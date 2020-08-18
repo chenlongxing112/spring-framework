@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,8 +19,10 @@ package org.springframework.messaging.handler.annotation.support;
 import java.lang.reflect.Method;
 import java.util.Locale;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.messaging.Message;
@@ -31,10 +33,8 @@ import org.springframework.messaging.support.ErrorMessage;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.messaging.support.MessageBuilder;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for {@link MessageMethodArgumentResolver}.
@@ -44,6 +44,9 @@ import static org.mockito.Mockito.mock;
  */
 public class MessageMethodArgumentResolverTests {
 
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
+
 	private MessageConverter converter;
 
 	private MessageMethodArgumentResolver resolver;
@@ -51,7 +54,7 @@ public class MessageMethodArgumentResolverTests {
 	private Method method;
 
 
-	@BeforeEach
+	@Before
 	public void setup() throws Exception {
 		this.method = MessageMethodArgumentResolverTests.class.getDeclaredMethod("handle",
 				Message.class, Message.class, Message.class, Message.class, ErrorMessage.class, Message.class);
@@ -66,8 +69,8 @@ public class MessageMethodArgumentResolverTests {
 		Message<String> message = MessageBuilder.withPayload("test").build();
 		MethodParameter parameter = new MethodParameter(this.method, 0);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThat(this.resolver.resolveArgument(parameter, message)).isSameAs(message);
+		assertTrue(this.resolver.supportsParameter(parameter));
+		assertSame(message, this.resolver.resolveArgument(parameter, message));
 	}
 
 	@Test
@@ -75,8 +78,8 @@ public class MessageMethodArgumentResolverTests {
 		Message<Integer> message = MessageBuilder.withPayload(123).build();
 		MethodParameter parameter = new MethodParameter(this.method, 1);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThat(this.resolver.resolveArgument(parameter, message)).isSameAs(message);
+		assertTrue(this.resolver.supportsParameter(parameter));
+		assertSame(message, this.resolver.resolveArgument(parameter, message));
 	}
 
 	@Test
@@ -84,8 +87,8 @@ public class MessageMethodArgumentResolverTests {
 		Message<Integer> message = MessageBuilder.withPayload(123).build();
 		MethodParameter parameter = new MethodParameter(this.method, 2);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThat(this.resolver.resolveArgument(parameter, message)).isSameAs(message);
+		assertTrue(this.resolver.supportsParameter(parameter));
+		assertSame(message, this.resolver.resolveArgument(parameter, message));
 	}
 
 	@Test
@@ -93,14 +96,14 @@ public class MessageMethodArgumentResolverTests {
 		Message<String> message = MessageBuilder.withPayload("test").build();
 		MethodParameter parameter = new MethodParameter(this.method, 1);
 
-		given(this.converter.fromMessage(message, Integer.class)).willReturn(4);
+		when(this.converter.fromMessage(message, Integer.class)).thenReturn(4);
 
 		@SuppressWarnings("unchecked")
 		Message<Integer> actual = (Message<Integer>) this.resolver.resolveArgument(parameter, message);
 
-		assertThat(actual).isNotNull();
-		assertThat(actual.getHeaders()).isSameAs(message.getHeaders());
-		assertThat(actual.getPayload()).isEqualTo(4);
+		assertNotNull(actual);
+		assertSame(message.getHeaders(), actual.getHeaders());
+		assertEquals(new Integer(4), actual.getPayload());
 	}
 
 	@Test
@@ -108,11 +111,11 @@ public class MessageMethodArgumentResolverTests {
 		Message<String> message = MessageBuilder.withPayload("test").build();
 		MethodParameter parameter = new MethodParameter(this.method, 1);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(() ->
-				this.resolver.resolveArgument(parameter, message))
-			.withMessageContaining(Integer.class.getName())
-			.withMessageContaining(String.class.getName());
+		assertTrue(this.resolver.supportsParameter(parameter));
+		thrown.expect(MessageConversionException.class);
+		thrown.expectMessage(Integer.class.getName());
+		thrown.expectMessage(String.class.getName());
+		this.resolver.resolveArgument(parameter, message);
 	}
 
 	@Test
@@ -120,12 +123,12 @@ public class MessageMethodArgumentResolverTests {
 		Message<String> message = MessageBuilder.withPayload("").build();
 		MethodParameter parameter = new MethodParameter(this.method, 1);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(() ->
-				this.resolver.resolveArgument(parameter, message))
-			.withMessageContaining("payload is empty")
-			.withMessageContaining(Integer.class.getName())
-			.withMessageContaining(String.class.getName());
+		assertTrue(this.resolver.supportsParameter(parameter));
+		thrown.expect(MessageConversionException.class);
+		thrown.expectMessage("payload is empty");
+		thrown.expectMessage(Integer.class.getName());
+		thrown.expectMessage(String.class.getName());
+		this.resolver.resolveArgument(parameter, message);
 	}
 
 	@Test
@@ -133,8 +136,8 @@ public class MessageMethodArgumentResolverTests {
 		Message<Integer> message = MessageBuilder.withPayload(123).build();
 		MethodParameter parameter = new MethodParameter(this.method, 3);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThat(this.resolver.resolveArgument(parameter, message)).isSameAs(message);
+		assertTrue(this.resolver.supportsParameter(parameter));
+		assertSame(message, this.resolver.resolveArgument(parameter, message));
 	}
 
 	@Test
@@ -142,11 +145,11 @@ public class MessageMethodArgumentResolverTests {
 		Message<Locale> message = MessageBuilder.withPayload(Locale.getDefault()).build();
 		MethodParameter parameter = new MethodParameter(this.method, 3);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(() ->
-				this.resolver.resolveArgument(parameter, message))
-			.withMessageContaining(Number.class.getName())
-			.withMessageContaining(Locale.class.getName());
+		assertTrue(this.resolver.supportsParameter(parameter));
+		thrown.expect(MessageConversionException.class);
+		thrown.expectMessage(Number.class.getName());
+		thrown.expectMessage(Locale.class.getName());
+		this.resolver.resolveArgument(parameter, message);
 	}
 
 	@Test
@@ -154,8 +157,8 @@ public class MessageMethodArgumentResolverTests {
 		ErrorMessage message = new ErrorMessage(new UnsupportedOperationException());
 		MethodParameter parameter = new MethodParameter(this.method, 4);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThat(this.resolver.resolveArgument(parameter, message)).isSameAs(message);
+		assertTrue(this.resolver.supportsParameter(parameter));
+		assertSame(message, this.resolver.resolveArgument(parameter, message));
 	}
 
 	@Test
@@ -163,8 +166,8 @@ public class MessageMethodArgumentResolverTests {
 		ErrorMessage message = new ErrorMessage(new UnsupportedOperationException());
 		MethodParameter parameter = new MethodParameter(this.method, 0);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThat(this.resolver.resolveArgument(parameter, message)).isSameAs(message);
+		assertTrue(this.resolver.supportsParameter(parameter));
+		assertSame(message, this.resolver.resolveArgument(parameter, message));
 	}
 
 	@Test
@@ -173,11 +176,11 @@ public class MessageMethodArgumentResolverTests {
 		Message<? extends Throwable> message = new GenericMessage<Throwable>(ex);
 		MethodParameter parameter = new MethodParameter(this.method, 4);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThatExceptionOfType(MethodArgumentTypeMismatchException.class).isThrownBy(() ->
-				this.resolver.resolveArgument(parameter, message))
-			.withMessageContaining(ErrorMessage.class.getName())
-			.withMessageContaining(GenericMessage.class.getName());
+		assertTrue(this.resolver.supportsParameter(parameter));
+		thrown.expect(MethodArgumentTypeMismatchException.class);
+		thrown.expectMessage(ErrorMessage.class.getName());
+		thrown.expectMessage(GenericMessage.class.getName());
+		assertSame(message, this.resolver.resolveArgument(parameter, message));
 	}
 
 	@Test
@@ -187,8 +190,8 @@ public class MessageMethodArgumentResolverTests {
 		Message<String> message = MessageBuilder.withPayload("test").build();
 		MethodParameter parameter = new MethodParameter(this.method, 0);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThat(this.resolver.resolveArgument(parameter, message)).isSameAs(message);
+		assertTrue(this.resolver.supportsParameter(parameter));
+		assertSame(message, this.resolver.resolveArgument(parameter, message));
 	}
 
 	@Test
@@ -198,11 +201,11 @@ public class MessageMethodArgumentResolverTests {
 		Message<String> message = MessageBuilder.withPayload("test").build();
 		MethodParameter parameter = new MethodParameter(this.method, 1);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(() ->
-				this.resolver.resolveArgument(parameter, message))
-			.withMessageContaining(Integer.class.getName())
-			.withMessageContaining(String.class.getName());
+		assertTrue(this.resolver.supportsParameter(parameter));
+		thrown.expect(MessageConversionException.class);
+		thrown.expectMessage(Integer.class.getName());
+		thrown.expectMessage(String.class.getName());
+		this.resolver.resolveArgument(parameter, message);
 	}
 
 	@Test
@@ -212,12 +215,12 @@ public class MessageMethodArgumentResolverTests {
 		Message<String> message = MessageBuilder.withPayload("").build();
 		MethodParameter parameter = new MethodParameter(this.method, 1);
 
-		assertThat(this.resolver.supportsParameter(parameter)).isTrue();
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(() ->
-				this.resolver.resolveArgument(parameter, message))
-			.withMessageContaining("payload is empty")
-			.withMessageContaining(Integer.class.getName())
-			.withMessageContaining(String.class.getName());
+		assertTrue(this.resolver.supportsParameter(parameter));
+		thrown.expect(MessageConversionException.class);
+		thrown.expectMessage("payload is empty");
+		thrown.expectMessage(Integer.class.getName());
+		thrown.expectMessage(String.class.getName());
+		this.resolver.resolveArgument(parameter, message);
 	}
 
 	@Test // SPR-16486
@@ -228,12 +231,10 @@ public class MessageMethodArgumentResolverTests {
 		this.resolver = new MessageMethodArgumentResolver(new MappingJackson2MessageConverter());
 		Object actual = this.resolver.resolveArgument(parameter, inMessage);
 
-		boolean condition1 = actual instanceof Message;
-		assertThat(condition1).isTrue();
+		assertTrue(actual instanceof Message);
 		Message<?> outMessage = (Message<?>) actual;
-		boolean condition = outMessage.getPayload() instanceof Foo;
-		assertThat(condition).isTrue();
-		assertThat(((Foo) outMessage.getPayload()).getFoo()).isEqualTo("bar");
+		assertTrue(outMessage.getPayload() instanceof Foo);
+		assertEquals("bar", ((Foo) outMessage.getPayload()).getFoo());
 	}
 
 

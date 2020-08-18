@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -81,7 +81,8 @@ import org.springframework.web.server.ServerWebExchange;
  * @author Rossen Stoyanchev
  * @since 5.0
  */
-public class ViewResolutionResultHandler extends HandlerResultHandlerSupport implements HandlerResultHandler, Ordered {
+public class ViewResolutionResultHandler extends HandlerResultHandlerSupport
+		implements HandlerResultHandler, Ordered {
 
 	private static final Object NO_VALUE = new Object();
 
@@ -144,7 +145,6 @@ public class ViewResolutionResultHandler extends HandlerResultHandlerSupport imp
 		return this.defaultViews;
 	}
 
-
 	@Override
 	public boolean supports(HandlerResult result) {
 		if (hasModelAnnotation(result.getReturnTypeSource())) {
@@ -160,12 +160,14 @@ public class ViewResolutionResultHandler extends HandlerResultHandlerSupport imp
 			type = result.getReturnType().getGeneric().toClass();
 		}
 
-		return (CharSequence.class.isAssignableFrom(type) ||
-				Rendering.class.isAssignableFrom(type) ||
-				Model.class.isAssignableFrom(type) ||
-				Map.class.isAssignableFrom(type) ||
-				View.class.isAssignableFrom(type) ||
+		return (CharSequence.class.isAssignableFrom(type) || Rendering.class.isAssignableFrom(type) ||
+				Model.class.isAssignableFrom(type) || Map.class.isAssignableFrom(type) ||
+				void.class.equals(type) || View.class.isAssignableFrom(type) ||
 				!BeanUtils.isSimpleProperty(type));
+	}
+
+	private boolean hasModelAnnotation(MethodParameter parameter) {
+		return parameter.hasMethodAnnotation(ModelAttribute.class);
 	}
 
 	@Override
@@ -243,15 +245,11 @@ public class ViewResolutionResultHandler extends HandlerResultHandlerSupport imp
 						model.addAttribute(name, returnValue);
 						viewsMono = resolveViews(getDefaultViewName(exchange), locale);
 					}
-					BindingContext bindingContext = result.getBindingContext();
-					updateBindingResult(bindingContext, exchange);
-					return viewsMono.flatMap(views -> render(views, model.asMap(), bindingContext, exchange));
+
+					updateBindingContext(result.getBindingContext(), exchange);
+
+					return viewsMono.flatMap(views -> render(views, model.asMap(), exchange));
 				});
-	}
-
-
-	private boolean hasModelAnnotation(MethodParameter parameter) {
-		return parameter.hasMethodAnnotation(ModelAttribute.class);
 	}
 
 	/**
@@ -290,55 +288,44 @@ public class ViewResolutionResultHandler extends HandlerResultHandlerSupport imp
 				.orElseGet(() -> Conventions.getVariableNameForParameter(returnType));
 	}
 
-	private void updateBindingResult(BindingContext context, ServerWebExchange exchange) {
+	private void updateBindingContext(BindingContext context, ServerWebExchange exchange) {
 		Map<String, Object> model = context.getModel().asMap();
-		for (Map.Entry<String, Object> entry : model.entrySet()) {
-			String name = entry.getKey();
-			Object value = entry.getValue();
-			if (isBindingCandidate(name, value)) {
-				if (!model.containsKey(BindingResult.MODEL_KEY_PREFIX + name)) {
-					WebExchangeDataBinder binder = context.createDataBinder(exchange, value, name);
+		model.keySet().stream()
+				.filter(name -> isBindingCandidate(name, model.get(name)))
+				.filter(name -> !model.containsKey(BindingResult.MODEL_KEY_PREFIX + name))
+				.forEach(name -> {
+					WebExchangeDataBinder binder = context.createDataBinder(exchange, model.get(name), name);
 					model.put(BindingResult.MODEL_KEY_PREFIX + name, binder.getBindingResult());
-				}
-			}
-		}
+				});
 	}
 
 	private boolean isBindingCandidate(String name, @Nullable Object value) {
 		return (!name.startsWith(BindingResult.MODEL_KEY_PREFIX) && value != null &&
-				!value.getClass().isArray() && !(value instanceof Collection) && !(value instanceof Map) &&
-				getAdapterRegistry().getAdapter(null, value) == null &&
-				!BeanUtils.isSimpleValueType(value.getClass()));
+				!value.getClass().isArray() && !(value instanceof Collection) &&
+				!(value instanceof Map) && !BeanUtils.isSimpleValueType(value.getClass()));
 	}
 
 	private Mono<? extends Void> render(List<View> views, Map<String, Object> model,
-			BindingContext bindingContext, ServerWebExchange exchange) {
+			ServerWebExchange exchange) {
 
 		for (View view : views) {
 			if (view.isRedirectView()) {
-				return renderWith(view, model, null, exchange, bindingContext);
+				return view.render(model, null, exchange);
 			}
 		}
+
 		List<MediaType> mediaTypes = getMediaTypes(views);
 		MediaType bestMediaType = selectMediaType(exchange, () -> mediaTypes);
 		if (bestMediaType != null) {
 			for (View view : views) {
 				for (MediaType mediaType : view.getSupportedMediaTypes()) {
 					if (mediaType.isCompatibleWith(bestMediaType)) {
-						return renderWith(view, model, mediaType, exchange, bindingContext);
+						return view.render(model, mediaType, exchange);
 					}
 				}
 			}
 		}
 		throw new NotAcceptableStatusException(mediaTypes);
-	}
-
-	private Mono<? extends Void> renderWith(View view, Map<String, Object> model,
-			@Nullable MediaType mediaType, ServerWebExchange exchange, BindingContext bindingContext) {
-
-		exchange.getAttributes().put(View.BINDING_CONTEXT_ATTRIBUTE, bindingContext);
-		return view.render(model, mediaType, exchange)
-				.doOnTerminate(() -> exchange.getAttributes().remove(View.BINDING_CONTEXT_ATTRIBUTE));
 	}
 
 	private List<MediaType> getMediaTypes(List<View> views) {

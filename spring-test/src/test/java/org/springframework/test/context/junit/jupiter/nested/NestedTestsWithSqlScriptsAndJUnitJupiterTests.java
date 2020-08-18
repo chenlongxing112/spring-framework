@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,7 +32,7 @@ import org.springframework.test.context.transaction.BeforeTransaction;
 import org.springframework.test.jdbc.JdbcTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Integration tests that verify support for {@link Nested @Nested} test classes in
@@ -53,13 +53,13 @@ class NestedTestsWithSqlScriptsAndJUnitJupiterTests {
 	@BeforeTransaction
 	@AfterTransaction
 	void checkInitialDatabaseState() {
-		assertThat(countRowsInTable("user")).isEqualTo(0);
+		assertEquals(0, countRowsInTable("user"));
 	}
 
 	@Test
 	@Sql("/org/springframework/test/context/jdbc/data.sql")
 	void sqlScripts() {
-		assertThat(countRowsInTable("user")).isEqualTo(1);
+		assertEquals(1, countRowsInTable("user"));
 	}
 
 	private int countRowsInTable(String tableName) {
@@ -77,13 +77,13 @@ class NestedTestsWithSqlScriptsAndJUnitJupiterTests {
 		@BeforeTransaction
 		@AfterTransaction
 		void checkInitialDatabaseState() {
-			assertThat(countRowsInTable("user")).isEqualTo(0);
+			assertEquals(0, countRowsInTable("user"));
 		}
 
 		@Test
 		@Sql("/org/springframework/test/context/jdbc/data.sql")
 		void nestedSqlScripts() {
-			assertThat(countRowsInTable("user")).isEqualTo(1);
+			assertEquals(1, countRowsInTable("user"));
 		}
 
 		private int countRowsInTable(String tableName) {

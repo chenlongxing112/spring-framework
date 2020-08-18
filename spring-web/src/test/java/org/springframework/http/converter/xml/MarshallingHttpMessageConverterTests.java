@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@ package org.springframework.http.converter.xml;
 import javax.xml.transform.Result;
 import javax.xml.transform.stream.StreamSource;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.MediaType;
@@ -32,14 +32,8 @@ import org.springframework.oxm.MarshallingFailureException;
 import org.springframework.oxm.Unmarshaller;
 import org.springframework.oxm.UnmarshallingFailureException;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willDoNothing;
-import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * Tests for {@link MarshallingHttpMessageConverter}.
@@ -58,9 +52,9 @@ public class MarshallingHttpMessageConverterTests {
 		MarshallingHttpMessageConverter converter = new MarshallingHttpMessageConverter();
 		converter.setUnmarshaller(unmarshaller);
 
-		assertThat(converter.canRead(Boolean.class, MediaType.TEXT_PLAIN)).isFalse();
-		assertThat(converter.canRead(Integer.class, MediaType.TEXT_XML)).isFalse();
-		assertThat(converter.canRead(String.class, MediaType.TEXT_XML)).isTrue();
+		assertFalse(converter.canRead(Boolean.class, MediaType.TEXT_PLAIN));
+		assertFalse(converter.canRead(Integer.class, MediaType.TEXT_XML));
+		assertTrue(converter.canRead(String.class, MediaType.TEXT_XML));
 	}
 
 	@Test
@@ -73,9 +67,9 @@ public class MarshallingHttpMessageConverterTests {
 		MarshallingHttpMessageConverter converter = new MarshallingHttpMessageConverter();
 		converter.setMarshaller(marshaller);
 
-		assertThat(converter.canWrite(Boolean.class, MediaType.TEXT_PLAIN)).isFalse();
-		assertThat(converter.canWrite(Integer.class, MediaType.TEXT_XML)).isFalse();
-		assertThat(converter.canWrite(String.class, MediaType.TEXT_XML)).isTrue();
+		assertFalse(converter.canWrite(Boolean.class, MediaType.TEXT_PLAIN));
+		assertFalse(converter.canWrite(Integer.class, MediaType.TEXT_XML));
+		assertTrue(converter.canWrite(String.class, MediaType.TEXT_XML));
 	}
 
 	@Test
@@ -90,7 +84,7 @@ public class MarshallingHttpMessageConverterTests {
 		converter.setUnmarshaller(unmarshaller);
 
 		String result = (String) converter.read(Object.class, inputMessage);
-		assertThat(result).as("Invalid result").isEqualTo(body);
+		assertEquals("Invalid result", body, result);
 	}
 
 	@Test
@@ -102,9 +96,13 @@ public class MarshallingHttpMessageConverterTests {
 		given(unmarshaller.unmarshal(isA(StreamSource.class))).willReturn(Integer.valueOf(3));
 
 		MarshallingHttpMessageConverter converter = new MarshallingHttpMessageConverter(marshaller, unmarshaller);
-		assertThatExceptionOfType(HttpMessageNotReadableException.class).isThrownBy(() ->
-				converter.read(String.class, inputMessage))
-			.withCauseInstanceOf(TypeMismatchException.class);
+		try {
+			converter.read(String.class, inputMessage);
+			fail("Should have thrown HttpMessageNotReadableException");
+		}
+		catch (HttpMessageNotReadableException ex) {
+			assertTrue(ex.getCause() instanceof TypeMismatchException);
+		}
 	}
 
 	@Test
@@ -118,9 +116,13 @@ public class MarshallingHttpMessageConverterTests {
 		MarshallingHttpMessageConverter converter = new MarshallingHttpMessageConverter();
 		converter.setUnmarshaller(unmarshaller);
 
-		assertThatExceptionOfType(HttpMessageNotReadableException.class).isThrownBy(() ->
-				converter.read(Object.class, inputMessage))
-			.withCause(ex);
+		try {
+			converter.read(Object.class, inputMessage);
+			fail("HttpMessageNotReadableException should be thrown");
+		}
+		catch (HttpMessageNotReadableException e) {
+			assertTrue("Invalid exception hierarchy", e.getCause() == ex);
+		}
 	}
 
 	@Test
@@ -134,7 +136,8 @@ public class MarshallingHttpMessageConverterTests {
 		MarshallingHttpMessageConverter converter = new MarshallingHttpMessageConverter(marshaller);
 		converter.write(body, null, outputMessage);
 
-		assertThat(outputMessage.getHeaders().getContentType()).as("Invalid content-type").isEqualTo(new MediaType("application", "xml"));
+		assertEquals("Invalid content-type", new MediaType("application", "xml"),
+				outputMessage.getHeaders().getContentType());
 	}
 
 	@Test
@@ -146,15 +149,18 @@ public class MarshallingHttpMessageConverterTests {
 		Marshaller marshaller = mock(Marshaller.class);
 		willThrow(ex).given(marshaller).marshal(eq(body), isA(Result.class));
 
-		MarshallingHttpMessageConverter converter = new MarshallingHttpMessageConverter(marshaller);
-		assertThatExceptionOfType(HttpMessageNotWritableException.class).isThrownBy(() ->
-				converter.write(body, null, outputMessage))
-			.withCause(ex);
+		try {
+			MarshallingHttpMessageConverter converter = new MarshallingHttpMessageConverter(marshaller);
+			converter.write(body, null, outputMessage);
+			fail("HttpMessageNotWritableException should be thrown");
+		}
+		catch (HttpMessageNotWritableException e) {
+			assertTrue("Invalid exception hierarchy", e.getCause() == ex);
+		}
 	}
 
-	@Test
+	@Test(expected = UnsupportedOperationException.class)
 	public void supports() throws Exception {
-		assertThatExceptionOfType(UnsupportedOperationException.class).isThrownBy(() ->
-				new MarshallingHttpMessageConverter().supports(Object.class));
+		new MarshallingHttpMessageConverter().supports(Object.class);
 	}
 }

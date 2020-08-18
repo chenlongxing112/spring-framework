@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,15 @@
 
 package org.springframework.http.server.reactive;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import org.springframework.core.io.buffer.DataBuffer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for {@link AbstractListenerReadPublisher}.
@@ -39,7 +39,7 @@ public class ListenerReadPublisherTests {
 	private final TestSubscriber subscriber = new TestSubscriber();
 
 
-	@BeforeEach
+	@Before
 	public void setup() {
 		this.publisher.subscribe(this.subscriber);
 	}
@@ -51,7 +51,7 @@ public class ListenerReadPublisherTests {
 		this.subscriber.getSubscription().request(2);
 		this.publisher.onDataAvailable();
 
-		assertThat(this.publisher.getReadCalls()).isEqualTo(2);
+		assertEquals(2, this.publisher.getReadCalls());
 	}
 
 	@Test // SPR-17410
@@ -61,8 +61,8 @@ public class ListenerReadPublisherTests {
 		this.publisher.onDataAvailable();
 		this.publisher.onError(new IllegalStateException());
 
-		assertThat(this.publisher.getReadCalls()).isEqualTo(2);
-		assertThat(this.publisher.getDiscardCalls()).isEqualTo(1);
+		assertEquals(2, this.publisher.getReadCalls());
+		assertEquals(1, this.publisher.getDiscardCalls());
 	}
 
 	@Test // SPR-17410
@@ -72,8 +72,8 @@ public class ListenerReadPublisherTests {
 		this.subscriber.setCancelOnNext(true);
 		this.publisher.onDataAvailable();
 
-		assertThat(this.publisher.getReadCalls()).isEqualTo(1);
-		assertThat(this.publisher.getDiscardCalls()).isEqualTo(1);
+		assertEquals(1, this.publisher.getReadCalls());
+		assertEquals(1, this.publisher.getDiscardCalls());
 	}
 
 

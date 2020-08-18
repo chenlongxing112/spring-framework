@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -261,8 +261,8 @@ class DefaultWebTestClient implements WebTestClient {
 		}
 
 		@Override
-		public RequestHeadersSpec<?> bodyValue(Object body) {
-			this.bodySpec.bodyValue(body);
+		public RequestHeadersSpec<?> body(BodyInserter<?, ? super ClientHttpRequest> inserter) {
+			this.bodySpec.body(inserter);
 			return this;
 		}
 
@@ -273,33 +273,9 @@ class DefaultWebTestClient implements WebTestClient {
 		}
 
 		@Override
-		public <T, S extends Publisher<T>> RequestHeadersSpec<?> body(S publisher, ParameterizedTypeReference<T> elementTypeRef) {
-			this.bodySpec.body(publisher, elementTypeRef);
-			return this;
-		}
-
-		@Override
-		public RequestHeadersSpec<?> body(Object producer, Class<?> elementClass) {
-			this.bodySpec.body(producer, elementClass);
-			return this;
-		}
-
-		@Override
-		public RequestHeadersSpec<?> body(Object producer, ParameterizedTypeReference<?> elementTypeRef) {
-			this.bodySpec.body(producer, elementTypeRef);
-			return this;
-		}
-
-		@Override
-		public RequestHeadersSpec<?> body(BodyInserter<?, ? super ClientHttpRequest> inserter) {
-			this.bodySpec.body(inserter);
-			return this;
-		}
-
-		@Override
-		@Deprecated
 		public RequestHeadersSpec<?> syncBody(Object body) {
-			return bodyValue(body);
+			this.bodySpec.syncBody(body);
+			return this;
 		}
 
 		@Override
@@ -379,14 +355,14 @@ class DefaultWebTestClient implements WebTestClient {
 		}
 
 		@Override
-		public <T> FluxExchangeResult<T> returnResult(Class<T> elementClass) {
-			Flux<T> body = this.response.bodyToFlux(elementClass);
+		public <T> FluxExchangeResult<T> returnResult(Class<T> elementType) {
+			Flux<T> body = this.response.bodyToFlux(elementType);
 			return new FluxExchangeResult<>(this.exchangeResult, body);
 		}
 
 		@Override
-		public <T> FluxExchangeResult<T> returnResult(ParameterizedTypeReference<T> elementTypeRef) {
-			Flux<T> body = this.response.bodyToFlux(elementTypeRef);
+		public <T> FluxExchangeResult<T> returnResult(ParameterizedTypeReference<T> elementType) {
+			Flux<T> body = this.response.bodyToFlux(elementType);
 			return new FluxExchangeResult<>(this.exchangeResult, body);
 		}
 	}

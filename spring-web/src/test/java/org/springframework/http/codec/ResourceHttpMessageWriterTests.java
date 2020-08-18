@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,9 @@ package org.springframework.http.codec;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -30,14 +29,18 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpRequest;
+import org.springframework.mock.http.server.reactive.test.MockServerHttpResponse;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest;
-import org.springframework.web.testfixture.http.server.reactive.MockServerHttpResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertThat;
 import static org.springframework.http.MediaType.TEXT_PLAIN;
-import static org.springframework.web.testfixture.http.server.reactive.MockServerHttpRequest.get;
+import static org.springframework.mock.http.server.reactive.test.MockServerHttpRequest.get;
 
 /**
  * Unit tests for {@link ResourceHttpMessageWriter}.
@@ -59,10 +62,9 @@ public class ResourceHttpMessageWriterTests {
 
 
 	@Test
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void getWritableMediaTypes() throws Exception {
-		assertThat((List) this.writer.getWritableMediaTypes())
-				.containsExactlyInAnyOrder(MimeTypeUtils.APPLICATION_OCTET_STREAM, MimeTypeUtils.ALL);
+		assertThat(this.writer.getWritableMediaTypes(),
+				containsInAnyOrder(MimeTypeUtils.APPLICATION_OCTET_STREAM, MimeTypeUtils.ALL));
 	}
 
 	@Test
@@ -70,9 +72,9 @@ public class ResourceHttpMessageWriterTests {
 
 		testWrite(get("/").build());
 
-		assertThat(this.response.getHeaders().getContentType()).isEqualTo(TEXT_PLAIN);
-		assertThat(this.response.getHeaders().getContentLength()).isEqualTo(39L);
-		assertThat(this.response.getHeaders().getFirst(HttpHeaders.ACCEPT_RANGES)).isEqualTo("bytes");
+		assertThat(this.response.getHeaders().getContentType(), is(TEXT_PLAIN));
+		assertThat(this.response.getHeaders().getContentLength(), is(39L));
+		assertThat(this.response.getHeaders().getFirst(HttpHeaders.ACCEPT_RANGES), is("bytes"));
 
 		String content = "Spring Framework test resource content.";
 		StepVerifier.create(this.response.getBodyAsString()).expectNext(content).expectComplete().verify();
@@ -83,9 +85,9 @@ public class ResourceHttpMessageWriterTests {
 
 		testWrite(get("/").range(of(0, 5)).build());
 
-		assertThat(this.response.getHeaders().getContentType()).isEqualTo(TEXT_PLAIN);
-		assertThat(this.response.getHeaders().getFirst(HttpHeaders.CONTENT_RANGE)).isEqualTo("bytes 0-5/39");
-		assertThat(this.response.getHeaders().getContentLength()).isEqualTo(6L);
+		assertThat(this.response.getHeaders().getContentType(), is(TEXT_PLAIN));
+		assertThat(this.response.getHeaders().getFirst(HttpHeaders.CONTENT_RANGE), is("bytes 0-5/39"));
+		assertThat(this.response.getHeaders().getContentLength(), is(6L));
 
 		StepVerifier.create(this.response.getBodyAsString()).expectNext("Spring").expectComplete().verify();
 	}
@@ -99,7 +101,7 @@ public class ResourceHttpMessageWriterTests {
 		String contentType = headers.getContentType().toString();
 		String boundary = contentType.substring(30);
 
-		assertThat(contentType).startsWith("multipart/byteranges;boundary=");
+		assertThat(contentType, startsWith("multipart/byteranges;boundary="));
 
 		StepVerifier.create(this.response.getBodyAsString())
 				.consumeNextWith(content -> {
@@ -123,7 +125,7 @@ public class ResourceHttpMessageWriterTests {
 							"resource content.",
 							"--" + boundary + "--"
 					};
-					assertThat(actualRanges).isEqualTo(expected);
+					assertArrayEquals(expected, actualRanges);
 				})
 				.expectComplete()
 				.verify();
@@ -134,8 +136,8 @@ public class ResourceHttpMessageWriterTests {
 
 		testWrite(get("/").header(HttpHeaders.RANGE, "invalid").build());
 
-		assertThat(this.response.getHeaders().getFirst(HttpHeaders.ACCEPT_RANGES)).isEqualTo("bytes");
-		assertThat(this.response.getStatusCode()).isEqualTo(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+		assertThat(this.response.getHeaders().getFirst(HttpHeaders.ACCEPT_RANGES), is("bytes"));
+		assertThat(this.response.getStatusCode(), is(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE));
 	}
 
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.jdbc.core.metadata;
 
 import java.util.Arrays;
 import java.util.List;
-
 import javax.sql.DataSource;
 
 import org.apache.commons.logging.Log;
@@ -42,9 +41,8 @@ public final class CallMetaDataProviderFactory {
 	public static final List<String> supportedDatabaseProductsForProcedures = Arrays.asList(
 			"Apache Derby",
 			"DB2",
-			"Informix Dynamic Server",
-			"Microsoft SQL Server",
 			"MySQL",
+			"Microsoft SQL Server",
 			"Oracle",
 			"PostgreSQL",
 			"Sybase"
@@ -52,8 +50,8 @@ public final class CallMetaDataProviderFactory {
 
 	/** List of supported database products for function calls. */
 	public static final List<String> supportedDatabaseProductsForFunctions = Arrays.asList(
-			"Microsoft SQL Server",
 			"MySQL",
+			"Microsoft SQL Server",
 			"Oracle",
 			"PostgreSQL"
 		);

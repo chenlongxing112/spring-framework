@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -85,9 +85,7 @@ public class DefaultJmsActivationSpecFactory extends StandardJmsActivationSpecFa
 				return adapter.getClass().getClassLoader().loadClass(specClassName);
 			}
 			catch (ClassNotFoundException ex) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("No default <Provider>ActivationSpec class found: " + specClassName);
-				}
+				logger.debug("No default <Provider>ActivationSpec class found: " + specClassName);
 			}
 		}
 
@@ -100,9 +98,7 @@ public class DefaultJmsActivationSpecFactory extends StandardJmsActivationSpecFa
 				return adapter.getClass().getClassLoader().loadClass(specClassName);
 			}
 			catch (ClassNotFoundException ex) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("No default <Provider>ActivationSpecImpl class found: " + specClassName);
-				}
+				logger.debug("No default <Provider>ActivationSpecImpl class found: " + specClassName);
 			}
 		}
 
@@ -113,9 +109,7 @@ public class DefaultJmsActivationSpecFactory extends StandardJmsActivationSpecFa
 			return adapter.getClass().getClassLoader().loadClass(specClassName);
 		}
 		catch (ClassNotFoundException ex) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("No default ActivationSpecImpl class found in provider package: " + specClassName);
-			}
+			logger.debug("No default ActivationSpecImpl class found in provider package: " + specClassName);
 		}
 
 		// ActivationSpecImpl class in "inbound" subpackage (WebSphere MQ 6.0.2.1)
@@ -124,9 +118,7 @@ public class DefaultJmsActivationSpecFactory extends StandardJmsActivationSpecFa
 			return adapter.getClass().getClassLoader().loadClass(specClassName);
 		}
 		catch (ClassNotFoundException ex) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("No default ActivationSpecImpl class found in inbound subpackage: " + specClassName);
-			}
+			logger.debug("No default ActivationSpecImpl class found in inbound subpackage: " + specClassName);
 		}
 
 		throw new IllegalStateException("No ActivationSpec class defined - " +

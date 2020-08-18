@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.InvalidPathException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
@@ -30,7 +29,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
@@ -295,10 +293,8 @@ public class MockServletContext implements ServletContext {
 	@Nullable
 	public Set<String> getResourcePaths(String path) {
 		String actualPath = (path.endsWith("/") ? path : path + "/");
-		String resourceLocation = getResourceLocation(actualPath);
-		Resource resource = null;
+		Resource resource = this.resourceLoader.getResource(getResourceLocation(actualPath));
 		try {
-			resource = this.resourceLoader.getResource(resourceLocation);
 			File file = resource.getFile();
 			String[] fileList = file.list();
 			if (ObjectUtils.isEmpty(fileList)) {
@@ -314,10 +310,9 @@ public class MockServletContext implements ServletContext {
 			}
 			return resourcePaths;
 		}
-		catch (InvalidPathException | IOException ex ) {
+		catch (IOException ex) {
 			if (logger.isWarnEnabled()) {
-				logger.warn("Could not get resource paths for " +
-						(resource != null ? resource : resourceLocation), ex);
+				logger.warn("Could not get resource paths for " + resource, ex);
 			}
 			return null;
 		}
@@ -326,22 +321,19 @@ public class MockServletContext implements ServletContext {
 	@Override
 	@Nullable
 	public URL getResource(String path) throws MalformedURLException {
-		String resourceLocation = getResourceLocation(path);
-		Resource resource = null;
+		Resource resource = this.resourceLoader.getResource(getResourceLocation(path));
+		if (!resource.exists()) {
+			return null;
+		}
 		try {
-			resource = this.resourceLoader.getResource(resourceLocation);
-			if (!resource.exists()) {
-				return null;
-			}
 			return resource.getURL();
 		}
 		catch (MalformedURLException ex) {
 			throw ex;
 		}
-		catch (InvalidPathException | IOException ex) {
+		catch (IOException ex) {
 			if (logger.isWarnEnabled()) {
-				logger.warn("Could not get URL for resource " +
-						(resource != null ? resource : resourceLocation), ex);
+				logger.warn("Could not get URL for " + resource, ex);
 			}
 			return null;
 		}
@@ -350,19 +342,16 @@ public class MockServletContext implements ServletContext {
 	@Override
 	@Nullable
 	public InputStream getResourceAsStream(String path) {
-		String resourceLocation = getResourceLocation(path);
-		Resource resource = null;
+		Resource resource = this.resourceLoader.getResource(getResourceLocation(path));
+		if (!resource.exists()) {
+			return null;
+		}
 		try {
-			resource = this.resourceLoader.getResource(resourceLocation);
-			if (!resource.exists()) {
-				return null;
-			}
 			return resource.getInputStream();
 		}
-		catch (InvalidPathException | IOException ex) {
+		catch (IOException ex) {
 			if (logger.isWarnEnabled()) {
-				logger.warn("Could not open InputStream for resource " +
-						(resource != null ? resource : resourceLocation), ex);
+				logger.warn("Could not open InputStream for " + resource, ex);
 			}
 			return null;
 		}
@@ -469,16 +458,13 @@ public class MockServletContext implements ServletContext {
 	@Override
 	@Nullable
 	public String getRealPath(String path) {
-		String resourceLocation = getResourceLocation(path);
-		Resource resource = null;
+		Resource resource = this.resourceLoader.getResource(getResourceLocation(path));
 		try {
-			resource = this.resourceLoader.getResource(resourceLocation);
 			return resource.getFile().getAbsolutePath();
 		}
-		catch (InvalidPathException | IOException ex) {
+		catch (IOException ex) {
 			if (logger.isWarnEnabled()) {
-				logger.warn("Could not determine real path of resource " +
-						(resource != null ? resource : resourceLocation), ex);
+				logger.warn("Could not determine real path of resource " + resource, ex);
 			}
 			return null;
 		}

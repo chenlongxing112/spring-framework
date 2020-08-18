@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,18 +19,14 @@ package org.springframework.web.servlet.mvc.condition;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.lang.Nullable;
-import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.cors.CorsUtils;
 
@@ -44,16 +40,8 @@ import org.springframework.web.cors.CorsUtils;
  */
 public final class RequestMethodsRequestCondition extends AbstractRequestCondition<RequestMethodsRequestCondition> {
 
-	/** Per HTTP method cache to return ready instances from getMatchingCondition. */
-	private static final Map<String, RequestMethodsRequestCondition> requestMethodConditionCache;
-
-	static {
-		requestMethodConditionCache = new HashMap<>(RequestMethod.values().length);
-		for (RequestMethod method : RequestMethod.values()) {
-			requestMethodConditionCache.put(method.name(), new RequestMethodsRequestCondition(method));
-		}
-	}
-
+	private static final RequestMethodsRequestCondition GET_CONDITION =
+			new RequestMethodsRequestCondition(RequestMethod.GET);
 
 	private final Set<RequestMethod> methods;
 
@@ -64,15 +52,11 @@ public final class RequestMethodsRequestCondition extends AbstractRequestConditi
 	 * if, 0 the condition will match to every request
 	 */
 	public RequestMethodsRequestCondition(RequestMethod... requestMethods) {
-		this.methods = (ObjectUtils.isEmpty(requestMethods) ?
-				Collections.emptySet() : new LinkedHashSet<>(Arrays.asList(requestMethods)));
+		this(Arrays.asList(requestMethods));
 	}
 
-	/**
-	 * Private constructor for internal use when combining conditions.
-	 */
-	private RequestMethodsRequestCondition(Set<RequestMethod> methods) {
-		this.methods = methods;
+	private RequestMethodsRequestCondition(Collection<RequestMethod> requestMethods) {
+		this.methods = Collections.unmodifiableSet(new LinkedHashSet<>(requestMethods));
 	}
 
 
@@ -99,15 +83,6 @@ public final class RequestMethodsRequestCondition extends AbstractRequestConditi
 	 */
 	@Override
 	public RequestMethodsRequestCondition combine(RequestMethodsRequestCondition other) {
-		if (isEmpty() && other.isEmpty()) {
-			return this;
-		}
-		else if (other.isEmpty()) {
-			return this;
-		}
-		else if (isEmpty()) {
-			return other;
-		}
 		Set<RequestMethod> set = new LinkedHashSet<>(this.methods);
 		set.addAll(other.methods);
 		return new RequestMethodsRequestCondition(set);
@@ -133,7 +108,7 @@ public final class RequestMethodsRequestCondition extends AbstractRequestConditi
 			if (RequestMethod.OPTIONS.name().equals(request.getMethod()) &&
 					!DispatcherType.ERROR.equals(request.getDispatcherType())) {
 
-				return null; // We handle OPTIONS transparently, so don't match if no explicit declarations
+				return null; // No implicit match for OPTIONS (we handle it)
 			}
 			return this;
 		}
@@ -157,18 +132,16 @@ public final class RequestMethodsRequestCondition extends AbstractRequestConditi
 
 	@Nullable
 	private RequestMethodsRequestCondition matchRequestMethod(String httpMethodValue) {
-		RequestMethod requestMethod;
-		try {
-			requestMethod = RequestMethod.valueOf(httpMethodValue);
-			if (getMethods().contains(requestMethod)) {
-				return requestMethodConditionCache.get(httpMethodValue);
+		HttpMethod httpMethod = HttpMethod.resolve(httpMethodValue);
+		if (httpMethod != null) {
+			for (RequestMethod method : getMethods()) {
+				if (httpMethod.matches(method.name())) {
+					return new RequestMethodsRequestCondition(method);
+				}
 			}
-			if (requestMethod.equals(RequestMethod.HEAD) && getMethods().contains(RequestMethod.GET)) {
-				return requestMethodConditionCache.get(HttpMethod.GET.name());
+			if (httpMethod == HttpMethod.HEAD && getMethods().contains(RequestMethod.GET)) {
+				return GET_CONDITION;
 			}
-		}
-		catch (IllegalArgumentException ex) {
-			// Custom request method
 		}
 		return null;
 	}
