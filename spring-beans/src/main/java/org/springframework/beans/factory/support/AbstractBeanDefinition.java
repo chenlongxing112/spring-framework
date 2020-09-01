@@ -157,7 +157,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	private String[] dependsOn;
 
 	private boolean autowireCandidate = true;
-
+	// byType有多个beanName时, 取primary为true的(只能一个设为true)
 	private boolean primary = false;
 
 	private final Map<String, AutowireCandidateQualifier> qualifiers = new LinkedHashMap<>();
@@ -1151,6 +1151,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 		}
 		else if (count == 1) {
 			// Mark override as not overloaded, to avoid the overhead of arg type checking.
+			// 将override标记为未重载，以避免arg类型检查的开销。
 			mo.setOverloaded(false);
 		}
 	}

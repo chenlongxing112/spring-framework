@@ -561,8 +561,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// Invoke factory processors registered as beans in the context.
 				// 调用后置处理器, 此方法太重要了, 调用过程参考下图
 				// Invoke factory processors registered as beans in the context.
-				// 1.通过beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class)
-				//   拿到ConfigurationClassPostProcessor
+				// 1.通过beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class)拿到ConfigurationClassPostProcessor
 				// 2.通过ConfigurationClassPostProcessor.postProcessBeanDefinitionRegistry，注册所有注解配置的bean
 				// 注册的顺序： @ComponentScan>实现ImportSelector>方法bean>@ImportResource("spring.xml")
 				//  > 实现 ImportBeanDefinitionRegistrar  (相对的顺序，都在同一个配置类上配置)
@@ -570,6 +569,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				//  增强@Configuration修饰的配置类  AppConfig--->AppConfig$$EnhancerBySpringCGLIB
 				// (可以处理内部方法bean之间的调用，防止多例)
 				//  添加了后置处理器 ConfigurationClassPostProcessor.ImportAwareBeanPostProcessor (new)
+				// 自己写的业务bean, 在这里完成注册
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
@@ -898,7 +898,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Finish the initialization of this context's bean factory,
 	 * initializing all remaining singleton beans.
 	 */
-	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
+	protected void  finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
 		// Initialize conversion service for this context.
 		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
 				beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
