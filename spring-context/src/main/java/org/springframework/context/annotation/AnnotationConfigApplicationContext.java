@@ -64,9 +64,9 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * <p>
 	 * 初始化注解读取器和Classpath扫描器, 用来读取当前应用程序提供给spring认识的注解和扫描配置类置顶的包
 	 */
-	public AnnotationConfigApplicationContext() {
+	public  AnnotationConfigApplicationContext() {
+		// 初始化注解读取器在父类构造方法中初始化DefaultListableBeanFactory,
 		super();
-		// super(); 初始化注解读取器在父类构造方法中初始化DefaultListableBeanFactory,
 		// 并且将spring内置bean(添加的内置bean是如下的1,3,4,5,8,9)封装成RootBeanDefinition对象
 		// 添加到bean工厂的beanDefinitionMap中去以及将beanName添加至beanDefinitionNames(list)中去
 		// 注解读取器
@@ -78,18 +78,12 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 		// 注册spring自带bean5个
 		this.reader = new AnnotatedBeanDefinitionReader(this);
 		// classPath扫描器
-		// 并没啥用, 虽然ClassPathBeanDefinitionScanner
-		// 类的作用是扫描@ComponentScan注解提供的包路径。
-		// 但实际上它并没有做扫描工作, spring内部扫描路径
-		// 的时候, 是在内部新new了一个ClassPathBeanDefinitionScanner,
-		// 这个属性目前没啥用, 当然我们可以获取这个对象
-		// 调用它的scan方法, 但是没有必要! 因为
-		// @ComponentScan可以支持多个扫描路径。
+		// 并没啥用, 虽然ClassPathBeanDefinitionScanner类的作用是扫描@ComponentScan注解提供的包路径。
+		// 但实际上它并没有做扫描工作, spring内部扫描路径的时候, 是在内部新new了一个ClassPathBeanDefinitionScanner,
+		// 这个属性目前没啥用, 当然我们可以获取这个对象调用它的scan方法, 但是没有必要! 因为@ComponentScan可以支持多个扫描路径。
 		// 那这个类有什么用呢？跟刚刚的解释一样,
-		// 我们可以自己new一个ClassPathBeanDefinitionScanner对象或者扩展他,
-		// 利用它的扫描功能(因为它是使用ASM来扫描的)
-		// Mybatis源码中就是自己扩展了
-		// ClassPathBeanDefinitionScanner类
+		// 我们可以自己new一个ClassPathBeanDefinitionScanner对象或者扩展他,利用它的扫描功能(因为它是使用ASM来扫描的)
+		// Mybatis源码中就是自己扩展了ClassPathBeanDefinitionScanner类
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}
 

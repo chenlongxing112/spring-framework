@@ -1430,8 +1430,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	}
 
 	/**
-	 * Populate the bean instance in the given BeanWrapper with the property values
-	 * from the bean definition.
+	 * Populate the bean instance in the given BeanWrapper with the property values from the bean definition.
 	 *
 	 * @param beanName the name of the bean
 	 * @param mbd      the bean definition for the bean
