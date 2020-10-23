@@ -39,24 +39,18 @@ import org.springframework.web.context.ConfigurableWebEnvironment;
  * documentation for details.
  *
  * @author Chris Beams
- * @see StandardEnvironment
  * @since 3.1
+ * @see StandardEnvironment
  */
 public class StandardServletEnvironment extends StandardEnvironment implements ConfigurableWebEnvironment {
 
-	/**
-	 * Servlet context init parameters property source name: {@value}.
-	 */
+	/** Servlet context init parameters property source name: {@value}. */
 	public static final String SERVLET_CONTEXT_PROPERTY_SOURCE_NAME = "servletContextInitParams";
 
-	/**
-	 * Servlet config init parameters property source name: {@value}.
-	 */
+	/** Servlet config init parameters property source name: {@value}. */
 	public static final String SERVLET_CONFIG_PROPERTY_SOURCE_NAME = "servletConfigInitParams";
 
-	/**
-	 * JNDI property source name: {@value}.
-	 */
+	/** JNDI property source name: {@value}. */
 	public static final String JNDI_PROPERTY_SOURCE_NAME = "jndiProperties";
 
 
@@ -78,7 +72,6 @@ public class StandardServletEnvironment extends StandardEnvironment implements C
 	 * {@link StubPropertySource stubs} at this stage, and will be
 	 * {@linkplain #initPropertySources(ServletContext, ServletConfig) fully initialized}
 	 * once the actual {@link ServletContext} object becomes available.
-	 *
 	 * @see StandardEnvironment#customizePropertySources
 	 * @see org.springframework.core.env.AbstractEnvironment#customizePropertySources
 	 * @see ServletConfigPropertySource
@@ -97,15 +90,8 @@ public class StandardServletEnvironment extends StandardEnvironment implements C
 		super.customizePropertySources(propertySources);
 	}
 
-	/**
-	 * 用真正的servlet context/config 属性源来替换作为占位符存在的 stub 属性源
-	 *
-	 * @param servletContext the {@link ServletContext} (may not be {@code null})
-	 * @param servletConfig  the {@link ServletConfig} ({@code null} if not available)
-	 */
 	@Override
 	public void initPropertySources(@Nullable ServletContext servletContext, @Nullable ServletConfig servletConfig) {
-		// 工具类来初始化属性源，进入这个方法
 		WebApplicationContextUtils.initServletPropertySources(getPropertySources(), servletContext, servletConfig);
 	}
 

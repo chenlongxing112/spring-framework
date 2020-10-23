@@ -117,6 +117,7 @@ class ConfigurationClassBeanDefinitionReader {
 	public void loadBeanDefinitions(Set<ConfigurationClass> configurationModel) {
 		TrackedConditionEvaluator trackedConditionEvaluator = new TrackedConditionEvaluator();
 		for (ConfigurationClass configClass : configurationModel) {
+			// 循环调用loadBeanDefinitionsForConfigurationClass方法
 			loadBeanDefinitionsForConfigurationClass(configClass, trackedConditionEvaluator);
 		}
 	}
@@ -136,15 +137,18 @@ class ConfigurationClassBeanDefinitionReader {
 			this.importRegistry.removeImportingClass(configClass.getMetadata().getClassName());
 			return;
 		}
-
+		// 如果一个bean是通过@Import(ImportSelector)的方式添加到容器中的，那么此时configClass.isImported()返回的是true
+		// 而且configClass的importedBy属性里面存储的是ConfigurationClass就是将bean导入的类
 		if (configClass.isImported()) {
 			registerBeanDefinitionForImportedConfigurationClass(configClass);
 		}
+		// 判断当前的bean中是否含有@Bean注解的方法，如果有，需要把这些方法产生的bean放入到BeanDefinitionMap当中
 		for (BeanMethod beanMethod : configClass.getBeanMethods()) {
 			loadBeanDefinitionsForBeanMethod(beanMethod);
 		}
 
 		loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
+		// 如果bean上存在@Import注解，且import的是一个实现了ImportBeanDefinitionRegistrar接口,则执行ImportBeanDefinitionRegistrar的registerBeanDefinitions()方法
 		loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
 	}
 
@@ -211,7 +215,7 @@ class ConfigurationClassBeanDefinitionReader {
 			return;
 		}
 
-		ConfigurationClassBeanDefinition beanDef = new ConfigurationClassBeanDefinition(configClass, metadata);
+		ConfigurationClassBeanDefinition beanDef = new ConfigurationClassBeanDefinition(configClass, metadata, beanName);
 		beanDef.setSource(this.sourceExtractor.extractSource(metadata, configClass.getResource()));
 
 		if (metadata.isStatic()) {
@@ -276,7 +280,7 @@ class ConfigurationClassBeanDefinitionReader {
 					new BeanDefinitionHolder(beanDef, beanName), this.registry,
 					proxyMode == ScopedProxyMode.TARGET_CLASS);
 			beanDefToRegister = new ConfigurationClassBeanDefinition(
-					(RootBeanDefinition) proxyDef.getBeanDefinition(), configClass, metadata);
+					(RootBeanDefinition) proxyDef.getBeanDefinition(), configClass, metadata, beanName);
 		}
 
 		if (logger.isTraceEnabled()) {
@@ -398,24 +402,31 @@ class ConfigurationClassBeanDefinitionReader {
 
 		private final MethodMetadata factoryMethodMetadata;
 
-		public ConfigurationClassBeanDefinition(ConfigurationClass configClass, MethodMetadata beanMethodMetadata) {
+		private final String derivedBeanName;
+
+		public ConfigurationClassBeanDefinition(
+				ConfigurationClass configClass, MethodMetadata beanMethodMetadata, String derivedBeanName) {
+
 			this.annotationMetadata = configClass.getMetadata();
 			this.factoryMethodMetadata = beanMethodMetadata;
+			this.derivedBeanName = derivedBeanName;
 			setResource(configClass.getResource());
 			setLenientConstructorResolution(false);
 		}
 
-		public ConfigurationClassBeanDefinition(
-				RootBeanDefinition original, ConfigurationClass configClass, MethodMetadata beanMethodMetadata) {
+		public ConfigurationClassBeanDefinition(RootBeanDefinition original,
+				ConfigurationClass configClass, MethodMetadata beanMethodMetadata, String derivedBeanName) {
 			super(original);
 			this.annotationMetadata = configClass.getMetadata();
 			this.factoryMethodMetadata = beanMethodMetadata;
+			this.derivedBeanName = derivedBeanName;
 		}
 
 		private ConfigurationClassBeanDefinition(ConfigurationClassBeanDefinition original) {
 			super(original);
 			this.annotationMetadata = original.annotationMetadata;
 			this.factoryMethodMetadata = original.factoryMethodMetadata;
+			this.derivedBeanName = original.derivedBeanName;
 		}
 
 		@Override
@@ -431,7 +442,8 @@ class ConfigurationClassBeanDefinitionReader {
 
 		@Override
 		public boolean isFactoryMethod(Method candidate) {
-			return (super.isFactoryMethod(candidate) && BeanAnnotationHelper.isBeanAnnotated(candidate));
+			return (super.isFactoryMethod(candidate) && BeanAnnotationHelper.isBeanAnnotated(candidate) &&
+					BeanAnnotationHelper.determineBeanNameFor(candidate).equals(this.derivedBeanName));
 		}
 
 		@Override

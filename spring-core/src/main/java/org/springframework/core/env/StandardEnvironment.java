@@ -16,8 +16,6 @@
 
 package org.springframework.core.env;
 
-import java.util.Map;
-
 /**
  * {@link Environment} implementation suitable for use in 'standard' (i.e. non-web)
  * applications.
@@ -29,7 +27,7 @@ import java.util.Map;
  * <li>{@linkplain AbstractEnvironment#getSystemProperties() system properties}
  * <li>{@linkplain AbstractEnvironment#getSystemEnvironment() system environment variables}
  * </ul>
- * <p>
+ *
  * That is, if the key "xyz" is present both in the JVM system properties as well as in
  * the set of environment variables for the current process, the value of key "xyz" from
  * system properties will return from a call to {@code environment.getProperty("xyz")}.
@@ -48,27 +46,19 @@ import java.util.Map;
  * variable names.
  *
  * @author Chris Beams
+ * @since 3.1
  * @see ConfigurableEnvironment
  * @see SystemEnvironmentPropertySource
  * @see org.springframework.web.context.support.StandardServletEnvironment
- * @since 3.1
  */
 public class StandardEnvironment extends AbstractEnvironment {
 
-	/**
-	 * System environment property source name: {@value}.
-	 */
+	/** System environment property source name: {@value}. */
 	public static final String SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME = "systemEnvironment";
 
-	/**
-	 * JVM system properties property source name: {@value}.
-	 */
+	/** JVM system properties property source name: {@value}. */
 	public static final String SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME = "systemProperties";
 
-	public StandardEnvironment() {
-		// 我加的
-		super();
-	}
 
 	/**
 	 * Customize the set of property sources with those appropriate for any standard
@@ -79,20 +69,16 @@ public class StandardEnvironment extends AbstractEnvironment {
 	 * </ul>
 	 * <p>Properties present in {@value #SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME} will
 	 * take precedence over those in {@value #SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME}.
-	 *
 	 * @see AbstractEnvironment#customizePropertySources(MutablePropertySources)
 	 * @see #getSystemProperties()
 	 * @see #getSystemEnvironment()
 	 */
 	@Override
 	protected void customizePropertySources(MutablePropertySources propertySources) {
-		Map<String, Object> systemProperties = getSystemProperties();
-		PropertiesPropertySource propertySource = new PropertiesPropertySource(SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME, systemProperties);
-		propertySources.addLast(propertySource);
-
-		Map<String, Object> systemEnvironment = getSystemEnvironment();
-		SystemEnvironmentPropertySource environmentPropertySource = new SystemEnvironmentPropertySource(SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, systemEnvironment);
-		propertySources.addLast(environmentPropertySource);
+		propertySources.addLast(
+				new PropertiesPropertySource(SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME, getSystemProperties()));
+		propertySources.addLast(
+				new SystemEnvironmentPropertySource(SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, getSystemEnvironment()));
 	}
 
 }
