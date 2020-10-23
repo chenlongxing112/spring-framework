@@ -168,6 +168,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	/**
+	 * 创建上下文的唯一标识
+	 * <p>
 	 * Unique id for this context, if any.
 	 */
 	private String id = ObjectUtils.identityToString(this);
@@ -210,6 +212,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	private final AtomicBoolean closed = new AtomicBoolean();
 
 	/**
+	 * 刷新和销毁不能同时运行, 用这个监视器当作锁
 	 * Synchronization monitor for the "refresh" and "destroy".
 	 */
 	private final Object startupShutdownMonitor = new Object();
@@ -265,6 +268,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Create a new AbstractApplicationContext with no parent.
 	 */
 	public AbstractApplicationContext() {
+		// 创建资源模式处理器
 		this.resourcePatternResolver = getResourcePatternResolver();
 	}
 
@@ -502,6 +506,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see org.springframework.core.io.support.PathMatchingResourcePatternResolver
 	 */
 	protected ResourcePatternResolver getResourcePatternResolver() {
+		// 创建一个资源模式解析器 ( 其实就是用来解析xml配置文件)
 		return new PathMatchingResourcePatternResolver(this);
 	}
 
@@ -573,7 +578,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	public void refresh() throws BeansException, IllegalStateException {
 		synchronized (this.startupShutdownMonitor) {
 			// Prepare this context for refreshing.
-			// 准备环境, 读取配置文件
+			/*
+			 * 准备环境, 做容器刷新前准备工作
+			 * 1. 设置容器的启动时间
+			 * 2. 设置活跃状态为true
+			 * 3. 设置关闭状态为false
+			 * 4. 获取Environment对象, 并加载当前系统的属性值到Environment对象中
+			 * 5. 准备监听器和事件的集合对象, 默认为空的集合
+			 */
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
@@ -582,6 +594,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			// 1.调用org.springframework.context.support.GenericApplicationContext.refreshBeanFactory，
 			// 只是指定了SerializationId
 			// 2.直接返回beanFactory(不用创建，容器中已存在)
+
 			//  对于ClassPathXmlApplicationContext，作用：
 			// 1.调用AbstractRefreshableApplicationContext.refreshBeanFactory
 			// 2.如果存在beanFactory，先销毁单例bean，关闭beanFactory，再创建beanFactory
@@ -589,12 +602,15 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			// 4.将beanFactory赋值给容器，返回beanFactory
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
-			// Prepare the bean factory for use in this context.
-			// 这个方法执行完成, spring的bean单例容器中会存在三个bean,
-			// 分别是systemEnvironment, environment, systemProperties
-			// Prepare the bean factory for use in this context.
-			// 准备bean工厂： 指定beanFactory的类加载器， 添加后置处理器，注册缺省环境bean等
-			// beanFactory添加了2个后置处理器 ApplicationContextAwareProcessor, ApplicationListenerDetector (new )
+			/*
+			 * Prepare the bean factory for use in this context.
+			 *
+			 * 初始化beanFactory, 为其设置一些默认值, 完成一些初始化操作
+			 * 1. 这个方法执行完成, spring的bean单例容器中会存在三个bean,
+			 * 	  分别是systemEnvironment, environment, systemProperties
+			 * 2. 准备bean工厂： 指定beanFactory的类加载器， 添加后置处理器，注册缺省环境bean等
+			 * 3. beanFactory添加了2个后置处理器 ApplicationContextAwareProcessor, ApplicationListenerDetector (new )
+			 */
 			prepareBeanFactory(beanFactory);
 
 			try {
@@ -677,7 +693,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void prepareRefresh() {
 		// Switch to active.
+		// 记录容器开始初始化时间
 		this.startupDate = System.currentTimeMillis();
+		// 切换容器为初始化状态
+		// TODO 为什么设置两个状态位
 		this.closed.set(false);
 		this.active.set(true);
 
@@ -690,14 +709,21 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Initialize any placeholder property sources in the context environment.
+		// 初始化占位符资源，该方法为空, 留给子类覆盖
+		// 1.在 context 的 environment 中初始化占位符属性源
 		initPropertySources();
 
 		// Validate that all properties marked as required are resolvable:
 		// see ConfigurablePropertyResolver#setRequiredProperties
+		// 创建并获取环境对象, 验证需要的属性文件是否都已经放入环境中
+		// 验证所有被标记为必要的属性是否可解析，如果有遗失属性则不能解析并抛出异常，可以参考setRequiredProperties方法
 		getEnvironment().validateRequiredProperties();
 
+		// 创建早期时间监听器容集合，保存早期监听器，也就是在之前已经初始化的监听器。
+		// TODO 早期监听器 做什么的, 什么时候用的
 		// Store pre-refresh ApplicationListeners...
 		if (this.earlyApplicationListeners == null) {
+			// applicationListeners 在springboot 框架中有值
 			this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
 		} else {
 			// Reset local application listeners to pre-refresh state.
@@ -707,6 +733,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 		// Allow for the collection of early ApplicationEvents,
 		// to be published once the multicaster is available...
+		// 一旦有可利用的广播，允许早期的ApplicationEvents集合被发布
 		this.earlyApplicationEvents = new LinkedHashSet<>();
 	}
 
@@ -718,6 +745,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void initPropertySources() {
 		// For subclasses: do nothing by default.
+		// 具体业务流程由其子类覆盖完成，
+		// 也就是在 AbstractRefreshableWebApplicationContext 类中进行，
+		// AbstractRefreshableWebApplicationContext 是XmlWebApplicationContext的父类
 	}
 
 	/**
@@ -728,7 +758,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see #getBeanFactory()
 	 */
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
+		// 初始化BeanFactory, 并进行xml文件读取, 并将得到的BeanFactory记录在当前实体的属性中
+		// 刷新的意思是, 在当前容器启动之前, 有可能已经启动了启动了另外的一个beanfactory
 		refreshBeanFactory();
+		// 返回当前实体的BeanFactory属性
 		return getBeanFactory();
 	}
 
@@ -740,12 +773,17 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 		// Tell the internal bean factory to use the context's class loader etc.
+		// 类加载器
 		beanFactory.setBeanClassLoader(getClassLoader());
+		// SpringEL解析器
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
 		// Configure the bean factory with context callbacks.
+		// 添加一个bean后置处理器
 		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
+		// 设置忽略的aware接口
+		// Aware接口, 获取当前容器里面的一些对象, -> invokeAwareMethod
 		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
 		beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
 		beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);

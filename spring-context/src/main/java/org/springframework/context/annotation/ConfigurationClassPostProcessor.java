@@ -276,7 +276,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			BeanDefinition beanDef = registry.getBeanDefinition(beanName);
 			// 第一次进 appConfig 没有设置配置类属性是full还是lite
 			// registry.getBeanDefinition("appConfig").getAttribute("org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass")
-			if (beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE) != null) {
+			String configurationClassAttribute = ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE;
+			if (beanDef.getAttribute(configurationClassAttribute) != null) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Bean definition has already been processed as a configuration class: " + beanDef);
 				}
@@ -341,7 +342,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
 			// 注册bean到容器
-			//  注册实现了ImportSelector的bean
+			// 注册实现了ImportSelector的bean
 			// 方法bean注册到容器  @Bean
 			// @ImportResource("spring.xml") 配置的bean注册到容器
 			// 实现ImportBeanDefinitionRegistrar的bean 注册到容器

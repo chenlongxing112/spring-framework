@@ -1,0 +1,11 @@
+description = "My Spring Demo"
+
+dependencies {
+    compile(project(":spring-beans"))
+    compile(project(":spring-core"))
+    compile(project(":spring-context"))
+    testCompile(testFixtures(project(":spring-beans")))
+    testCompile(testFixtures(project(":spring-core")))
+    testCompile(testFixtures(project(":spring-context")))
+    testFixturesImplementation(testFixtures(project(":spring-core")))
+}
